@@ -64,3 +64,6 @@ coverage.xml
 
 # Windows files
 Thumbs.db
+
+# Env Files
+*.env
