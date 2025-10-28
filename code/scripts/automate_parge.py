@@ -70,6 +70,21 @@ def main():
         image.click_input()  # real mouse click
     else:
         raise RuntimeError("Runtime App window not found")
+    
+
+    time.sleep(3)
+
+    
+    # Find the new PARGE window by title
+    parge_window = desktop.window(title='P A R G E  Parametric Orthorectification')
+    if parge_window.exists(timeout=10):
+        print("Found the PARGE window")
+        parge_window.print_control_identifiers()
+    else:
+        print("PARGE window not found")
+
+    # Optional: print all current top-level windows
+    print(desktop.windows())
 
     ''''
     app = Application(backend="win32").start(r"C:\ReSe_Software_Win\idl89\bin\bin.x86_64\idlrt.exe -vm=C:\ReSe_Software_Win\parge\parge.sav ")
