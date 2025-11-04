@@ -1,7 +1,11 @@
 from pathlib import Path
 import shutil
 from pywinauto import Desktop, Application
+from pywinauto.timings import Timings
 import time
+
+Timings.slow() # double all timings (~2x slower script execution)
+
 
 # Exclude Steps 05 and 06 because those steps will be done by this script
 excluded_steps = ["05_output_parge",
@@ -40,68 +44,77 @@ def folder_exists(path: Path, folder: str) -> bool:
     return False
 
 
+'''How to use Pywinauto
+
+See Windows and Control Identifiers
+<your_element>.print_control_identifiers()
+<your_desktop>.windows()
+
+Very important to make sure control identifiers are shown 
+idlvm_window.wait('exists', timeout=1)
+
+
+
+'''
+
+
 def main():
+
+    wait_time = 10
     copy_folder(origin=raw_folder, dest=process_folder,
                 folders=sel_folders, excluded_subfolder=excluded_steps)
-   
-    '''  Approach does not work 
+
+
+    # Launch Target Executable
     app = Application(backend="uia").start("C:/ReSe_Software_Win/parge/PARGE.exe",
-                                             work_dir= "C:/ReSe_Software_Win/parge/"  # Makes sure config.ini is loaded
-                                             )
-    dialog  = app['IDL Virtual Machine Application']
-    btn_parge = dialog.child_window(title= "PARGE (64bit)", control_type = "Button")
-    time.sleep(1)
-    btn_parge.click_input()
-    '''    
-    app = Application(backend="uia").start(r"C:\ReSe_Software_Win\idl89\bin\bin.x86_64\idlrt.exe -vm=C:\ReSe_Software_Win\parge\parge.sav ")
+                                            work_dir="C:/ReSe_Software_Win/parge/"  # Makes sure config.ini is loaded
+                                            )
+
+    #Alternative: 
+    #app = Application(backend="win32").start(r"C:\ReSe_Software_Win\idl89\bin\bin.x86_64\idlrt.exe -vm=C:\ReSe_Software_Win\parge\parge.sav ")
+
+    # Create a Desktop Object to see all 
     desktop = Desktop(backend="uia")
-    #candidates = desktop.windows()
-    #print(candidates)
 
-    dlg = desktop.window(title='Runtime App')
-    
 
-    
-    if dlg.exists():
-        print("Found the Runtime App window")
-        dlg.print_control_identifiers()
-        pane = dlg.child_window(control_type="Pane")
-        image = pane.child_window(auto_id="316", control_type="Image")
-        image.click_input()  # real mouse click
-    else:
-        raise RuntimeError("Runtime App window not found")
-    
+    idlvm_window = desktop.window(title='Runtime App')
+    idlvm_window.wait('exists', timeout=wait_time)
+    pane = idlvm_window.child_window(control_type="Pane")
+    pane.wait('exists', timeout=wait_time)
+    image = pane.child_window(auto_id="316", control_type="Image")
+    image.wait('exists', timeout=wait_time)
+    image.click_input()
 
+    #Control Parge 
+    parge_window = desktop.window(title='P A R G E  Parametric Orthorectification')
+    parge_window.wait('exists', timeout=wait_time) 
+    #parge_window.print_control_identifiers()
+
+
+    menu_bar = parge_window.child_window(title="Application", control_type="MenuBar")
+    menu_bar.wait('exists', timeout=wait_time)
+
+
+    #Make sure DSM Menu is openede
+    dsm_tab = menu_bar.child_window(title="DSM", control_type="MenuItem")
+    dsm_tab.wait('exists', timeout=wait_time)
+    dsm_tab.expand()
     time.sleep(3)
 
-    
-    # Find the new PARGE window by title
-    parge_window = desktop.window(title='P A R G E  Parametric Orthorectification')
-    if parge_window.exists(timeout=10):
-        print("Found the PARGE window")
-        parge_window.print_control_identifiers()
-    else:
-        print("PARGE window not found")
+    # Make sure Import Menu is opened 
+    dsm_menu = parge_window.child_window(title = "DSM", control_type = "Menu")
+    import_sel = dsm_menu.child_window(title = "Import", control_type= "MenuItem")
+    import_sel.wait('exists', timeout=wait_time)
+    import_sel.click_input()
 
-    # Optional: print all current top-level windows
-    print(desktop.windows())
-
-    ''''
-    app = Application(backend="win32").start(r"C:\ReSe_Software_Win\idl89\bin\bin.x86_64\idlrt.exe -vm=C:\ReSe_Software_Win\parge\parge.sav ")
-    print(app.windows())
-    dialog = app.window(title_re=".*Runtime.*")
-    dialog.wait("visible ready", timeout=30)
-
-    dialog.print_control_identifiers()
-    '''
-
-    
-
-    
+    import_menu = parge_window.child_window(title = "Import", control_type = "Menu")
+    geotiff_sel = import_menu.child_window(title = "GEOTIFF", control_type= "MenuItem")
+    geotiff_sel.wait('exists', timeout=wait_time)
+    geotiff_sel.click_input()
 
 
 
-  
+ 
 
 if __name__ == "__main__":
     main()
