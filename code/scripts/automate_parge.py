@@ -4,7 +4,7 @@ from pywinauto import Desktop, Application
 from pywinauto.timings import Timings
 import time
 
-Timings.slow() # double all timings (~2x slower script execution)
+Timings.Defaults()
 
 
 # Exclude Steps 05 and 06 because those steps will be done by this script
@@ -88,7 +88,11 @@ def main():
     #Control Parge 
     parge_window = desktop.window(title='P A R G E  Parametric Orthorectification')
     parge_window.wait('exists', timeout=wait_time) 
-    #parge_window.print_control_identifiers()
+    
+    
+    parge_window.wrapper_object().set_focus()
+    time.sleep(1)
+
 
 
     menu_bar = parge_window.child_window(title="Application", control_type="MenuBar")
@@ -111,10 +115,28 @@ def main():
     geotiff_sel = import_menu.child_window(title = "GEOTIFF", control_type= "MenuItem")
     geotiff_sel.wait('exists', timeout=wait_time)
     geotiff_sel.click_input()
+    time.sleep(3)
 
+    #Now Geotiff Window Opens
+    read_geotiff_window = desktop.window(title='Read GEOTIFF DEM')
+    read_geotiff_window.wait('exists', timeout=wait_time) 
+    read_geotiff_window.print_control_identifiers()
 
+    #Access the ComboBox
+    file_combo = read_geotiff_window.child_window(title="File name:", control_type="ComboBox")
+    file_combo.wait('exists', timeout=wait_time) 
 
- 
+    #Write Path 
+    file_edit = file_combo.child_window(control_type="Edit")
+    file_edit.wait('exists', timeout=wait_time) 
+    file_edit.click_input()  # make sure focus is on the edit
+    file_edit.type_keys(r"E:\mjolnir_processing\re112o_250903\02_dsm\dem.tif{ENTER}", with_spaces=True)
+
+    open_button = file_combo.child_window(title="Open", control_type="Button")
+    open_button.wait('exists', timeout=wait_time) 
+    open_button.click_input()
+
 
 if __name__ == "__main__":
+    
     main()
