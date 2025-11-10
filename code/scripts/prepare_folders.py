@@ -2,12 +2,11 @@ from pathlib import Path
 import shutil
 
 
-
 # Set your Job
 sel_flights = ["re112o_250514", "re112o_250519", "re112o_250610", "re112o_250619",
                "re112o_250717_1", "re112o_250717_2",
-               "re112o_250723_1","re112o_250723_2","re112o_250723_3","re112o_250723_4",
-               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"] 
+               "re112o_250723_1", "re112o_250723_2", "re112o_250723_3", "re112o_250723_4",
+               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
@@ -15,7 +14,6 @@ process_folder = Path("E:/mjolnir_processing")
 def list_folders(path: Path) -> list:
     folders = [f.name for f in path.iterdir() if f.is_dir()]
     return folders
-
 
 
 def filter_folders(folders: Path, filters: list[list[str]]) -> list[str]:
@@ -70,6 +68,57 @@ def copy_folders(origin: Path, dest: Path, folders: list[str], report: bool = Fa
                 print(f"Skipped (does not exist): {src_path.name} ❌")
 
 
+def copy_flights(origin: Path, dest: Path, flights: list):
+    for flight in flights:
+        if not folder_exists(path=process_folder, folder=flight):
+            filtered_folders = filter_folders(folders=raw_folder / flight,
+                                              filters=[
+                                                  # Include if it has "DSM"
+                                                  ['dsm'],
+                                                  # Include if it has both "RAD" and "VNIR"
+                                                  ['rad', 'vnir'],
+                                                  # Include if it has both "RAD" and "SWIR"
+                                                  ['rad', 'swir']
+                                              ])
+            copy_folders(origin=origin / flight, dest=dest /
+                         flight, folders=filtered_folders, report=True)
+
+
+def rename_folders(process_folder: Path, flights: list, rename_lookup: list[dict], report: bool = True):
+    """
+    Renames subfolders in process_folder/flight according to rename_lookup.
+
+    Parameters:
+    - process_folder: Base processed folder path
+    - flights: List of flight folder names
+    - rename_lookup: List of dicts with 'filter' (list of keywords) and 'new_name'
+    - report: If True, prints actions
+    """
+    for flight in flights:
+        flight_folder = process_folder / flight
+        if not flight_folder.exists():
+            if report:
+                print(f"Flight folder does not exist: {flight_folder}")
+            continue
+
+        for subfolder in flight_folder.iterdir():
+            if subfolder.is_dir():
+                folder_lower = subfolder.name.lower()
+                new_name = subfolder.name  # default: keep original
+                for entry in rename_lookup:
+                    if all(keyword.lower() in folder_lower for keyword in entry["filter"]):
+                        new_name = entry["new_name"]
+                        break
+
+                if new_name != subfolder.name:
+                    new_path = subfolder.parent / new_name
+                    subfolder.rename(new_path)
+                    if report:
+                        print(f"Renamed: {subfolder.name} -> {new_name}")
+                elif report:
+                    print(f"No change: {subfolder.name}")
+
+
 def folder_exists(path: Path, folder: str) -> bool:
     existing_folders = list_folders(path)
     if folder in existing_folders:
@@ -79,18 +128,17 @@ def folder_exists(path: Path, folder: str) -> bool:
 
 
 def main():
-    for flight in sel_flights:
-        if not folder_exists( path=process_folder, folder=flight):
-            filtered_folders = filter_folders(folders=raw_folder / flight,
-                                            filters=[
-                                                ['dsm'],# Include if it has "DSM"
-                                                ['rad', 'vnir'],# Include if it has both "RAD" and "VNIR"
-                                                ['rad', 'swir']# Include if it has both "RAD" and "SWIR"
-                                            ])
-            copy_folders(origin=raw_folder /flight , dest=process_folder /flight, folders=filtered_folders, report=True)
-        
-
-
+    copy_flights(origin=raw_folder, dest=process_folder, flights=sel_flights)
+    rename_folders(
+        process_folder,
+        flights=sel_flights,
+        rename_lookup=[
+            {"filter": ["dsm"], "new_name": "DSM"},
+            {"filter": ["rad", "vnir"], "new_name": "VNIR"},
+            {"filter": ["rad", "swir"], "new_name": "SWIR"}
+        ],
+        report=True
+    )
 
 
 if __name__ == "__main__":
