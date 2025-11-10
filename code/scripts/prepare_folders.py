@@ -84,18 +84,18 @@ def copy_flights(origin: Path, dest: Path, flights: list):
                          flight, folders=filtered_folders, report=True)
 
 
-def rename_folders(process_folder: Path, flights: list, rename_lookup: list[dict], report: bool = False):
+def rename_folders(base_folder: Path, flights: list, rename_lookup: list[dict], report: bool = False):
     """
-    Renames subfolders in process_folder/flight according to rename_lookup.
+    Renames subfolders in base_folder/flight according to rename_lookup.
 
     Parameters:
-    - process_folder: Base processed folder path
+    - base_folder: Base  folder path
     - flights: List of flight folder names
     - rename_lookup: List of dicts with 'filter' (list of keywords) and 'new_name'
     - report: If True, prints actions
     """
     for flight in flights:
-        flight_folder = process_folder / flight
+        flight_folder = base_folder / flight
         if not flight_folder.exists():
             if report:
                 print(f"Flight folder does not exist: {flight_folder}")
@@ -119,6 +119,60 @@ def rename_folders(process_folder: Path, flights: list, rename_lookup: list[dict
                     print(f"No change: {subfolder.name}")
 
 
+def rename_files_to_base_full_extension(base_folder: Path, flights: list, target_subfolder: str, base_name: str = "DSM", report: bool = False):
+    """
+    Renames all files in a specific subfolder of each flight to a base name,
+    keeping the full original extension (everything after the first dot), 
+    or just the base name if there is no extension.
+
+    Example:
+    dem.tif.aux.xml -> DSM.tif.aux.xml
+    demddddd       -> DSM
+
+    Parameters:
+    - base_folder: Path to the folder containing flight subfolders
+    - flights: List of flight folder names
+    - target_subfolder: Name of the subfolder inside each flight folder to process (e.g., "DSM")
+    - base_name: The new base filename to use (default: "DSM")
+    - report: If True, prints renaming actions
+    """
+    base_folder = Path(base_folder)
+
+    for flight in flights:
+        flight_folder = base_folder / flight / target_subfolder
+        if not flight_folder.exists() or not flight_folder.is_dir():
+            if report:
+                print(f"Folder does not exist: {flight_folder}")
+            continue
+
+        for file_path in flight_folder.iterdir():
+            if file_path.is_file():
+                # Split the filename at the first dot
+                parts = file_path.name.split(".", 1)
+                if len(parts) == 1:
+                    # No dot, just rename to base_name
+                    new_name = base_name
+                else:
+                    # Keep everything after the first dot as extension
+                    new_name = f"{base_name}.{parts[1]}"
+
+                new_path = file_path.parent / new_name
+
+                # Skip if the source and target are identical
+                if new_path == file_path:
+                    if report:
+                        print(f"No change needed: {file_path.name}")
+                    continue
+
+                # Overwrite existing files if necessary
+                if new_path.exists():
+                    new_path.unlink()
+
+                file_path.rename(new_path)
+                if report:
+                    print(f"Renamed: {file_path.name} -> {new_name}")
+
+
 def folder_exists(path: Path, folder: str) -> bool:
     existing_folders = list_folders(path)
     if folder in existing_folders:
@@ -130,13 +184,21 @@ def folder_exists(path: Path, folder: str) -> bool:
 def main():
     copy_flights(origin=raw_folder, dest=process_folder, flights=sel_flights)
     rename_folders(
-        process_folder,
+        base_folder=process_folder,
         flights=sel_flights,
         rename_lookup=[
             {"filter": ["dsm"], "new_name": "DSM"},
             {"filter": ["rad", "vnir"], "new_name": "VNIR"},
             {"filter": ["rad", "swir"], "new_name": "SWIR"}
-        ]
+        ],
+        report=True
+    )
+    rename_files_to_base_full_extension(
+        base_folder=process_folder,
+        flights=sel_flights,
+        target_subfolder="DSM",
+        base_name="DSM",
+        report=True
     )
 
 
