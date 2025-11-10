@@ -4,8 +4,8 @@ import shutil
 
 # Set your Job
 sel_flights = ["re112o_250514", "re112o_250519", "re112o_250610", "re112o_250619",
-               "re112o_250717_1", "re112o_250717_2",
-               "re112o_250723_1", "re112o_250723_2", "re112o_250723_3", "re112o_250723_4",
+               "re112o_250717_2",
+               "re112o_250723_4",
                "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
@@ -181,6 +181,62 @@ def folder_exists(path: Path, folder: str) -> bool:
     return False
 
 
+def check_empty_subfolders(base_folder: Path, flights: list, target_subfolder: str, report: bool = True) -> list[str]:
+    """
+    Checks which flight folders have an empty target subfolder (e.g., DSM).
+
+    Parameters:
+    - base_folder: Path to the folder containing flight subfolders
+    - flights: List of flight folder names
+    - target_subfolder: Name of the subfolder to check inside each flight (default: "DSM")
+    - report: If True, prints empty folders
+
+    Returns:
+    - List of flight folder names where the target subfolder is empty or does not exist
+    """
+    base_folder = Path(base_folder)
+    empty_flights = []
+
+    for flight in flights:
+        flight_folder = base_folder / flight / target_subfolder
+        if not flight_folder.exists() or not flight_folder.is_dir():
+            if report:
+                print(f"Folder does not exist: {flight_folder}")
+            empty_flights.append(flight)
+            continue
+
+        # Check if folder is empty
+        if not any(flight_folder.iterdir()):
+            empty_flights.append(flight)
+            if report:
+                print(f"Empty folder: {flight_folder}")
+
+    return empty_flights
+
+
+def delete_flight_folders(base_folder: Path, flights_to_delete: list, report: bool = True):
+    """
+    Deletes entire flight folders inside the base folder.
+
+    Parameters:
+    - base_folder: Path to the folder containing flight subfolders
+    - flights_to_delete: List of flight folder names to delete
+    - report: If True, prints deletion actions
+    """
+    base_folder = Path(base_folder)
+
+    for flight in flights_to_delete:
+        flight_folder = base_folder / flight
+        if flight_folder.exists() and flight_folder.is_dir():
+            shutil.rmtree(flight_folder)
+            if report:
+                print(f"Deleted flight folder: {flight_folder}")
+        else:
+            if report:
+                print(
+                    f"Flight folder does not exist, skipping: {flight_folder}")
+
+
 def main():
     copy_flights(origin=raw_folder, dest=process_folder, flights=sel_flights)
     rename_folders(
@@ -193,6 +249,7 @@ def main():
         ],
         report=True
     )
+    # Rename dem to DSM
     rename_files_to_base_full_extension(
         base_folder=process_folder,
         flights=sel_flights,
@@ -200,6 +257,9 @@ def main():
         base_name="DSM",
         report=True
     )
+    # Delete Unprocessed Flights 
+    uncprocessed_flights = check_empty_subfolders(base_folder=process_folder, flights=list_folders(path=process_folder), target_subfolder="DSM")
+    delete_flight_folders(base_folder=process_folder, flights_to_delete=uncprocessed_flights,report=True)
 
 
 if __name__ == "__main__":
