@@ -84,7 +84,7 @@ def copy_flights(origin: Path, dest: Path, flights: list):
                          flight, folders=filtered_folders, report=True)
 
 
-def rename_folders(process_folder: Path, flights: list, rename_lookup: list[dict], report: bool = True):
+def rename_folders(process_folder: Path, flights: list, rename_lookup: list[dict], report: bool = False):
     """
     Renames subfolders in process_folder/flight according to rename_lookup.
 
@@ -136,8 +136,7 @@ def main():
             {"filter": ["dsm"], "new_name": "DSM"},
             {"filter": ["rad", "vnir"], "new_name": "VNIR"},
             {"filter": ["rad", "swir"], "new_name": "SWIR"}
-        ],
-        report=True
+        ]
     )
 
 
