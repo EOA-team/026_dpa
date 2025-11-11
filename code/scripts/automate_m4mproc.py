@@ -21,7 +21,7 @@ process_folder = Path("E:/mjolnir_processing")
 
 #activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
 activate_processes = [ "Geocoding" ]
-sel_flights =["re112o_250807"]
+sel_flights =["re112o_250807", "re112o_250813"]
 
 class CheckboxesControl:
     def __init__(self, window: UIAWrapper, names: list[str], active : list[str]):
@@ -261,6 +261,18 @@ def confirm_control(window: UIAWrapper):
     ok_btn = find_button_by_title(window, title = '  OK  ' ) # Spaces important: otherwise cannot find btn 
     ok_btn.invoke()
 
+def wait_until_process_finished(desktop: Desktop):
+    proc_console = Desktop(backend="uia").window(title='M4M Processor Console')
+    proc_console.wait('exists', timeout=wait_time) 
+    done_btn = find_button_by_title(proc_console, title = ' Done ' ) # Spaces important: otherwise cannot find btn 
+    done_btn.invoke() # Trigger that Processor Console Closes as soon as it is finished
+    # Poll every second if M4m Processor still exists
+    while True:
+        if not proc_console.exists(timeout=1):
+            print("M4M Processor Console has closed.")
+            break
+        time.sleep(1)
+
 
 def set_foldepaths(folder_editboxes: list[UIAWrapper], flight : str):
     for editbox in folder_editboxes:
@@ -297,7 +309,7 @@ def main():
         set_foldepaths(flight = flight, folder_editboxes=editboxes )
         start_process(window=m4m_window)
         confirm_control(window=m4m_window)
-
+        wait_until_process_finished(desktop)
     
                 
 
