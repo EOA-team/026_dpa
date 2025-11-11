@@ -14,6 +14,11 @@ wait_time = 3
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
+sel_flights = ["re112o_250514", "re112o_250519", "re112o_250610", "re112o_250619",
+               "re112o_250717_2",
+               "re112o_250723_4",
+               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
+
 
 
 class CheckboxesControl:
@@ -183,12 +188,44 @@ def load_config_file(filepath: Path, window: UIAWrapper):
     file_edit.type_keys("{ENTER}")
 
 
-def close_window(window: Window):
+def close_window(window: UIAWrapper):
     window.close()
     ctrl_window = window.child_window(title='IDL Control Window', control_type= "Window")
     ctrl_window.wait('exists', timeout=wait_time) 
     ctrl_window.type_keys("{ENTER}")
 
+
+def initialize_m4mProc(window : UIAWrapper):
+    checkboxes = CheckboxesControl(
+        names= ["Raw Data Import", "Geocoding", "Reflectance Retrieval",
+                "Topograhic and Radiometric Correction", "Product Generation", "Rectification", "Mosaic", "Point Cloud"],
+        window=window,
+        active=[ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
+    )
+    load_config_file(filepath=process_folder / "conf_rese_prcsr.json", window=window)
+    checkboxes.set_checkboxes()
+
+def find_editboxes(window: UIAWrapper) -> list[UIAWrapper]:
+    """
+    Returns a list of all Edit controls within the given window.
+
+    Parameters:
+    - window: UIAWrapper of the parent window.
+
+    Returns:
+    - List of UIAWrapper objects representing Edit controls.
+    """
+    edit_controls: list[UIAWrapper] = []
+
+    for ctrl in window.descendants():
+        try:
+            if ctrl.element_info.control_type == "Edit":
+                edit_controls.append(ctrl)
+        except Exception:
+            # Skip controls that can't be accessed
+            continue
+
+    return edit_controls
     
 
     
@@ -208,15 +245,28 @@ def main():
     desktop = Desktop(backend="uia")
 
     m4m_window = get_m4mProc(desktop)
-    checkboxes = CheckboxesControl(
-        names= ["Raw Data Import", "Geocoding", "Reflectance Retrieval",
-                "Topograhic and Radiometric Correction", "Product Generation", "Rectification", "Mosaic", "Point Cloud"],
-        window=m4m_window,
-        active=[ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
-    )
-    #load_config_file(filepath=process_folder / "conf_rese_prcsr.json", window=m4m_window)
-    #checkboxes.set_checkboxes()
-    close_window(window=m4m_window)
+    editboxes = find_editboxes(window=m4m_window)
+    for flight in sel_flights:
+        for editbox in editboxes:
+            name = editbox.element_info.name.strip()
+            print(editbox.element_info.name)
+            if(name == "Main Input Directory:"):
+                editbox.set_edit_text(process_folder / flight)
+            elif(name == "DSM File:"):
+                editbox.set_edit_text(process_folder / flight / "DSM" /"DSM")
+            elif(name == "Output directory:"):
+                editbox.set_edit_text(process_folder / flight / "output")
+        
+        time.sleep(1)
+                
+
+     
+    #initialize_m4mProc(window=m4m_window)
+
+
+
+    
+    #close_window(window=m4m_window)
     
     
 
