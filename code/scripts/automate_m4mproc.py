@@ -1,7 +1,7 @@
 import time
 from pywinauto import Desktop, Application
 from pywinauto.controls.uiawrapper import UIAWrapper
-from pywinauto.timings import Timings
+from pywinauto.timings import Timings, TimeoutError
 from pathlib import Path
 import shutil
 from pyprojroot import here
@@ -19,9 +19,12 @@ process_folder = Path("E:/mjolnir_processing")
 #                "re112o_250723_4",
 #                "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
 
-#activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
-activate_processes = [ "Geocoding" ]
-sel_flights =["re112o_250807", "re112o_250813"]
+sel_flights = ["re112o_250723_4",
+               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
+
+activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
+
+
 
 class CheckboxesControl:
     def __init__(self, window: UIAWrapper, names: list[str], active : list[str]):
@@ -255,11 +258,38 @@ def start_process(window: UIAWrapper):
     process_btn = find_button_by_title(window, title = " Process " )
     process_btn.invoke()
 
-def confirm_control(window: UIAWrapper):
-    ctrl_window = window.child_window(title='IDL Control Window', control_type= "Window")
-    ctrl_window.wait('exists', timeout=wait_time) 
-    ok_btn = find_button_by_title(window, title = '  OK  ' ) # Spaces important: otherwise cannot find btn 
-    ok_btn.invoke()
+def confirm_alert(window: UIAWrapper):
+    try:
+        # Try to find and wait for the alert window
+        alert_window = window.child_window(title='IDL Alert Window', control_type="Window")
+        alert_window.wait('exists', timeout=wait_time)
+
+        # Try to find the OK button
+        ok_btn = find_button_by_title(window, title='OK')  # Spaces important!
+        ok_btn.invoke()
+        print(f"⚠️ 'IDL Alert Window' appeared  — Skipping this flight ")
+
+    except TimeoutError:
+        print(f"⚠️ 'IDL Alert Window' did not appear  — There must be another issue ")
+   
+
+
+def confirm_control(window: UIAWrapper) -> bool:
+    try:
+        # Try to find and wait for the control window
+        ctrl_window = window.child_window(title='IDL Control Window', control_type="Window")
+        ctrl_window.wait('exists', timeout=wait_time)
+
+        # Try to find the OK button
+        ok_btn = find_button_by_title(window, title='  OK  ')  # Spaces important!
+        ok_btn.invoke()
+        return (True)
+
+    except TimeoutError:
+        confirm_alert(window=window)
+        return False
+
+        
 
 def wait_until_process_finished(desktop: Desktop):
     proc_console = Desktop(backend="uia").window(title='M4M Processor Console')
@@ -278,12 +308,11 @@ def set_foldepaths(folder_editboxes: list[UIAWrapper], flight : str):
     for editbox in folder_editboxes:
         name = editbox.element_info.name.strip()
         if(name == "Main Input Directory:"):
-            print(str(process_folder / flight) + '\\')
             editbox.set_edit_text(str(process_folder / flight) + '\\') # The '\' is important otherwise SWIR and VNIR are not found'
         elif(name == "DSM File:"):
-            editbox.set_edit_text(process_folder / flight / "DSM" /"DSM")
+            editbox.set_edit_text(str(process_folder / flight / "DSM" /"DSM"))
         elif(name == "Output directory:"):
-            editbox.set_edit_text(process_folder / flight / "output")
+            editbox.set_edit_text(str(process_folder / flight / "output") + '\\') # The '\' is important otherwise out dir not created
 
     
 
@@ -306,10 +335,13 @@ def main():
 
     editboxes = find_editboxes(window=m4m_window)
     for flight in sel_flights:
+        print(f"Processing {flight}🛠️...")
         set_foldepaths(flight = flight, folder_editboxes=editboxes )
         start_process(window=m4m_window)
-        confirm_control(window=m4m_window)
-        wait_until_process_finished(desktop)
+        if confirm_control(window=m4m_window):
+            wait_until_process_finished(desktop)
+            print("Finished✅")
+    
     
                 
 
