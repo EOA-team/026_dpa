@@ -6,20 +6,22 @@ from pathlib import Path
 import shutil
 from pyprojroot import here
 
-Timings.Fast()
-wait_time = 3
+Timings.fast()
+wait_time = 5
 
 
 
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
-sel_flights = ["re112o_250514", "re112o_250519", "re112o_250610", "re112o_250619",
-               "re112o_250717_2",
-               "re112o_250723_4",
-               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
+# sel_flights = ["re112o_250514", "re112o_250519", "re112o_250610", "re112o_250619",
+#                "re112o_250717_2",
+#                "re112o_250723_4",
+#                "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
 
-
+#activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
+activate_processes = [ "Geocoding" ]
+sel_flights =["re112o_250807"]
 
 class CheckboxesControl:
     def __init__(self, window: UIAWrapper, names: list[str], active : list[str]):
@@ -200,7 +202,7 @@ def initialize_m4mProc(window : UIAWrapper):
         names= ["Raw Data Import", "Geocoding", "Reflectance Retrieval",
                 "Topograhic and Radiometric Correction", "Product Generation", "Rectification", "Mosaic", "Point Cloud"],
         window=window,
-        active=[ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
+        active= activate_processes
     )
     load_config_file(filepath=process_folder / "conf_rese_prcsr.json", window=window)
     checkboxes.set_checkboxes()
@@ -226,7 +228,50 @@ def find_editboxes(window: UIAWrapper) -> list[UIAWrapper]:
             continue
 
     return edit_controls
-    
+
+def find_button_by_title(window: UIAWrapper, title: str) -> UIAWrapper:
+    """
+    Returns the first Button control within the given window
+    that matches the specified title.
+
+    Parameters:
+    - window: UIAWrapper of the parent window.
+    - title: Title of the button to search for.
+
+    Returns:
+    - UIAWrapper object representing the matching Button control,
+      or None if no matching button is found.
+    """
+    for ctrl in window.descendants():
+        try:
+            if ctrl.element_info.control_type == "Button" and ctrl.window_text() == title:
+                return ctrl
+        except Exception:
+            continue
+
+    return None
+
+def start_process(window: UIAWrapper):
+    process_btn = find_button_by_title(window, title = " Process " )
+    process_btn.invoke()
+
+def confirm_control(window: UIAWrapper):
+    ctrl_window = window.child_window(title='IDL Control Window', control_type= "Window")
+    ctrl_window.wait('exists', timeout=wait_time) 
+    ok_btn = find_button_by_title(window, title = '  OK  ' ) # Spaces important: otherwise cannot find btn 
+    ok_btn.invoke()
+
+
+def set_foldepaths(folder_editboxes: list[UIAWrapper], flight : str):
+    for editbox in folder_editboxes:
+        name = editbox.element_info.name.strip()
+        if(name == "Main Input Directory:"):
+            print(str(process_folder / flight) + '\\')
+            editbox.set_edit_text(str(process_folder / flight) + '\\') # The '\' is important otherwise SWIR and VNIR are not found'
+        elif(name == "DSM File:"):
+            editbox.set_edit_text(process_folder / flight / "DSM" /"DSM")
+        elif(name == "Output directory:"):
+            editbox.set_edit_text(process_folder / flight / "output")
 
     
 
@@ -246,18 +291,13 @@ def main():
 
     m4m_window = get_m4mProc(desktop)
     initialize_m4mProc(window=m4m_window)
+
     editboxes = find_editboxes(window=m4m_window)
     for flight in sel_flights:
-        for editbox in editboxes:
-            name = editbox.element_info.name.strip()
-            print(editbox.element_info.name)
-            if(name == "Main Input Directory:"):
-                editbox.set_edit_text(process_folder / flight)
-            elif(name == "DSM File:"):
-                editbox.set_edit_text(process_folder / flight / "DSM" /"DSM")
-            elif(name == "Output directory:"):
-                editbox.set_edit_text(process_folder / flight / "output")
-        time.sleep(1)
+        set_foldepaths(flight = flight, folder_editboxes=editboxes )
+        start_process(window=m4m_window)
+        confirm_control(window=m4m_window)
+
     
                 
 
