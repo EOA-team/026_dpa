@@ -184,7 +184,7 @@ def load_config_file(filepath: Path, window: UIAWrapper):
     file_edit.set_focus()
     file_edit.click_input()  
 
-    file_edit.type_keys(filepath)
+    file_edit.set_edit_text(filepath)
     file_edit.type_keys("{ENTER}")
 
 
@@ -245,6 +245,7 @@ def main():
     desktop = Desktop(backend="uia")
 
     m4m_window = get_m4mProc(desktop)
+    initialize_m4mProc(window=m4m_window)
     editboxes = find_editboxes(window=m4m_window)
     for flight in sel_flights:
         for editbox in editboxes:
@@ -256,12 +257,10 @@ def main():
                 editbox.set_edit_text(process_folder / flight / "DSM" /"DSM")
             elif(name == "Output directory:"):
                 editbox.set_edit_text(process_folder / flight / "output")
-        
         time.sleep(1)
+    
                 
 
-     
-    #initialize_m4mProc(window=m4m_window)
 
 
 
