@@ -71,12 +71,17 @@ class CheckboxesControl:
         state = [1 if word in active_names else 0 for word in self.names]
         return state
     
+    def focus_window(self):
+        self.window.set_focus()
+        self.window.click_input()
+    
     def set_checkboxes(self):
         """
         Sets the checkboxes to match the desired state.
         Checks a box if desired_state is 1 and it's currently 0,
         unchecks a box if desired_state is 0 and it's currently 1.
         """
+        self.focus_window()
         for cb, current, desired in zip(self.checkboxes, self.state, self.desired_state):
             try:
                 if current is None:
@@ -88,8 +93,6 @@ class CheckboxesControl:
 
         # Update the internal state after setting
         self.state = self.get_active_states()
-
-
 
 
 def open_idlvm(desktop: Desktop):
@@ -107,8 +110,6 @@ def get_m4mProc(desktop: Desktop):
         window= open_M4MProc(desktop)
     
     return window
-
-
 
 
 def open_M4MProc(desktop: Desktop):
@@ -143,7 +144,9 @@ def load_config_file(filepath: Path, window: UIAWrapper):
         print(f"Copy from {src_file}")
         shutil.copy(src_file, dst_file)
     
-
+    #Focus Window
+    window.set_focus()
+    window.click_input()
         
     #Expand  Edit Tab 
     menu_bar = window.child_window(title="Application", control_type="MenuBar")
@@ -165,7 +168,6 @@ def load_config_file(filepath: Path, window: UIAWrapper):
     filesel_dialog.set_focus()
     filesel_dialog.click_input()
 
-
      #Access the ComboBox
     file_combo = filesel_dialog.child_window(title="File name:", control_type="ComboBox")
     file_combo.wait('exists', timeout=wait_time) 
@@ -181,6 +183,11 @@ def load_config_file(filepath: Path, window: UIAWrapper):
     file_edit.type_keys("{ENTER}")
 
 
+def close_window(window: Window):
+    window.close()
+    ctrl_window = window.child_window(title='IDL Control Window', control_type= "Window")
+    ctrl_window.wait('exists', timeout=wait_time) 
+    ctrl_window.type_keys("{ENTER}")
 
     
 
@@ -207,10 +214,10 @@ def main():
         window=m4m_window,
         active=[ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
     )
-    load_config_file(filepath=process_folder / "conf_rese_prcsr.json", window=m4m_window)
-    m4m_window.set_focus()
-    m4m_window.click_input()
-    checkboxes.set_checkboxes()
+    #load_config_file(filepath=process_folder / "conf_rese_prcsr.json", window=m4m_window)
+    #checkboxes.set_checkboxes()
+    close_window(window=m4m_window)
+    
     
 
 
