@@ -28,7 +28,7 @@
         "PRODUCTOPT": "P1: SAM Iron",
         "RECTOPT": "nearbilin, input: reflectance",
         "MOSAICOPT": "nearest; psize:  0.040",
-        "MOSDIR": "E:\\mjolnir_processing\\re112o_250903\\output\\reflectance\\",
+        "MOSDIR": "",
         "MOSFILT": "*rfl.bsq",
         "MOSFILE": "mosaic.bsq",
         "POINTSOPT": "LAS",
