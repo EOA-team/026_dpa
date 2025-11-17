@@ -18,7 +18,7 @@ sel_flights = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723
                "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"] # Relevant Flights for MT 
 
 
-activate_processes = [ "Geocoding"]
+activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
 
 
 
