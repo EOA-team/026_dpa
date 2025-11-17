@@ -17,6 +17,7 @@ process_folder = Path("E:/mjolnir_processing")
 sel_flights = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
                "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"] # Relevant Flights for MT 
 
+
 activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
 
 
@@ -310,17 +311,6 @@ def set_foldepaths(folder_editboxes: list[UIAWrapper], flight : str):
             editbox.set_edit_text(str(process_folder / flight / "output") + '\\') # The '\' is important otherwise out dir not created
 
     
-
-
-
-
-
-
-
-
-
-
-
 def main():
     # Create a Desktop Object to see all windows present on Desktop
     desktop = Desktop(backend="uia")
@@ -332,6 +322,7 @@ def main():
     for flight in sel_flights:
         print(f"Processing {flight}🛠️...")
         set_foldepaths(flight = flight, folder_editboxes=editboxes )
+        time.sleep(3)
         start_process(window=m4m_window)
         if confirm_control(window=m4m_window):
             wait_until_process_finished(desktop)
