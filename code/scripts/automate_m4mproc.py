@@ -18,7 +18,7 @@ sel_flights = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723
                "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"] # Relevant Flights for MT 
 
 
-activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
+activate_processes = [ "Geocoding"]
 
 
 
@@ -228,7 +228,7 @@ def find_editboxes(window: UIAWrapper) -> list[UIAWrapper]:
 
     return edit_controls
 
-def find_button_by_title(window: UIAWrapper, title: str) -> UIAWrapper:
+def find_button_by_title(window: UIAWrapper, title: str, partial: bool = True) -> UIAWrapper:
     """
     Returns the first Button control within the given window
     that matches the specified title.
@@ -236,19 +236,41 @@ def find_button_by_title(window: UIAWrapper, title: str) -> UIAWrapper:
     Parameters:
     - window: UIAWrapper of the parent window.
     - title: Title of the button to search for.
+    - partial: If True, allows partial (substring) matching.
 
     Returns:
     - UIAWrapper object representing the matching Button control,
       or None if no matching button is found.
     """
+    normalized_title = title.strip().lower()
+    found_buttons = []
+
     for ctrl in window.descendants():
         try:
-            if ctrl.element_info.control_type == "Button" and ctrl.window_text() == title:
+            if ctrl.element_info.control_type != "Button":
+                continue
+
+            btn_text = ctrl.window_text().strip()
+            found_buttons.append(btn_text)
+
+            # check match
+            btn_text_norm = btn_text.lower()
+            if partial and normalized_title in btn_text_norm:
                 return ctrl
+            elif not partial and normalized_title == btn_text_norm:
+                return ctrl
+
         except Exception:
             continue
 
+    # If no button found, print all available button names for debugging
+    print(f"[DEBUG] Could not find button with title '{title}'. Available buttons:")
+    for btn_name in found_buttons:
+        print(f" - '{btn_name}'")
+
     return None
+
+
 
 def start_process(window: UIAWrapper):
     process_btn = find_button_by_title(window, title = " Process " )
@@ -317,6 +339,7 @@ def main():
 
     m4m_window = get_m4mProc(desktop)
     initialize_m4mProc(window=m4m_window)
+  
 
     editboxes = find_editboxes(window=m4m_window)
     for flight in sel_flights:
