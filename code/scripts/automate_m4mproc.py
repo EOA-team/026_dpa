@@ -139,8 +139,23 @@ def open_M4MProc(desktop: Desktop):
     m4m_window.click_input()
     return m4m_window
 
-def file_exists(base_path: Path, filename: str) -> bool:
-    return (base_path / filename).is_file()
+def file_exists(base_path: Path, pattern: str) -> bool:
+    """
+    Check if any file matching the pattern exists in the folder.
+
+    Args:
+        base_path (Path): Folder to search in.
+        pattern (str): Filename or glob pattern, e.g., '*.bsq'.
+
+    Returns:
+        bool: True if at least one matching file exists, False otherwise.
+    """
+    if not base_path.is_dir():
+        return False 
+
+    # Use glob to match patterns like *.bsq or specific names
+    matching_files = list(base_path.glob(pattern))
+    return len(matching_files) > 0
 
 def load_config_file(filepath: Path, window: UIAWrapper):
     if not filepath.is_file():
@@ -307,19 +322,20 @@ def confirm_control(window: UIAWrapper) -> bool:
         confirm_alert(window=window)
         return False
 
-        
-
-def wait_until_process_finished(desktop: Desktop):
-    proc_console = Desktop(backend="uia").window(title='M4M Processor Console')
-    proc_console.wait('exists', timeout=wait_time) 
-    done_btn = find_button_by_title(proc_console, title = ' Done ' ) # Spaces important: otherwise cannot find btn 
+def trigger_close_console(desktop: Desktop):
+    proc_console = desktop.window(title='M4M Processor Console')
+    proc_console.wait('exists', timeout=wait_time)
+    done_btn = find_button_by_title(proc_console, title = ' Done ' ) # Spaces important: otherwise cannot find btn
     done_btn.invoke() # Trigger that Processor Console Closes as soon as it is finished
-    # Poll every second if M4m Processor still exists
+
+def wait_until_process_finished(flight : str ):
+    # Wait until there is a bsq and hdr file in the output 
     while True:
-        if not proc_console.exists(timeout=1):
-            print("M4M Processor Console has closed.")
+        bsq_exists = file_exists(base_path=process_folder/ flight / "output" / "mosaics" , pattern= "*.bsq" ) 
+        hdf_exists = file_exists(base_path=process_folder/ flight / "output" / "mosaics" , pattern= "*.hdr" ) 
+        if bsq_exists and hdf_exists :
             break
-        time.sleep(1)
+
 
 
 def set_foldepaths(folder_editboxes: list[UIAWrapper], flight : str):
@@ -345,15 +361,10 @@ def main():
         set_foldepaths(flight = flight, folder_editboxes=editboxes )
         start_process(window=m4m_window)
         if confirm_control(window=m4m_window):
-            wait_until_process_finished(desktop)
+            trigger_close_console(desktop)
+            wait_until_process_finished(flight=flight)
             print("Finished✅")
-    
-    
-                
-
-
-
-
+       
     
     #close_window(window=m4m_window)
     
