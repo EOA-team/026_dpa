@@ -338,14 +338,11 @@ def main():
     desktop = Desktop(backend="uia")
 
     m4m_window = get_m4mProc(desktop)
-    initialize_m4mProc(window=m4m_window)
-  
-
     editboxes = find_editboxes(window=m4m_window)
     for flight in sel_flights:
+        initialize_m4mProc(window=m4m_window) # Make sure defaults are loaded after each loop --> Resets MOSDIR
         print(f"Processing {flight}🛠️...")
         set_foldepaths(flight = flight, folder_editboxes=editboxes )
-        time.sleep(3)
         start_process(window=m4m_window)
         if confirm_control(window=m4m_window):
             wait_until_process_finished(desktop)
