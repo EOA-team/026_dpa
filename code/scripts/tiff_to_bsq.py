@@ -21,7 +21,7 @@ def main ():
         dataset = gdal.Open(selected_Folder /filename)
         driver = gdal.GetDriverByName('ENVI')
         new_filename = change_file_extension(file_path=selected_Folder / filename, new_extension="bsq")
-        driver.CreateCopy(selected_Folder/ new_filename, dataset)
+        driver.CreateCopy(selected_Folder/ new_filename, dataset, options=["INTERLEAVE=BSQ"])
         print(f"Conversion complete! ENVI file saved as: {new_filename}")
 if __name__ == "__main__":
     main()
