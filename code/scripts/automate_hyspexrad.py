@@ -4,6 +4,8 @@ from pywinauto.controls.uiawrapper import UIAWrapper
 from pywinauto.timings import Timings, TimeoutError
 from pathlib import Path
 
+import time
+
 Timings.fast()
 wait_time = 5
 
@@ -30,7 +32,9 @@ def get_hyspexrad(desktop: Desktop):
 
 def open_hyspexrad(desktop: Desktop):
     # Launch Target Executable
-    app = Application(backend="uia").start("G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe")
+    app = Application(backend="uia").start("G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe",
+                                           work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/"
+                                           )
 
     hyspexrad_window = desktop.window(title='HyspexRad_V3.5')
     hyspexrad_window.wait('exists', timeout=wait_time)
@@ -45,6 +49,7 @@ def main():
     # Create a Desktop Object to see all windows present on Desktop
     desktop = Desktop(backend="uia")
     m4m_window = get_hyspexrad(desktop)
+    time.sleep(5)
     m4m_window.close()
 
 
