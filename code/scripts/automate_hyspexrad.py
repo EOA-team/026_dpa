@@ -44,8 +44,8 @@ def open_hyspexrad(desktop: Desktop):
 def main():
     # Create a Desktop Object to see all windows present on Desktop
     desktop = Desktop(backend="uia")
-
     m4m_window = get_hyspexrad(desktop)
+    m4m_window.close()
 
 
 

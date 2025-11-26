@@ -364,9 +364,7 @@ def main():
             trigger_close_console(desktop)
             wait_until_process_finished(flight=flight)
             print("Finished✅")
-       
-    
-    #close_window(window=m4m_window)
+    close_window(window=m4m_window)
     
     
 
