@@ -8,6 +8,18 @@ sel_flights = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
+# This list defines filters for folders that should be copied.
+# Each sublist contains strings that must all be present in the folder name to include it.
+# Example 1: To start with raw data only, keep ['raw'] and comment out the rest.
+# Example 2: To start with dsm, rad_vnir, and rad_swir already processed, comment out ['raw'] as it won't be needed.
+
+folder_filter = [
+    #['raw'],           # Include folders containing "raw"
+    ['dsm'],           # Include folders containing "dsm"
+    ['rad', 'vnir'],   # Include folders containing both "rad" and "vnir"
+    ['rad', 'swir']    # Include folders containing both "rad" and "swir"
+]
+
 
 def list_folders(path: Path) -> list:
     folders = [f.name for f in path.iterdir() if f.is_dir()]
@@ -70,14 +82,7 @@ def copy_flights(origin: Path, dest: Path, flights: list):
     for flight in flights:
         if not folder_exists(path=process_folder, folder=flight):
             filtered_folders = filter_folders(folders=raw_folder / flight,
-                                              filters=[
-                                                  # Include if it has "DSM"
-                                                  ['dsm'],
-                                                  # Include if it has both "RAD" and "VNIR"
-                                                  ['rad', 'vnir'],
-                                                  # Include if it has both "RAD" and "SWIR"
-                                                  ['rad', 'swir']
-                                              ])
+                                              filters= folder_filter)
             copy_folders(origin=origin / flight, dest=dest /
                          flight, folders=filtered_folders, report=True)
 
