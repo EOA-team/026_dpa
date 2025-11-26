@@ -5,6 +5,7 @@ dependencies:
   - blosc=1.21.6=hfd34d9b_1
   - bzip2=1.0.8=h0ad9c76_8
   - ca-certificates=2025.11.12=h4c7d964_0
+  - comtypes=1.4.11=py39hcbf5309_0
   - freexl=2.0.0=hf297d47_2
   - gdal=3.11.3=py39h2c6f85e_2
   - geos=3.14.0=hdade9fe_0
@@ -50,9 +51,13 @@ dependencies:
   - pcre2=10.46=h3402e2f_0
   - pip=25.2=pyh8b19718_0
   - proj=9.6.2=h7990399_2
+  - pyprojroot=0.3.0=pyhd8ed1ab_2
   - python=3.9.23=h8c5b53a_0_cpython
   - python_abi=3.9=8_cp39
+  - pywin32=311=py39h5fb4b08_0
+  - pywinauto=0.6.9=py39hcbf5309_0
   - setuptools=80.9.0=pyhff2d567_0
+  - six=1.17.0=pyhe01879c_1
   - snappy=1.2.2=h7fa0ca8_1
   - sqlite=3.51.0=hdb435a2_0
   - tbb=2022.3.0=hd094cb3_1
