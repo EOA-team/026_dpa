@@ -12,9 +12,10 @@ from pywinauto.timings import TimeoutError
 from pathlib import Path
 from typing import Optional, List
 import time 
+import psutil
 
 # Default timeout for wait operations (seconds)
-DEFAULT_WAIT_TIME = 5
+DEFAULT_WAIT_TIME = 3
 
 
 def get_application(
@@ -136,32 +137,103 @@ def find_control(
     return None
 
 
-def close_window_with_confirmation(window: UIAWrapper) -> bool:
+def close_window_with_confirmation(
+    window: UIAWrapper,
+    desktop: Desktop,
+    confirmation_buttons: list[str],
+    wait_for_dialog: int = DEFAULT_WAIT_TIME
+) -> bool:
     """
-    Close window and press Enter to handle any confirmation.
-    Simple and effective for most cases.
+    Close a window and automatically handle confirmation dialog.
+        
+    Examples:
+        # Must specify which button(s) to click
+        close_window_with_confirmation(window, desktop, confirmation_buttons=["Yes"])
+        
+        # Try multiple buttons in order
+        close_window_with_confirmation(window, desktop, confirmation_buttons=["Don't Save", "No", "OK"])
+        
+        # Custom wait time
+        close_window_with_confirmation(window, desktop, confirmation_buttons=["Yes"], wait_for_dialog=2.0)
     """
+    import time
+    
+    # Validate that confirmation_buttons is provided and not empty
+    if not confirmation_buttons:
+        raise ValueError("confirmation_buttons must be provided and cannot be empty. "
+                        "Example: confirmation_buttons=['Yes'] or ['OK', 'No']")
+    
     try:
+        # Attempt to close the window
+        print(f"Closing window: '{window.window_text()}'")
         window.close()
-        # Just press Enter - works for most confirmations
-        window.type_keys("{ENTER}")
-        return True
         
+        # Wait for potential confirmation dialog
+        time.sleep(wait_for_dialog)
+        
+        # Look for confirmation dialogs
+        dialog_handled = False
+        for ctrl in desktop.windows():
+            try:
+                # Check if it's a visible dialog
+                if not ctrl.is_visible():
+                    continue
+                
+                # Check if it's a dialog window
+                class_name = ctrl.class_name() if hasattr(ctrl, 'class_name') else ''
+                if not (ctrl.is_dialog() or 
+                       class_name in ["#32770", "Dialog", "Window"] or
+                       "dialog" in ctrl.window_text().lower()):
+                    continue
+                
+                print(f"  Found dialog: '{ctrl.window_text()}'")
+                
+                # Try each confirmation button using find_control
+                for btn_name in confirmation_buttons:
+                    try:
+                        btn = find_control(
+                            window=ctrl,
+                            control_type="Button",
+                            control_name=btn_name,
+                            exact=False,
+                            debug=False
+                        )
+                        
+                        if btn and btn.is_visible() and btn.is_enabled():
+                            print(f"  Clicking '{btn.window_text()}' button...")
+                            btn.click()
+                            time.sleep(0.5)
+                            dialog_handled = True
+                            break
+                    except Exception:
+                        continue
+                
+                if dialog_handled:
+                    break
+                    
+            except Exception:
+                continue
+        
+        if dialog_handled:
+            print("  ✓ Confirmation dialog handled")
+        
+        # Check if window closed successfully
+        time.sleep(0.5)
+        if not window.exists():
+            print("  ✓ Window closed successfully")
+            return True
+        else:
+            print("  ⚠️ Window still exists after close attempt")
+            return False
+            
     except Exception as e:
-        print(f"⚠️ Error: {e}")
+        print(f"  ⚠️ Error closing window: {e}")
         return False
-        
 
 
 def main():
-    windows_desktop = Desktop(backend="uia")
-    open_application(app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
-                     work_dir="C:/ReSe_Software_Win/m4mproc/",
-                     idl_application=True, wait_time= DEFAULT_WAIT_TIME,
-                     window_title="ReSe Hyspex Processor 2025", desktop=windows_desktop)
+    pass
     
-
-
 
 if __name__ == "__main__":
     main()

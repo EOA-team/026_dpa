@@ -1,7 +1,7 @@
 import pytest 
 from code.pywinauto_helpers import (
-    get_application, open_application,close_window_with_confirmation,
-    handle_idl_vm_startup, find_control,
+    open_application,close_window_with_confirmation,
+    find_control,
     DEFAULT_WAIT_TIME, Desktop
 )
 
@@ -14,6 +14,67 @@ def windows_desktop():
     
     # Cleanup after all tests are done
     print("\n🧹 Cleaning up Desktop after test session...")
+
+def test_open_application_only_once_simple(windows_desktop):
+    """Test that open_application reuses existing window."""
+    
+    # First call
+    window1 = open_application(
+        desktop=windows_desktop,
+        app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
+        work_dir="C:/ReSe_Software_Win/m4mproc/",
+        window_title="ReSe Hyspex Processor 2025",
+        idl_application=True
+    )
+    
+    assert window1 is not None
+    assert window1.exists()
+    handle1 = window1.handle
+    
+    # Second call - should return same window
+    window2 = open_application(
+        desktop=windows_desktop,
+        app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
+        work_dir="C:/ReSe_Software_Win/m4mproc/",
+        window_title="ReSe Hyspex Processor 2025",
+        idl_application=True
+    )
+    
+    # Compare by window handle, not object identity
+    handle2 = window2.handle
+    assert handle1 == handle2, f"Different windows! {handle1} vs {handle2}"
+    
+    # Third call
+    window3 = open_application(
+        desktop=windows_desktop,
+        app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
+        work_dir="C:/ReSe_Software_Win/m4mproc/",
+        window_title="ReSe Hyspex Processor 2025",
+        idl_application=True
+    )
+    
+    handle3 = window3.handle
+    assert handle3 == handle1, f"Third call different! {handle3} vs {handle1}"
+    
+    print(f"✓ All calls returned same window (handle: {handle1})")
+
+
+def test_open_and_close(windows_desktop):
+    m4m_window= open_application(app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
+                     work_dir="C:/ReSe_Software_Win/m4mproc/",
+                     idl_application=True, wait_time= DEFAULT_WAIT_TIME,
+                     window_title="ReSe Hyspex Processor 2025", desktop=windows_desktop)
+    assert m4m_window.window_text() == "ReSe Hyspex Processor 2025"
+    close_window_with_confirmation(desktop=windows_desktop,
+                                   window=m4m_window,
+                                   confirmation_buttons=["Yes"])
+
+     # Check window is closed
+    assert not m4m_window.exists(), "Window still exists"
+    print("✓ Window closed successfully")
+
+
+
 
 
 def test_find_control(windows_desktop):
@@ -44,16 +105,11 @@ def test_find_control(windows_desktop):
     
     print(f"✓ All tests passed! Found '{select_exact.window_text()}' and '{process_btn.window_text()}'")
     
-    close_window_with_confirmation(m4m_window)
+    close_window_with_confirmation(desktop=windows_desktop,
+                                   window=m4m_window,
+                                   confirmation_buttons=["Yes"])
 
-# def test_open_and_close_m4mproc(windows_desktop):
-#     m4m= open_application(app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
-#                      work_dir="C:/ReSe_Software_Win/m4mproc/",
-#                      idl_application=True, wait_time= DEFAULT_WAIT_TIME,
-#                      window_title="ReSe Hyspex Processor 2025", desktop=windows_desktop)
-#     assert m4m.window_text() == "ReSe Hyspex Processor 2025"
-#     m4m.close()
-#     assert m4m.window_text() == None
+
 
     
     
