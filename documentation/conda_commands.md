@@ -21,7 +21,7 @@ Replace `026_dpa` with your environment name if different.
 Export your current environment to a YAML file:
 
 ```bash
-conda env export > environment.yml
+conda env export --no-builds > environment.yml
 ```
 
 This will create `environment.yml` containing all packages and dependencies.

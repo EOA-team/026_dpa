@@ -1,7 +1,7 @@
 from osgeo import gdal
 from pathlib import Path
 
-selected_Folder = Path("E:/251118_final_mt_ready/re112o_250918/output/georeferenced")
+selected_Folder = Path("E:/mjolnir_processing/re112o_250610/output/georeferenced")
 
 def get_tif_files(folder_path: Path) -> list[str]:
     folder = Path(folder_path)

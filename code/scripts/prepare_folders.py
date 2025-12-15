@@ -3,8 +3,7 @@ import shutil
 
 
 # Set your Job
-sel_flights = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
-               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"] # Relevant Flights for MT 
+sel_flights = ["re112o_250610", "re112o_250619"] # Relevant Flights for MT 
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
