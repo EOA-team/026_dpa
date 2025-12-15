@@ -139,6 +139,46 @@ def find_control(
     
     return None
 
+def find_controls_by_type(
+    window: UIAWrapper,
+    control_type: str,
+    debug: bool = True
+) -> List[UIAWrapper]:
+    """
+    Find ALL controls of a specific type.
+    
+    Examples:
+        # Find all buttons
+        buttons = find_controls(window, "Button")
+        
+        # Find all checkboxes
+        checkboxes = find_controls(window, "CheckBox")
+    """
+    # Bring window to foreground to ensure controls are accessible
+    window.set_focus()
+    
+    found_controls = []
+    
+    for ctrl in window.descendants():
+        try:
+            if ctrl.element_info.control_type != control_type:
+                continue
+            
+            found_controls.append(ctrl)
+                    
+        except Exception:
+            continue
+    
+    if debug:
+        print(f"[DEBUG] Found {len(found_controls)} {control_type} controls")
+        for ctrl in found_controls:
+            try:
+                name = ctrl.window_text().strip()
+                print(f"  - '{name}'")
+            except:
+                print(f"  - (unnamed)")
+    
+    return found_controls
 
 def close_window_with_confirmation(
     window: UIAWrapper,

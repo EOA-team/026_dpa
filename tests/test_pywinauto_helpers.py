@@ -4,6 +4,7 @@ from code.pywinauto_helpers import (
     find_control,
     DEFAULT_WAIT_TIME, Desktop
 )
+from code.checkboxescontrol import CheckboxesControl
 
 @pytest.fixture(scope="session")
 def windows_desktop():
@@ -144,26 +145,18 @@ def test_controls_fail_on_minimized_window(windows_desktop):
                                    confirmation_buttons=["Yes"])
 
 
+def test_checkboxescontrol(windows_desktop):
+    hyspexrad_window = open_application(desktop=windows_desktop, 
+                                        app_path="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe",
+                                        work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/",
+                                        idl_application=False,
+                                        window_title="HyspexRad_V3.5")
+    
+    checkbox_control = CheckboxesControl(window=hyspexrad_window)
+    checkbox_control.print_summary()
+    assert True
 
     
-
-
-    
-    
-
-    
-
-
-    
-    # close_window_with_confirmation(desktop=windows_desktop,
-    #                                window=m4m_window,
-    #                                confirmation_buttons=["Yes"])
-    
-    # close_window_with_confirmation(desktop=windows_desktop,
-    #                                window=hyspexrad_window,
-    #                                confirmation_buttons=["Yes"])
-                                        
-        
         
         
     
