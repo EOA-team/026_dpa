@@ -105,6 +105,9 @@ def find_control(
         # Find button (exact match)
         btn = find_control(window, "Button", "Submit", exact=True)
     """
+    # Bring window to foreground to ensure controls are accessible
+    window.set_focus() 
+
     normalized_name = control_name.strip().lower()
     found_controls = []
     
@@ -144,7 +147,9 @@ def close_window_with_confirmation(
     wait_for_dialog: int = DEFAULT_WAIT_TIME
 ) -> bool:
     """
-    Close a window and automatically handle confirmation dialog.
+    Close a window and automatically handle confirmation dialog if it appears.
+    Also works for windows that close immediately without confirmation.
+
         
     Examples:
         # Must specify which button(s) to click
@@ -156,7 +161,9 @@ def close_window_with_confirmation(
         # Custom wait time
         close_window_with_confirmation(window, desktop, confirmation_buttons=["Yes"], wait_for_dialog=2.0)
     """
-    import time
+
+    # Bring window to foreground to ensure controls are accessible
+    window.set_focus() 
     
     # Validate that confirmation_buttons is provided and not empty
     if not confirmation_buttons:
@@ -164,12 +171,21 @@ def close_window_with_confirmation(
                         "Example: confirmation_buttons=['Yes'] or ['OK', 'No']")
     
     try:
+        window.set_focus()
         # Attempt to close the window
         print(f"Closing window: '{window.window_text()}'")
         window.close()
         
-        # Wait for potential confirmation dialog
-        time.sleep(wait_for_dialog)
+        # Small initial wait to see if window closes immediately
+        time.sleep(0.3)
+        
+        # Check if window closed without confirmation
+        if not window.exists():
+            print("  ✓ Window closed immediately (no confirmation needed)")
+            return True
+        
+        # Window still exists, wait for potential confirmation dialog
+        time.sleep(wait_for_dialog - 0.3)
         
         # Look for confirmation dialogs
         dialog_handled = False
@@ -229,7 +245,6 @@ def close_window_with_confirmation(
     except Exception as e:
         print(f"  ⚠️ Error closing window: {e}")
         return False
-
 
 def main():
     pass

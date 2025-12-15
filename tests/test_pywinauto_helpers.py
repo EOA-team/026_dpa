@@ -108,8 +108,63 @@ def test_find_control(windows_desktop):
     close_window_with_confirmation(desktop=windows_desktop,
                                    window=m4m_window,
                                    confirmation_buttons=["Yes"])
+    
+
+
+def test_controls_fail_on_minimized_window(windows_desktop):
+
+
+    m4m_window = open_application(app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
+                     work_dir="C:/ReSe_Software_Win/m4mproc/",
+                     idl_application=True, wait_time= DEFAULT_WAIT_TIME,
+                     window_title="ReSe Hyspex Processor 2025", desktop=windows_desktop)
+    
+
+    
+    m4m_window.minimize()
+
+    help_menu = find_control(window=m4m_window, control_type="MenuItem", control_name="help", exact=True)
+    assert help_menu is not None, "Help menu not found"
+    print("✓ Found Help menu")
+    help_menu.select()
+    print("✓ Select worked (window is focused)")
+
+
+    m4m_window.minimize()
+    print("\nAttempting to select() on minimized window (should fail)...")
+
+    with pytest.raises(Exception) as exc_info:
+        help_menu.select()
+
+    print(f"✓ Expected error: {type(exc_info.value).__name__}: {exc_info.value}")
+    print("✓ Confirmed: Cannot interact with controls when window is minimized")
+
+    close_window_with_confirmation(desktop=windows_desktop,
+                                   window=m4m_window,
+                                   confirmation_buttons=["Yes"])
 
 
 
+    
+
+
+    
+    
+
+    
+
+
+    
+    # close_window_with_confirmation(desktop=windows_desktop,
+    #                                window=m4m_window,
+    #                                confirmation_buttons=["Yes"])
+    
+    # close_window_with_confirmation(desktop=windows_desktop,
+    #                                window=hyspexrad_window,
+    #                                confirmation_buttons=["Yes"])
+                                        
+        
+        
+        
     
     
