@@ -4,6 +4,8 @@ from pywinauto.controls.uiawrapper import UIAWrapper
 from pywinauto.timings import Timings, TimeoutError
 from pathlib import Path
 
+from code.pywinauto_helpers import open_application, find_control
+from code.checkboxescontrol import CheckboxesControl
 import time
 
 Timings.fast()
@@ -80,40 +82,46 @@ def find_element_by_title(window: UIAWrapper, element_type: str, title: str, par
         except Exception:
             continue
 
+def set_fileformat(window: UIAWrapper, fileformat: str):
+    radio_button = find_control(window=window, control_type="RadioButton", control_name="bsq", exact=True)
+    radio_button.select()        
+
+def set_datatype(window: UIAWrapper, datatype: str):
+    radio_button = find_control(window=window, control_type="RadioButton", control_name="32 bit float", exact=True)
+    radio_button.select()   
+
+  
+
+
+        
 
 
 
 def main():
     # Create a Desktop Object to see all windows present on Desktop
-    desktop = Desktop(backend="uia")
-    m4m_window = get_hyspexrad(desktop)
-    
-    m4m_window.print_control_identifiers()
-    
-    rb1 = find_element_by_title(window=m4m_window, element_type="RadioButton", partial=True, title="BSQ")
-    rb1.select()
+    windows_desktop = Desktop(backend="uia")
+    hyspexrad_window = open_application(desktop=windows_desktop, 
+                                  app_path="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe",
+                                  work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/",
+                                  idl_application=False,
+                                  window_title="HyspexRad_V3.5")
+    checkboxes = CheckboxesControl(window=hyspexrad_window)
+    checkboxes.check("Radiance")
+    checkboxes.uncheck("Reflectance")
+    checkboxes.check("RGB")
+    checkboxes.uncheck("Saturation Map")
 
+    radio_button = find_control(window=hyspexrad_window, control_type="ListItem", control_name="JPG", exact=True)
+    radio_button.select()   
 
-    rb2 = find_element_by_title(window=m4m_window, element_type="RadioButton", partial=True, title="32 bit float")
-    rb2.select()
+    radio_button = find_control(window=hyspexrad_window, control_type="ListItem", control_name="ENVI Mask", exact=True)
+    radio_button.select()   
 
-
-    rb3 = find_element_by_title(window=m4m_window, element_type="CheckBox", partial=True, title="radiance ")
-    rb3.invoke()
-
-
-    rb4 = find_element_by_title(window=m4m_window, element_type="CheckBox", partial=True, title="rgb")
-    rb4.invoke()
-
-    rb5 = find_element_by_title(window=m4m_window, element_type="ListItem", partial=True, title="JPG")
-    rb5.select()
-
-    rb5 = find_element_by_title(window=m4m_window, element_type="ListItem", partial=True, title="Envi Mask ")
-    rb5.select()
-
+    set_fileformat(window=hyspexrad_window, fileformat="bsq")
+    set_datatype(window=hyspexrad_window, datatype="32 bit float")
 
     time.sleep(5)
-    m4m_window.close()
+    hyspexrad_window.close()
 
 
 
