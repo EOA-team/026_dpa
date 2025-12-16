@@ -4,7 +4,7 @@ from code.pywinauto_helpers import (
     find_control,set_checkbox,
     DEFAULT_WAIT_TIME, Desktop
 )
-from code.checkboxescontrol import CheckboxesControl
+
 
 @pytest.fixture(scope="session")
 def windows_desktop():

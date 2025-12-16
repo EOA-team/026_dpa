@@ -105,6 +105,7 @@ dependencies:
   - tomlkit=0.13.3
   - trio=0.32.0
   - trio-websocket=0.12.2
+  - types-psutil=6.1.0.20241221
   - typing_extensions=4.15.0
   - tzdata=2025c
   - ucrt=10.0.26100.0
