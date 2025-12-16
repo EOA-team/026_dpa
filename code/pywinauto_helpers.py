@@ -285,6 +285,54 @@ def close_window_with_confirmation(
     except Exception as e:
         print(f"  ⚠️ Error closing window: {e}")
         return False
+    
+def set_checkbox(
+    window: UIAWrapper,
+    checkbox_name: str,
+    activate: bool,
+    exact: bool = False
+) -> bool:
+    """
+    Check or uncheck a checkbox by name.
+  
+    Examples:
+        # Check a checkbox
+        set_checkbox(window, "Geocoding", activate=True)
+        
+        # Uncheck a checkbox
+        set_checkbox(window, "Raw Data Import", activate=False)
+        
+        # Partial match
+        set_checkbox(window, "Reflectance", activate=True)
+        
+        # Exact match
+        set_checkbox(window, "Geocoding", activate=True, exact=True)
+    """
+    checkbox = find_control(window, "CheckBox", checkbox_name, exact=exact, debug=False)
+    
+    if not checkbox:
+        print(f"⚠️ Checkbox not found: '{checkbox_name}'")
+        return False
+    
+    try:
+        current_state = checkbox.get_toggle_state()  # 0=Off, 1=On
+        desired_state = 1 if activate else 0
+        
+        # Already in desired state
+        if current_state == desired_state:
+            action = "checked" if activate else "unchecked"
+            print(f"✓ '{checkbox.window_text()}' already {action}")
+            return True
+        
+        # Toggle to desired state
+        checkbox.toggle()
+        action = "checked" if activate else "unchecked"
+        print(f"✓ {action.capitalize()}: '{checkbox.window_text()}'")
+        return True
+        
+    except Exception as e:
+        print(f"⚠️ Error setting checkbox '{checkbox_name}': {e}")
+        return False
 
 def main():
     pass
