@@ -237,7 +237,61 @@ def delete_flight_folders(base_folder: Path, flights_to_delete: list, report: bo
             if report:
                 print(
                     f"Flight folder does not exist, skipping: {flight_folder}")
+                
+def get_nr_of_files(base_path: Path, pattern: str) -> int:
+    """
+    Get the number of files matching the pattern in the folder.
 
+    Examples:
+        # Count all .bsq files
+        count = get_nr_of_files(Path("data"), "*.bsq")
+        
+        # Count specific file
+        count = get_nr_of_files(Path("data"), "output.txt")
+    """
+    if not base_path.is_dir():
+        return 0
+    
+    matching_files = list(base_path.glob(pattern))
+    return len(matching_files)
+
+
+def move_files_by_pattern(source: Path, destination: Path, pattern: str) -> int:
+    """
+    Move all files where filename contains the pattern (case-insensitive, ignoring spaces).
+    
+
+    Examples:
+        # Move all files containing 'v1240' (matches V1240, v 1240, V 1 2 4 0, etc.)
+        moved = move_files_by_pattern(Path("source"), Path("dest"), "v1240")
+    """
+    if not source.is_dir():
+        print(f"Source directory does not exist: {source}")
+        return 0
+    
+    # Create destination directory if it doesn't exist
+    destination.mkdir(parents=True, exist_ok=True)
+    
+    # Normalize the pattern: lowercase and remove spaces
+    normalized_pattern = pattern.lower().replace(" ", "")
+    
+    # Get all files in source directory
+    all_files = [f for f in source.iterdir() if f.is_file()]
+    
+    moved_count = 0
+    for file_path in all_files:
+        # Normalize filename: lowercase and remove spaces
+        normalized_filename = file_path.name.lower().replace(" ", "")
+        
+        # Check if pattern is in filename
+        if normalized_pattern in normalized_filename:
+            dest_file = destination / file_path.name
+            shutil.move(file_path, dest_file)  # move instead of copy
+            print(f"Moved: {file_path.name}")
+            moved_count += 1
+    
+    print(f"Moved {moved_count} file(s) containing '{pattern}' from {source} to {destination}")
+    return moved_count
 
 def main():
     copy_flights(origin=raw_folder, dest=process_folder, flights=sel_flights)

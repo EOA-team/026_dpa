@@ -90,13 +90,13 @@ def open_application(
 def find_control(
     window: UIAWrapper,
     control_type: str,
-    control_name: str,
+    control_name:  str = "",
     exact: bool = False,
+    found_index: Optional[int] = None,
     debug: bool = True
 ) -> Optional[UIAWrapper]:
     """
     Find a UI control by type and name.
-
         
     Examples:
         # Find button (partial match)
@@ -104,12 +104,19 @@ def find_control(
         
         # Find button (exact match)
         btn = find_control(window, "Button", "Submit", exact=True)
+
+        # Find button (without name --> just take the first one it finds)
+        btn = find_control(window, "Button", found_indey=0)
+        
+        # Find second ListBox
+        listbox = find_control(window, "ListBox", found_index=1)
     """
     # Bring window to foreground to ensure controls are accessible
     window.set_focus() 
 
     normalized_name = control_name.strip().lower()
     found_controls = []
+    matching_controls = []
     
     for ctrl in window.descendants():
         try:
@@ -119,6 +126,15 @@ def find_control(
             control_text = ctrl.window_text().strip()
             found_controls.append(control_text)
             
+            # If found_index is specified, just collect all matching controls by type
+            if found_index is not None:
+                matching_controls.append(ctrl)
+                continue
+            
+            # Otherwise, match by name
+            if not control_name:
+                continue
+                
             control_text_norm = control_text.lower()
             if exact:
                 if normalized_name == control_text_norm:
@@ -129,6 +145,15 @@ def find_control(
                     
         except Exception:
             continue
+    
+    # If found_index was specified, return the control at that index
+    if found_index is not None:
+        if 0 <= found_index < len(matching_controls):
+            return matching_controls[found_index]
+        elif debug:
+            print(f"[DEBUG] Could not find {control_type} at index {found_index}")
+            print(f"[DEBUG] Found {len(matching_controls)} {control_type} controls (indices 0-{len(matching_controls)-1})")
+        return None
     
     if debug:
         match_type = "exact" if exact else "partial"

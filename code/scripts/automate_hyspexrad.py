@@ -5,17 +5,25 @@ from pywinauto.timings import Timings, TimeoutError
 from pathlib import Path
 
 from code.pywinauto_helpers import open_application, find_control, set_checkbox
+from code.scripts.prepare_folders import folder_exists, get_nr_of_files, move_files_by_pattern
 import time
 
 Timings.fast()
 wait_time = 5
+
+NR_OF_SENSORS = 2 # VNIR , SWIR
+FLIGHT_LINES = 3
+OUTPUT_FILES_PER_FLIGHT_LINE = 3 # hdr , jpg, img
+
+VNIR_TAG = "v1240"
+SWIR_TAG = "s620"
 
 
 
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
-sel_flights = ["re112o_250610"] # Relevant Flights for MT 
+sel_flights = ["re112o_250610", "re112o_250918"] # Relevant Flights for MT 
 
 
 def get_hyspexrad(desktop: Desktop):
@@ -90,8 +98,8 @@ def set_datatype(window: UIAWrapper, datatype: str):
 
   
 def set_output_folder(window: UIAWrapper,flight : str):
-    editbox = find_control(window=window, control_type="Edit", control_name="", exact=True)
-    editbox.set_edit_text(str(process_folder / flight) + '\\')
+    editbox = find_control(window=window, control_type="Edit", found_index=0)
+    editbox.set_edit_text(str(process_folder / flight / "tmp") + '\\')
 
 def set_input_folder(window: UIAWrapper,flight : str):
     button  = find_control(window=window, control_type="Button", control_name="open images", exact=True)
@@ -111,6 +119,29 @@ def set_input_folder(window: UIAWrapper,flight : str):
     itemslist.type_keys("^a")  # Ctrl+A
     itemslist.type_keys("{ENTER}")
 
+def set_softwarebinning(window: UIAWrapper):
+    swir_across_track = find_control(window=window, control_type="ComboBox", found_index=0)
+    swir_across_track.select("1X")
+    swir_spectral_direction = find_control(window=window, control_type="ComboBox", found_index=1)
+    swir_spectral_direction.select("1X")
+    swir_along_track = find_control(window=window, control_type="ComboBox", found_index=2)
+    swir_along_track.select("1X")
+    vnir_across_track = find_control(window=window, control_type="ComboBox", found_index=3)
+    vnir_across_track.select("2X")
+    vnir_spectral_direction = find_control(window=window, control_type="ComboBox", found_index=4)
+    vnir_spectral_direction.select("2X")
+    vnir_along_track = find_control(window=window, control_type="ComboBox", found_index=5)
+    vnir_along_track.select("2X")
+
+def set_output_fileformat(window: UIAWrapper, filerformat: str):
+    combobox = find_control(window=window, control_type="ComboBox", 
+                            control_name="Save", exact=True)
+    combobox.select(filerformat)
+
+def trigger_run(window: UIAWrapper):
+    button = find_control(window=window, control_type="Button", control_name="run", exact=True)
+    button.invoke()
+
 
 
 
@@ -124,35 +155,50 @@ def main():
                                   idl_application=False,
                                   window_title="HyspexRad_V3.5")
     
+    
+    
     set_fileformat(window=hyspexrad_window, fileformat="bsq")
     set_datatype(window=hyspexrad_window, datatype="32 bit float")
+    set_output_fileformat(window=hyspexrad_window, filerformat="JPG")
 
     set_checkbox(window=hyspexrad_window, checkbox_name="radiance" ,activate=True, exact=True)
     set_checkbox(window=hyspexrad_window, checkbox_name="reflectance" ,activate=False, exact=True)
     set_checkbox(window=hyspexrad_window, checkbox_name="rgb" ,activate=True, exact=True)
     set_checkbox(window=hyspexrad_window, checkbox_name="saturation map" ,activate=False, exact=True)
-    
-
-    radio_button = find_control(window=hyspexrad_window, control_type="ListItem", control_name="JPG", exact=True)
-    radio_button.select()   
-
-    radio_button = find_control(window=hyspexrad_window, control_type="ListItem", control_name="ENVI Mask", exact=True)
-    radio_button.select()   
 
 
     for flight in sel_flights:
-        set_output_folder(window= hyspexrad_window, flight=flight)
-        set_input_folder(window=hyspexrad_window, flight=flight)
-    
-  
+        # Create tmp folder for this flight
+        tmp_folder = process_folder / flight / "tmp"
+        tmp_folder.mkdir(parents=True, exist_ok=True)
+
+        
+
    
+        
+        set_output_folder(window=hyspexrad_window, flight=flight)
+        set_input_folder(window=hyspexrad_window, flight=flight)
+        set_softwarebinning(window=hyspexrad_window)
+        trigger_run(window=hyspexrad_window)
+        
+        nr_files = 0
+        expected_files = NR_OF_SENSORS * FLIGHT_LINES * OUTPUT_FILES_PER_FLIGHT_LINE
+        
+        while nr_files != expected_files:
+            nr_jpg = get_nr_of_files(base_path=tmp_folder, pattern="*.JPG")
+            nr_hdr = get_nr_of_files(base_path=tmp_folder, pattern="*.hdr")
+            nr_img = get_nr_of_files(base_path=tmp_folder, pattern="*.img")
+            nr_files = nr_jpg + nr_hdr + nr_img
+            print(f"Files found: {nr_files}/{expected_files} (jpg:{nr_jpg}, hdr:{nr_hdr}, img:{nr_img})")
+            time.sleep(1)
+        
+        swir_folder = process_folder / flight / "SWIR"
+        move_files_by_pattern(source=tmp_folder, destination=swir_folder, pattern=SWIR_TAG)
 
-    
+        vnir_folder = process_folder / flight / "VNIR"
+        move_files_by_pattern(source=tmp_folder, destination=vnir_folder, pattern=VNIR_TAG)
 
-    
-    
 
-    time.sleep(10)
     hyspexrad_window.close()
 
 
