@@ -1,7 +1,7 @@
 import pytest 
 from code.pywinauto_helpers import (
     open_application,close_window_with_confirmation,
-    find_control,
+    find_control,set_checkbox,
     DEFAULT_WAIT_TIME, Desktop
 )
 from code.checkboxescontrol import CheckboxesControl
@@ -145,17 +145,93 @@ def test_controls_fail_on_minimized_window(windows_desktop):
                                    confirmation_buttons=["Yes"])
 
 
-def test_checkboxescontrol(windows_desktop):
-    hyspexrad_window = open_application(desktop=windows_desktop, 
-                                        app_path="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe",
-                                        work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/",
-                                        idl_application=False,
-                                        window_title="HyspexRad_V3.5")
-    
-    checkbox_control = CheckboxesControl(window=hyspexrad_window)
-    checkbox_control.print_summary()
-    assert True
 
+def test_set_checkbox(windows_desktop):
+    """Test checking and unchecking a checkbox."""
+    
+    # Open HyspexRad
+    hyspexrad_window = open_application(
+        desktop=windows_desktop,
+        app_path="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe",
+        work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/",
+        window_title="HyspexRad_V3.5",
+        idl_application=False
+    )
+    
+    print("\n=== Test 1: Check initial state ===")
+    checkbox = find_control(
+        window=hyspexrad_window,  
+        control_type="CheckBox",
+        control_name="radiance",
+        exact=True, 
+        debug=False
+    )
+    
+    assert checkbox is not None, "Radiance checkbox not found"
+    
+    state = checkbox.get_toggle_state()
+    print(f"Initial state: {state} (1=checked, 0=unchecked)")
+    
+    assert state == 1, "Expected Radiance to be checked by default"
+    print("✓ Radiance is checked by default")
+    
+    # Test 2: Uncheck the checkbox
+    print("\n=== Test 2: Uncheck checkbox ===")
+    result = set_checkbox(
+        window=hyspexrad_window,  
+        checkbox_name="radiance",
+        activate=False,
+        exact=True
+    )
+    
+    assert result, "Failed to uncheck checkbox"
+    
+    # Verify it's unchecked
+    checkbox = find_control(
+        window=hyspexrad_window,
+        control_type="CheckBox",
+        control_name="radiance",
+        exact=False,
+        debug=True
+    )
+    
+    state = checkbox.get_toggle_state()
+    assert state == 0, "Expected Radiance to be unchecked"
+    print("✓ Radiance is now unchecked")
+    
+    # Test 3: Check the checkbox again
+    print("\n=== Test 3: Check checkbox again ===")
+    result = set_checkbox(
+        window=hyspexrad_window,
+        checkbox_name="radiance",
+        activate=True,
+        exact=True
+    )
+    
+    assert result, "Failed to check checkbox"
+    
+    # Verify it's checked
+    checkbox = find_control(
+        window=hyspexrad_window,
+        control_type="CheckBox",
+        control_name="radiance",
+        exact=False,
+        debug=False
+    )
+    
+    state = checkbox.get_toggle_state()
+    assert state == 1, "Expected Radiance to be checked again"  # Fixed: should be 1, not 0
+    print("✓ Radiance is checked again")
+    
+    # Cleanup
+    print("\n=== Cleanup ===")
+    close_window_with_confirmation(
+        hyspexrad_window,
+        windows_desktop,
+        confirmation_buttons=["Yes", "OK"]
+    )
+    
+    print("\n✓✓✓ All tests passed!")
     
         
         

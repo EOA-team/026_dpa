@@ -4,8 +4,7 @@ from pywinauto.controls.uiawrapper import UIAWrapper
 from pywinauto.timings import Timings, TimeoutError
 from pathlib import Path
 
-from code.pywinauto_helpers import open_application, find_control
-from code.checkboxescontrol import CheckboxesControl
+from code.pywinauto_helpers import open_application, find_control, set_checkbox
 import time
 
 Timings.fast()
@@ -16,8 +15,7 @@ wait_time = 5
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
-sel_flights = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
-               "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"] # Relevant Flights for MT 
+sel_flights = ["re112o_250610"] # Relevant Flights for MT 
 
 
 def get_hyspexrad(desktop: Desktop):
@@ -91,9 +89,29 @@ def set_datatype(window: UIAWrapper, datatype: str):
     radio_button.select()   
 
   
+def set_output_folder(window: UIAWrapper,flight : str):
+    editbox = find_control(window=window, control_type="Edit", control_name="", exact=True)
+    editbox.set_edit_text(str(process_folder / flight) + '\\')
+
+def set_input_folder(window: UIAWrapper,flight : str):
+    button  = find_control(window=window, control_type="Button", control_name="open images", exact=True)
+    button.invoke()
+
+    #File Selector
+    image_selection_window = window.child_window(title='Select Images', control_type= "Window")
+    image_selection_window.wait('exists', timeout=5) 
+
+    #Write Path 
+    editbox = find_control(window=image_selection_window, control_type="Edit", control_name="file name:", exact=True)
+    editbox.set_edit_text(str(process_folder / flight / "RAW"/ "*.hyspex"))
+    editbox.type_keys("{ENTER}")
+    
+    itemslist= find_control(window=image_selection_window, control_type="List", control_name="items view", exact=True)
+
+    itemslist.type_keys("^a")  # Ctrl+A
+    itemslist.type_keys("{ENTER}")
 
 
-        
 
 
 
@@ -105,11 +123,15 @@ def main():
                                   work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/",
                                   idl_application=False,
                                   window_title="HyspexRad_V3.5")
-    checkboxes = CheckboxesControl(window=hyspexrad_window)
-    checkboxes.check("Radiance")
-    checkboxes.uncheck("Reflectance")
-    checkboxes.check("RGB")
-    checkboxes.uncheck("Saturation Map")
+    
+    set_fileformat(window=hyspexrad_window, fileformat="bsq")
+    set_datatype(window=hyspexrad_window, datatype="32 bit float")
+
+    set_checkbox(window=hyspexrad_window, checkbox_name="radiance" ,activate=True, exact=True)
+    set_checkbox(window=hyspexrad_window, checkbox_name="reflectance" ,activate=False, exact=True)
+    set_checkbox(window=hyspexrad_window, checkbox_name="rgb" ,activate=True, exact=True)
+    set_checkbox(window=hyspexrad_window, checkbox_name="saturation map" ,activate=False, exact=True)
+    
 
     radio_button = find_control(window=hyspexrad_window, control_type="ListItem", control_name="JPG", exact=True)
     radio_button.select()   
@@ -117,10 +139,20 @@ def main():
     radio_button = find_control(window=hyspexrad_window, control_type="ListItem", control_name="ENVI Mask", exact=True)
     radio_button.select()   
 
-    set_fileformat(window=hyspexrad_window, fileformat="bsq")
-    set_datatype(window=hyspexrad_window, datatype="32 bit float")
 
-    time.sleep(5)
+    for flight in sel_flights:
+        set_output_folder(window= hyspexrad_window, flight=flight)
+        set_input_folder(window=hyspexrad_window, flight=flight)
+    
+  
+   
+
+    
+
+    
+    
+
+    time.sleep(10)
     hyspexrad_window.close()
 
 

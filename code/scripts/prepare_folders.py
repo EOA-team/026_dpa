@@ -3,7 +3,7 @@ import shutil
 
 
 # Set your Job
-sel_flights = ["re112o_250610", "re112o_250619"] # Relevant Flights for MT 
+sel_flights = ["re112o_250610", "re112o_250918"] # Relevant Flights for MT 
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
@@ -13,10 +13,10 @@ process_folder = Path("E:/mjolnir_processing")
 # Example 2: To start with dsm, rad_vnir, and rad_swir already processed, comment out ['raw'] as it won't be needed.
 
 folder_filter = [
-    #['raw'],           # Include folders containing "raw"
-    ['dsm'],           # Include folders containing "dsm"
-    ['rad', 'vnir'],   # Include folders containing both "rad" and "vnir"
-    ['rad', 'swir']    # Include folders containing both "rad" and "swir"
+    ['raw'],           # Include folders containing "raw"
+    #['dsm'],           # Include folders containing "dsm"
+    #['rad', 'vnir'],   # Include folders containing both "rad" and "vnir"
+    #['rad', 'swir']    # Include folders containing both "rad" and "swir"
 ]
 
 
@@ -245,6 +245,7 @@ def main():
         base_folder=process_folder,
         flights=sel_flights,
         rename_lookup=[
+            {"filter": ["raw"], "new_name": "RAW"},
             {"filter": ["dsm"], "new_name": "DSM"},
             {"filter": ["rad", "vnir"], "new_name": "VNIR"},
             {"filter": ["rad", "swir"], "new_name": "SWIR"}
@@ -260,8 +261,8 @@ def main():
         report=True
     )
     # Delete Unprocessed Flights 
-    uncprocessed_flights = check_empty_subfolders(base_folder=process_folder, flights=list_folders(path=process_folder), target_subfolder="DSM")
-    delete_flight_folders(base_folder=process_folder, flights_to_delete=uncprocessed_flights,report=True)
+    #uncprocessed_flights = check_empty_subfolders(base_folder=process_folder, flights=list_folders(path=process_folder), target_subfolder="DSM")
+    #delete_flight_folders(base_folder=process_folder, flights_to_delete=uncprocessed_flights,report=True)
 
 
 if __name__ == "__main__":
