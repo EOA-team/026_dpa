@@ -90,7 +90,7 @@ def open_application(
 def find_control(
     window: UIAWrapper,
     control_type: str,
-    control_name:  str = "",
+    control_name: str = "",
     exact: bool = False,
     found_index: Optional[int] = None,
     debug: bool = True
@@ -105,10 +105,10 @@ def find_control(
         # Find button (exact match)
         btn = find_control(window, "Button", "Submit", exact=True)
 
-        # Find button (without name --> just take the first one it finds)
-        btn = find_control(window, "Button", found_indey=0)
+        # Find second ComboBox named "Save"
+        combo = find_control(window, "ComboBox", "Save", exact=True, found_index=1)
         
-        # Find second ListBox
+        # Find second ListBox (any name)
         listbox = find_control(window, "ListBox", found_index=1)
     """
     # Bring window to foreground to ensure controls are accessible
@@ -126,22 +126,24 @@ def find_control(
             control_text = ctrl.window_text().strip()
             found_controls.append(control_text)
             
-            # If found_index is specified, just collect all matching controls by type
+            # Check if name matches (if control_name is provided)
+            name_matches = True
+            if control_name:
+                control_text_norm = control_text.lower()
+                if exact:
+                    name_matches = (normalized_name == control_text_norm)
+                else:
+                    name_matches = (normalized_name in control_text_norm)
+            
+            # If found_index is specified, collect matching controls
             if found_index is not None:
-                matching_controls.append(ctrl)
+                if name_matches:  # Only collect if name matches (or no name specified)
+                    matching_controls.append(ctrl)
                 continue
             
-            # Otherwise, match by name
-            if not control_name:
-                continue
-                
-            control_text_norm = control_text.lower()
-            if exact:
-                if normalized_name == control_text_norm:
-                    return ctrl
-            else:
-                if normalized_name in control_text_norm:
-                    return ctrl
+            # If no found_index, return first match
+            if control_name and name_matches:
+                return ctrl
                     
         except Exception:
             continue
@@ -151,8 +153,9 @@ def find_control(
         if 0 <= found_index < len(matching_controls):
             return matching_controls[found_index]
         elif debug:
-            print(f"[DEBUG] Could not find {control_type} at index {found_index}")
-            print(f"[DEBUG] Found {len(matching_controls)} {control_type} controls (indices 0-{len(matching_controls)-1})")
+            name_info = f" with name '{control_name}'" if control_name else ""
+            print(f"[DEBUG] Could not find {control_type}{name_info} at index {found_index}")
+            print(f"[DEBUG] Found {len(matching_controls)} matching {control_type} controls (indices 0-{len(matching_controls)-1})")
         return None
     
     if debug:

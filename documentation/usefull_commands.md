@@ -1,5 +1,6 @@
 # Unit Tests
 python -m pytest
+python -m pytest tests/test_pywinauto_helpers.py::test_set_checkbox
 # Code Style
 pylint code
 # Static Type Checking 

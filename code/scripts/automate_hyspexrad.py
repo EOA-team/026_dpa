@@ -107,30 +107,45 @@ def set_input_folder(window: UIAWrapper,flight : str):
 
     #File Selector
     image_selection_window = window.child_window(title='Select Images', control_type= "Window")
-    image_selection_window.wait('exists', timeout=5) 
+    image_selection_window.wait('exists', timeout=5)
+    image_selection_window.set_focus()
 
     #Write Path 
-    editbox = find_control(window=image_selection_window, control_type="Edit", control_name="file name:", exact=True)
-    editbox.set_edit_text(str(process_folder / flight / "RAW"/ "*.hyspex"))
+    editbox = find_control(window=image_selection_window, control_type="Edit", control_name="file name:", exact=True, debug=True)
+    editbox.set_edit_text(str(process_folder / flight / "RAW"))
     editbox.type_keys("{ENTER}")
     
-    itemslist= find_control(window=image_selection_window, control_type="List", control_name="items view", exact=True)
-
+    itemslist= find_control(window=image_selection_window, control_type="List", control_name="items view", exact=True, debug=True)
     itemslist.type_keys("^a")  # Ctrl+A
-    itemslist.type_keys("{ENTER}")
+    
+
+    open_btn = find_control(window=image_selection_window, control_type="Button", 
+                            control_name="open", exact=True, found_index=2, debug=True)
+    open_btn.click()
+    
+    
+
+
+    # Wait for window to close
+    image_selection_window.wait_not('exists', timeout=5)
 
 def set_softwarebinning(window: UIAWrapper):
-    swir_across_track = find_control(window=window, control_type="ComboBox", found_index=0)
+    swir_across_track = find_control(window=window, control_type="ComboBox", control_name="Software Binning", found_index=0)
     swir_across_track.select("1X")
-    swir_spectral_direction = find_control(window=window, control_type="ComboBox", found_index=1)
+
+    swir_spectral_direction = find_control(window=window, control_type="ComboBox", control_name="Software Binning", found_index=1)
     swir_spectral_direction.select("1X")
-    swir_along_track = find_control(window=window, control_type="ComboBox", found_index=2)
+
+    swir_along_track = find_control(window=window, control_type="ComboBox", control_name="Software Binning", found_index=2)
     swir_along_track.select("1X")
-    vnir_across_track = find_control(window=window, control_type="ComboBox", found_index=3)
+
+    vnir_across_track = find_control(window=window, control_type="ComboBox", control_name="Software Binning", found_index=3)
     vnir_across_track.select("2X")
-    vnir_spectral_direction = find_control(window=window, control_type="ComboBox", found_index=4)
+
+    vnir_spectral_direction = find_control(window=window, control_type="ComboBox", control_name="Software Binning", found_index=4)
     vnir_spectral_direction.select("2X")
-    vnir_along_track = find_control(window=window, control_type="ComboBox", found_index=5)
+
+    vnir_along_track = find_control(window=window, control_type="ComboBox", control_name="Software Binning", found_index=5)
     vnir_along_track.select("2X")
 
 def set_output_fileformat(window: UIAWrapper, filerformat: str):

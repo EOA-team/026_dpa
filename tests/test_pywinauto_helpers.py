@@ -1,7 +1,7 @@
 import pytest 
 from code.pywinauto_helpers import (
     open_application,close_window_with_confirmation,
-    find_control,set_checkbox,
+    find_control,set_checkbox, 
     DEFAULT_WAIT_TIME, Desktop
 )
 
@@ -143,6 +143,34 @@ def test_controls_fail_on_minimized_window(windows_desktop):
     close_window_with_confirmation(desktop=windows_desktop,
                                    window=m4m_window,
                                    confirmation_buttons=["Yes"])
+    
+
+def test_select_combobox_item(windows_desktop):
+        # Open HyspexRad
+    hyspexrad_window = open_application(
+        desktop=windows_desktop,
+        app_path="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe",
+        work_dir="G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/",
+        window_title="HyspexRad_V3.5",
+        idl_application=False
+    )
+
+    items_to_set = ["JPG", "BMP", "PNG"]
+
+    combobox = find_control(window=hyspexrad_window, control_type="ComboBox", 
+                            control_name="Save", exact=True, found_index=0, debug=True)
+    for expected_item in items_to_set:
+        combobox.select(expected_item)
+        selected_value = combobox.selected_text()
+        assert selected_value ==expected_item
+
+    expected_item = "ENVI Mask"
+    combobox = find_control(window=hyspexrad_window, control_type="ComboBox", 
+                            control_name="Save", exact=True, found_index=1, debug=True)
+    combobox.select("ENVI Mask")
+    selected_value = combobox.selected_text()
+    assert selected_value ==expected_item
+
 
 
 
