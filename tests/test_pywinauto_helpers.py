@@ -66,9 +66,8 @@ def test_open_and_close(windows_desktop):
                      idl_application=True, wait_time= DEFAULT_WAIT_TIME,
                      window_title="ReSe Hyspex Processor 2025", desktop=windows_desktop)
     assert m4m_window.window_text() == "ReSe Hyspex Processor 2025"
-    close_window_with_confirmation(desktop=windows_desktop,
-                                   window=m4m_window,
-                                   confirmation_buttons=["Yes"])
+    close_window_with_confirmation(window=m4m_window,
+                                   confirmation_buttons=["Yes", "Ok"])
 
      # Check window is closed
     assert not m4m_window.exists(), "Window still exists"
@@ -79,14 +78,23 @@ def test_open_and_close(windows_desktop):
 
 
 def test_find_control(windows_desktop):
-    m4m_window = open_application(app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
-                     work_dir="C:/ReSe_Software_Win/m4mproc/",
-                     idl_application=True, wait_time= DEFAULT_WAIT_TIME,
-                     window_title="ReSe Hyspex Processor 2025", desktop=windows_desktop)
+    m4m_window = open_application(
+        app_path="C:/ReSe_Software_Win/m4mproc/M4Mproc.exe",
+        work_dir="C:/ReSe_Software_Win/m4mproc/",
+        idl_application=True, 
+        wait_time=DEFAULT_WAIT_TIME,
+        window_title="ReSe Hyspex Processor 2025", 
+        desktop=windows_desktop
+    )
+    
+    # Test variables
+    expected_control_type = "Button"
+    expected_name = "Check Consistency"
+    
     # Find button using different methods
-    select_exact = find_control(window=m4m_window, control_type="Button", control_name="Check Consistency", exact=True)
-    select_partial = find_control(window=m4m_window, control_type="Button", control_name="check", exact=False)
-    select_case = find_control(window=m4m_window, control_type="Button", control_name="check consistency", exact=True)  # lowercase
+    select_exact = find_control(window=m4m_window, control_type=expected_control_type, control_name=expected_name, exact=True)
+    select_partial = find_control(window=m4m_window, control_type=expected_control_type, control_name="check", exact=False)
+    select_case = find_control(window=m4m_window, control_type=expected_control_type, control_name="check consistency", exact=True)  # lowercase
     
     # All should be found
     assert select_exact is not None, "Exact search failed"
@@ -100,15 +108,22 @@ def test_find_control(windows_desktop):
     assert select_exact.window_text() == select_partial.window_text() == select_case.window_text()
     
     # Find different button to verify they're not all the same
-    process_btn = find_control(m4m_window, "Button", "Process", exact=True)
+    process_btn = find_control(window=m4m_window, control_type=expected_control_type, control_name="Process", exact=True)
     assert process_btn is not None, "Could not find Process button"
     assert process_btn != select_exact, "Select and Process should be different buttons"
+
+    
+
+    # Test that ValueError is raised for non-existent button
+    non_existent_name = "this_name_does_not_exist"
+    with pytest.raises(ValueError, match=f"Could not find {expected_control_type} with name '{non_existent_name}'"):
+        find_control(window=m4m_window, control_type=expected_control_type, control_name=non_existent_name, exact=True)
+    
     
     print(f"✓ All tests passed! Found '{select_exact.window_text()}' and '{process_btn.window_text()}'")
     
-    close_window_with_confirmation(desktop=windows_desktop,
-                                   window=m4m_window,
-                                   confirmation_buttons=["Yes"])
+    close_window_with_confirmation(window=m4m_window,
+                                   confirmation_buttons=["Yes", "Ok"])
     
 
 
@@ -140,9 +155,8 @@ def test_controls_fail_on_minimized_window(windows_desktop):
     print(f"✓ Expected error: {type(exc_info.value).__name__}: {exc_info.value}")
     print("✓ Confirmed: Cannot interact with controls when window is minimized")
 
-    close_window_with_confirmation(desktop=windows_desktop,
-                                   window=m4m_window,
-                                   confirmation_buttons=["Yes"])
+    close_window_with_confirmation(window=m4m_window,
+                                   confirmation_buttons=["Yes", "Ok"])
     
 
 def test_select_combobox_item(windows_desktop):
@@ -158,7 +172,7 @@ def test_select_combobox_item(windows_desktop):
     items_to_set = ["JPG", "BMP", "PNG"]
 
     combobox = find_control(window=hyspexrad_window, control_type="ComboBox", 
-                            control_name="Save", exact=True, found_index=0, debug=True)
+                            control_name="Save", exact=True, found_index=0)
     for expected_item in items_to_set:
         combobox.select(expected_item)
         selected_value = combobox.selected_text()
@@ -166,7 +180,7 @@ def test_select_combobox_item(windows_desktop):
 
     expected_item = "ENVI Mask"
     combobox = find_control(window=hyspexrad_window, control_type="ComboBox", 
-                            control_name="Save", exact=True, found_index=1, debug=True)
+                            control_name="Save", exact=True, found_index=1)
     combobox.select("ENVI Mask")
     selected_value = combobox.selected_text()
     assert selected_value ==expected_item
@@ -192,7 +206,6 @@ def test_set_checkbox(windows_desktop):
         control_type="CheckBox",
         control_name="radiance",
         exact=True, 
-        debug=False
     )
     
     assert checkbox is not None, "Radiance checkbox not found"
@@ -219,8 +232,6 @@ def test_set_checkbox(windows_desktop):
         window=hyspexrad_window,
         control_type="CheckBox",
         control_name="radiance",
-        exact=False,
-        debug=True
     )
     
     state = checkbox.get_toggle_state()
@@ -244,7 +255,6 @@ def test_set_checkbox(windows_desktop):
         control_type="CheckBox",
         control_name="radiance",
         exact=False,
-        debug=False
     )
     
     state = checkbox.get_toggle_state()
@@ -254,8 +264,7 @@ def test_set_checkbox(windows_desktop):
     # Cleanup
     print("\n=== Cleanup ===")
     close_window_with_confirmation(
-        hyspexrad_window,
-        windows_desktop,
+        window= hyspexrad_window,
         confirmation_buttons=["Yes", "OK"]
     )
     

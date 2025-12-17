@@ -111,16 +111,16 @@ def set_input_folder(window: UIAWrapper,flight : str):
     image_selection_window.set_focus()
 
     #Write Path 
-    editbox = find_control(window=image_selection_window, control_type="Edit", control_name="file name:", exact=True, debug=True)
+    editbox = find_control(window=image_selection_window, control_type="Edit", control_name="file name:", exact=True)
     editbox.set_edit_text(str(process_folder / flight / "RAW"))
     editbox.type_keys("{ENTER}")
     
-    itemslist= find_control(window=image_selection_window, control_type="List", control_name="items view", exact=True, debug=True)
+    itemslist= find_control(window=image_selection_window, control_type="List", control_name="items view", exact=True)
     itemslist.type_keys("^a")  # Ctrl+A
     
 
     open_btn = find_control(window=image_selection_window, control_type="Button", 
-                            control_name="open", exact=True, found_index=2, debug=True)
+                            control_name="open", exact=True, found_index=2)
     open_btn.click()
     
     
