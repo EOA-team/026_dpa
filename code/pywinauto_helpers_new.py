@@ -28,6 +28,10 @@ class ControlNotFoundError(WindowAutomationError):
     """Raised when a UI control cannot be found."""
     ...  # pylint: disable=unnecessary-ellipsis
 
+class WindowNotFoundError(WindowAutomationError):
+    """Raised when a Window cannot be found."""
+    ...  # pylint: disable=unnecessary-ellipsis
+
 
 class DesktopManager:
     """It has access to all the windows currently open on the desktop and allows to open windows,
@@ -203,7 +207,7 @@ class ControlFinder:
 
         return matching_controls[0]
 
-    def find_by_type_and_name(
+    def find_by_name(
         self,
         control_type: str,
         control_name: str = "",
@@ -262,3 +266,36 @@ class ControlFinder:
             auto_id=auto_id, control_type=control_type)
 
         return matching_control
+    
+    def find_child_window_by_title(self, window_title :str ) -> UIAWrapper | None:
+        """
+        Search for a visible child window within the parent window.
+        """
+        # Look for child window
+        child_window = self.window.child_window(control_type="Window", title = window_title)
+        if child_window.exists(timeout=DEFAULT_WAIT_TIME):
+            return child_window
+        raise WindowNotFoundError(f"Could not find child window with title '{window_title}'")
+
+
+class ControlSimulator:
+    """Provides an abstraction layer for some control simulations."""
+
+    def __init__(self, control: UIAWrapper):
+            self.control = control
+
+    def enable_checkbox(self) -> None:
+        """Enable/check the checkbox if it's not already checked."""
+        if not hasattr(self.control, 'get_toggle_state'):
+            raise AttributeError(f"Control does not support toggle state (not a checkbox/toggle button)")
+        
+        if self.control.get_toggle_state() != 1:
+            self.control.click()
+    
+    def disable_checkbox(self) -> None:
+        """Disable/uncheck the checkbox if it's not already unchecked."""
+        if not hasattr(self.control, 'get_toggle_state'):
+            raise AttributeError(f"Control does not support toggle state (not a checkbox/toggle button)")
+        
+        if self.control.get_toggle_state() != 0:
+            self.control.click()
