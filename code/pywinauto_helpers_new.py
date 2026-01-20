@@ -3,7 +3,7 @@ PyWinAuto Helper Module - An abstraction layer for the pywinauto library.
 Provides helper functions to manage windows and find controls more easily.
 """
 
-from pywinauto import Application, Desktop # type: ignore[import-untyped]
+from pywinauto import Application, Desktop  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
 # Configure Module
@@ -16,12 +16,17 @@ IDL_VM_WINDOW_TITLE = "Runtime App"
 
 class WindowAutomationError(Exception):
     """Base exception for window automation errors."""
-    ... # pylint: disable=unnecessary-ellipsis
+    ...  # pylint: disable=unnecessary-ellipsis
 
 
 class IdlHandlingError(WindowAutomationError):
     """Raised when there is an error handling IDL VM startup."""
-    ... # pylint: disable=unnecessary-ellipsis
+    ...  # pylint: disable=unnecessary-ellipsis
+
+
+class ControlNotFoundError(WindowAutomationError):
+    """Raised when a UI control cannot be found."""
+    ...  # pylint: disable=unnecessary-ellipsis
 
 
 class DesktopManager:
@@ -89,7 +94,7 @@ class ApplicationManager:
     def __enter__(self) -> "ApplicationManager":
         """Context manager start point - opens when entering 'with' block."""
         self.app = Application(backend=DEFAULT_BACKEND).start(cmd_line=self.app_path,
-                                                           work_dir=self.work_dir)
+                                                              work_dir=self.work_dir)
         # Some applications use IDL VM that needs special handling
         if self.is_idl_application:
             desktop_manager = DesktopManager()
@@ -108,3 +113,152 @@ class ApplicationManager:
         """Context manager exit point - handles cleanup when leaving 'with' block."""
         if self.app:
             self.app.kill()
+
+
+class ControlFinder:
+    """Provides methods to find controls within a given window.
+    There are two matching strategies:
+    - By auto_id: Savest way if available, because unique and does not change so often (SW updates).
+      Note:Unfortunately not always available in all applications.
+      For example, in IDL applications most controls do not have an auto_id.
+    - By name: Sometimes controls do not have unique names. 
+    In this case we can specify which occurrence to return by found_index .
+    """
+
+    def __init__(self, window: UIAWrapper):
+        self.window = window
+
+    @staticmethod
+    def _matches_name(control_text: str, target_name: str, exact: bool) -> bool:
+        """Check if control text matches the target name."""
+        if not target_name:
+            return True
+        control_text_norm = control_text.strip().lower()
+        target_name_norm = target_name.strip().lower()
+        if exact:
+            return control_text_norm == target_name_norm
+        return target_name_norm in control_text_norm
+
+    def _get_matches_by_name(
+        self,
+        control_type: str,
+        control_name: str,
+        exact: bool
+    ) -> list[UIAWrapper]:
+        """
+        Get all controls matching the specified type and name.
+        """
+        matching_controls = []
+        all_controls_of_type = []
+
+        for ctrl in self.window.descendants():
+            if ctrl.element_info.control_type != control_type:
+                continue
+            control_text = ctrl.window_text().strip()
+            all_controls_of_type.append(control_text)
+            if self._matches_name(control_text, control_name, exact):
+                matching_controls.append(ctrl)
+        if not matching_controls:
+            match_type = "exact" if exact else "partial"
+            name_info = f" with name '{control_name}' ({match_type})" if control_name else ""
+            error_msg = f"Could not find {control_type}{name_info}\n"
+            error_msg += f"Available {control_type} controls found: {all_controls_of_type}"
+            raise ValueError(error_msg)
+
+        return matching_controls
+
+    def _get_match_by_auto_id(
+        self,
+        control_type: str,
+        auto_id: str
+    ) -> UIAWrapper:
+        """
+        Get control matching the specified AutomationId.
+        """
+        matching_controls = []
+        all_auto_ids = []
+
+        for ctrl in self.window.descendants():
+            if ctrl.element_info.control_type != control_type:
+                continue
+
+            ctrl_auto_id = ctrl.element_info.automation_id
+
+            if ctrl_auto_id:  # Only collect non-empty AutomationIds
+                all_auto_ids.append(ctrl_auto_id)
+
+            if ctrl_auto_id == auto_id:
+                matching_controls.append(ctrl)
+
+        if not matching_controls:
+            error_msg = f"Could not find control with auto_id '{auto_id}'\n"
+            error_msg += f"Available AutomationIds found: {sorted(set(all_auto_ids))}"
+            raise ControlNotFoundError(error_msg)
+
+        if len(matching_controls) > 1:
+            raise ControlNotFoundError(
+                f"Found {len(matching_controls)} controls with auto_id='{auto_id}'. "
+                f"AutomationId should be unique but found duplicates."
+            )
+
+        return matching_controls[0]
+
+    def find_by_type_and_name(
+        self,
+        control_type: str,
+        control_name: str = "",
+        exact: bool = False,
+        found_index: int = 0,  # by default take first found  control
+
+    ) -> UIAWrapper:
+        """
+        Find a UI control by type and name.
+        Examples:
+            # Find button (partial match)
+            btn = manager.find_control(
+                window=window, control_type="Button", control_name="Submit"
+            )
+            # Find button (exact match)
+            btn = manager.find_control(
+                window=window, control_type="Button", 
+                control_name="Submit", exact=True
+            )
+            # Find second ComboBox named "Save"
+            combo = manager.find_control(
+                window=window, control_type="ComboBox", 
+                control_name="Save", exact=True, found_index=1
+            )
+            # Find second ListBox (any name)
+            listbox = manager.find_control(
+                window=window, control_type="ListBox", found_index=1
+            )
+        """
+        # Bring window to foreground to ensure controls are accessible
+        self.window.set_focus()
+        matching_controls = self._get_matches_by_name(
+            control_type, control_name, exact)
+        return matching_controls[found_index]
+
+    def find_by_auto_id(
+        self,
+        control_type: str,
+        auto_id: str,
+    ) -> UIAWrapper:
+        """
+        Find a UI control by AutomationId.
+
+        Examples:
+            # Find button by AutomationId
+            button = manager.find_control_by_auto_id(auto_id="btnSubmit")
+
+            # Find edit control
+            edit = manager.find_control_by_auto_id(auto_id="txtUsername")
+        """
+        # Bring window to foreground to ensure controls are accessible
+        self.window.set_focus()
+
+        # Find all matching controls
+        matching_control = self._get_match_by_auto_id(
+            auto_id=auto_id, control_type=control_type)
+
+        return matching_control
