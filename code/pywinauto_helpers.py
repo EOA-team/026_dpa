@@ -1,280 +1,322 @@
 """
-PyWinAuto Helper Module
-
-Common utility functions for Windows GUI automation using pywinauto.
-Consolidates frequently used operations for window management, control finding,
-and dialog handling.
+PyWinAuto Helper Module - An abstraction layer for the pywinauto library.
+Provides helper functions to manage windows and find controls more easily.
 """
-from pywinauto import Desktop, Application
-from pywinauto.controls.uiawrapper import UIAWrapper
 
-# Default timeout for wait operations (seconds)
-DEFAULT_WAIT_TIME = 3
+from pywinauto import Application, Desktop  # type: ignore[import-untyped]
+from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
+# Configure Module
+DEFAULT_WAIT_TIME = 5
+DEFAULT_BACKEND = "uia"
+IDL_VM_WINDOW_TITLE = "Runtime App"
 
-def get_application(
-    desktop: Desktop,
-    window_title: str,
-    wait_time: int = DEFAULT_WAIT_TIME
-) -> UIAWrapper | None :
-    """
-    Check if an application window already exists.
-    """
-    tmp_window = desktop.window(title=window_title)
-    if tmp_window.exists(timeout=wait_time):
-        print(f"Window '{window_title}' already exists!")
-        return tmp_window
-    print(f"Window '{window_title}' does not exist.")
-    return None
-def handle_idl_vm_startup(
-    desktop: Desktop,
-    wait_time: int = DEFAULT_WAIT_TIME
-) -> None:
-    """
-    Handle IDL Virtual Machine startup dialog.
-    IDL applications show a Runtime App window on startup that needs to be clicked.
-    """
-    try:
-        idlvm_window = desktop.window(title='Runtime App')
-        idlvm_window.wait('exists', timeout=wait_time)
-        pane = idlvm_window.child_window(control_type="Pane")
-        pane.wait('exists', timeout=wait_time)
-        image = pane.child_window(auto_id="316", control_type="Image")
-        image.wait('exists', timeout=wait_time)
-        image.click_input()
-        print("✓ IDL VM startup handled")
-    except Exception as e:
-        print(f"⚠️ Error handling IDL VM startup: {e}")
-        raise
-def open_application(
-    desktop: Desktop,
-    app_path: str,
-    window_title: str,
-    work_dir: str | None = None,
-    idl_application: bool = False,
-    wait_time: int = DEFAULT_WAIT_TIME
-) -> UIAWrapper:
-    """
-    Open an application or return existing window if already running.
-    """
-    # First check if application already exists
-    existing_window = get_application(desktop, window_title, wait_time)
-    if existing_window:
-        return existing_window
-    print(f"Opening application: {app_path}")
-    Application(backend="uia").start(app_path, work_dir=work_dir)
-    # Handle IDL VM startup if needed
-    if idl_application:
-        handle_idl_vm_startup(desktop, wait_time)
-    window = desktop.window(title=window_title)
-    window.wait('exists', timeout=wait_time)
-    window.set_focus()
-    print(f"✓ Application '{window_title}' opened successfully")
-    return window
-
-def _matches_control_name(control_text: str, target_name: str, exact: bool) -> bool:
-    """Check if control text matches the target name."""
-    if not target_name:
-        return True
-    control_text_norm = control_text.strip().lower()
-    target_name_norm = target_name.strip().lower()
-    if exact:
-        return control_text_norm == target_name_norm
-    return target_name_norm in control_text_norm
-
-def _get_matching_controls(
-    window: UIAWrapper,
-    control_type: str,
-    control_name: str,
-    exact: bool
-) -> list[UIAWrapper]:
-    """
-    Get all controls matching the specified type and name.
-    
-    """
-    matching_controls = []
-    all_controls_of_type = []
-
-    for ctrl in window.descendants():
-        if ctrl.element_info.control_type != control_type:
-            continue
-        control_text = ctrl.window_text().strip()
-        all_controls_of_type.append(control_text)
-        if _matches_control_name(control_text, control_name, exact):
-            matching_controls.append(ctrl)
-    if not matching_controls:
-        match_type = "exact" if exact else "partial"
-        name_info = f" with name '{control_name}' ({match_type})" if control_name else ""
-        error_msg = f"Could not find {control_type}{name_info}\n"
-        error_msg += f"Available {control_type} controls found: {all_controls_of_type}"
-        raise ValueError(error_msg)
-
-    return matching_controls
+# Exceptions
 
 
-def find_control(
-    window: UIAWrapper,
-    control_type: str,
-    control_name: str = "",
-    exact: bool = False,
-    found_index: int  = 0, # by default take first found  control
-
-) -> UIAWrapper:
-    """
-    Find a UI control by type and name.
-    Examples:
-        # Find button (partial match)
-        btn = find_control(
-            window=window, control_type="Button", control_name="Submit"
-        )
-        # Find button (exact match)
-        btn = find_control(
-            window=window, control_type="Button", 
-            control_name="Submit", exact=True
-        )
-        # Find second ComboBox named "Save"
-        combo = find_control(
-            window=window, control_type="ComboBox", 
-            control_name="Save", exact=True, found_index=1
-        )
-        # Find second ListBox (any name)
-        listbox = find_control(
-            window=window, control_type="ListBox", found_index=1
-        )
-    """
-    # Bring window to foreground to ensure controls are accessible
-    window.set_focus()
-    matching_controls = _get_matching_controls(window, control_type, control_name, exact)
-    return matching_controls[found_index]
+class WindowAutomationError(Exception):
+    """Base exception for window automation errors."""
+    ...  # pylint: disable=unnecessary-ellipsis
 
 
-def _find_confirmation_window(window: UIAWrapper) -> UIAWrapper | None:
-    """
-    Search for a visible confirmation dialog or window within the parent window.
-    """
-    # Look for child window
-    child_window = window.child_window(control_type="Window")
-    if child_window.exists(timeout=DEFAULT_WAIT_TIME):
-        print(f"  Found confirmation window: '{child_window.window_text()}'")
-        return child_window
+class IdlHandlingError(WindowAutomationError):
+    """Raised when there is an error handling IDL VM startup."""
+    ...  # pylint: disable=unnecessary-ellipsis
 
-    # Look for child dialog
-    child_dialog = window.child_window(control_type="Dialog")
-    if child_dialog.exists(timeout=DEFAULT_WAIT_TIME):
-        print(f"  Found confirmation dialog: '{child_dialog.window_text()}'")
-        return child_dialog
 
-    return None
+class ControlNotFoundError(WindowAutomationError):
+    """Raised when a UI control cannot be found."""
+    ...  # pylint: disable=unnecessary-ellipsis
 
-def _click_confirmation_button(
-    confirmation_window: UIAWrapper,
-    confirmation_buttons: list[str]
-) -> bool:
-    """
-    Try to click one of the confirmation buttons in the dialog/window.
-    
-    """
-    for btn_name in confirmation_buttons:
+class WindowNotFoundError(WindowAutomationError):
+    """Raised when a Window cannot be found."""
+    ...  # pylint: disable=unnecessary-ellipsis
+
+
+class DesktopManager:
+    """It has access to all the windows currently open on the desktop and allows to open windows,
+    that are not bound to a specific application instance. This is useful if an application spawns
+    independent windows that need to be managed separately."""
+
+    def __init__(self):
+        self.desktop = Desktop(backend=DEFAULT_BACKEND)
+
+    def handle_idl_vm_startup(self,) -> None:
+        """
+        Handle IDL Virtual Machine startup dialog.
+        IDL applications show a Runtime App window on startup that needs to be clicked.
+        """
         try:
-            btn = find_control(
-                window=confirmation_window,
-                control_type="Button",
-                control_name=btn_name,
-                exact=False,
-            )
-            btn.invoke()
+            idlvm_window = self.desktop.window(title=IDL_VM_WINDOW_TITLE)
+            idlvm_window.wait('exists', timeout=DEFAULT_WAIT_TIME)
+            pane = idlvm_window.child_window(control_type="Pane")
+            pane.wait('exists', timeout=DEFAULT_WAIT_TIME)
+            image = pane.child_window(auto_id="316", control_type="Image")
+            image.wait('exists', timeout=DEFAULT_WAIT_TIME)
+            image.click_input()
+        except Exception as e:
+            raise IdlHandlingError(
+                f"Error handling IDL VM startup: {e}") from e
+
+    def get_window(self, window_title, wait_time=DEFAULT_WAIT_TIME):
+        """Get a window by its title."""
+        window = self.desktop.window(title=window_title)
+        window.wait('exists', timeout=wait_time)
+        return window
+
+    def list_all_windows(self):
+        """List all windows with details."""
+        for window in self.desktop.windows():
+            title = window.window_text()
+            class_name = window.class_name()
+            is_visible = window.is_visible()
+            is_enabled = window.is_enabled()
+            rect = window.rectangle()
+
+            print(f"Title: {title}")
+            print(f"Class: {class_name}")
+            print(f"Visible: {is_visible}")
+            print(f"Enabled: {is_enabled}")
+            print(f"Position: {rect}")
+            print("=" * 50)
+
+
+class ApplicationManager:
+    """Manages a Window application lifecycle using a context manager. This ensures that
+    the application is properly started and closed."""
+
+    def __init__(self, app_path: str, window_title: str,
+                 is_idl_application: bool = False, work_dir: str | None = None):
+        self.app_path = app_path
+        self.window_title = window_title
+        self.work_dir: str | None = work_dir
+        # Some applications use IDL VM that needs special handling
+        self.is_idl_application = is_idl_application
+        self.app: Application | None = None
+        self.window: UIAWrapper | None = None
+
+    def __enter__(self) -> "ApplicationManager":
+        """Context manager start point - opens when entering 'with' block."""
+        self.app = Application(backend=DEFAULT_BACKEND).start(cmd_line=self.app_path,
+                                                              work_dir=self.work_dir)
+        # Some applications use IDL VM that needs special handling
+        if self.is_idl_application:
+            desktop_manager = DesktopManager()
+            desktop_manager.handle_idl_vm_startup()
+            self.window = desktop_manager.get_window(
+                self.window_title, wait_time=DEFAULT_WAIT_TIME)
+            self.app = Application(backend=DEFAULT_BACKEND).connect(
+                handle=self.window.handle)
+            return self
+
+        self.window = self.app.window(title=self.window_title)
+        self.window.wait('exists', timeout=DEFAULT_WAIT_TIME)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Context manager exit point - handles cleanup when leaving 'with' block."""
+        if self.app:
+            self.app.kill()
+
+
+class ControlFinder:
+    """Provides methods to find controls within a given window.
+    There are two matching strategies:
+    - By auto_id: Savest way if available, because unique and does not change so often (SW updates).
+      Note:Unfortunately not always available in all applications.
+      For example, in IDL applications most controls do not have an auto_id.
+    - By name: Sometimes controls do not have unique names. 
+    In this case we can specify which occurrence to return by found_index .
+    """
+
+    def __init__(self, window: UIAWrapper):
+        self.window = window
+
+    @staticmethod
+    def _matches_name(control_text: str, target_name: str, exact: bool) -> bool:
+        """Check if control text matches the target name."""
+        if not target_name:
             return True
+        control_text_norm = control_text.strip().lower()
+        target_name_norm = target_name.strip().lower()
+        if exact:
+            return control_text_norm == target_name_norm
+        return target_name_norm in control_text_norm
 
-        except ValueError:
-            # Button not found, try next one
-            continue
+    def _get_matches_by_name(
+        self,
+        control_type: str,
+        control_name: str,
+        exact: bool
+    ) -> list[UIAWrapper]:
+        """
+        Get all controls matching the specified type and name.
+        """
+        matching_controls = []
+        all_controls_of_type = []
 
-    return False
+        for ctrl in self.window.descendants():
+            if ctrl.element_info.control_type != control_type:
+                continue
+            control_text = ctrl.window_text().strip()
+            all_controls_of_type.append(control_text)
+            if self._matches_name(control_text, control_name, exact):
+                matching_controls.append(ctrl)
+        if not matching_controls:
+            match_type = "exact" if exact else "partial"
+            name_info = f" with name '{control_name}' ({match_type})" if control_name else ""
+            error_msg = f"Could not find {control_type}{name_info}\n"
+            error_msg += f"Available {control_type} controls found: {all_controls_of_type}"
+            raise ValueError(error_msg)
 
+        return matching_controls
 
-def close_window_with_confirmation(
-    window: UIAWrapper,
-    confirmation_buttons: list[str],
-) -> bool:
-    """
-    Close a window and automatically handle confirmation dialog if it appears.
-    Also works for windows that close immediately without confirmation.
+    def _get_match_by_auto_id(
+        self,
+        control_type: str,
+        auto_id: str
+    ) -> UIAWrapper:
+        """
+        Get control matching the specified AutomationId.
+        """
+        matching_controls = []
+        all_auto_ids = []
 
-    Examples:
-        # Must specify which button(s) to click
-        close_window_with_confirmation(
-            window, desktop, confirmation_buttons=["Yes"]
-        )
+        for ctrl in self.window.descendants():
+            if ctrl.element_info.control_type != control_type:
+                continue
+
+            ctrl_auto_id = ctrl.element_info.automation_id
+
+            if ctrl_auto_id:  # Only collect non-empty AutomationIds
+                all_auto_ids.append(ctrl_auto_id)
+
+            if ctrl_auto_id == auto_id:
+                matching_controls.append(ctrl)
+
+        if not matching_controls:
+            error_msg = f"Could not find control with auto_id '{auto_id}'\n"
+            error_msg += f"Available AutomationIds found: {sorted(set(all_auto_ids))}"
+            raise ControlNotFoundError(error_msg)
+
+        if len(matching_controls) > 1:
+            raise ControlNotFoundError(
+                f"Found {len(matching_controls)} controls with auto_id='{auto_id}'. "
+                f"AutomationId should be unique but found duplicates."
+            )
+
+        return matching_controls[0]
+
+    def find_by_name(
+        self,
+        control_type: str,
+        control_name: str = "",
+        exact: bool = False,
+        found_index: int = 0,  # by default take first found  control
+
+    ) -> UIAWrapper:
+        """
+        Find a UI control by type and name.
+        Examples:
+            # Find button (partial match)
+            btn = manager.find_control(
+                window=window, control_type="Button", control_name="Submit"
+            )
+            # Find button (exact match)
+            btn = manager.find_control(
+                window=window, control_type="Button", 
+                control_name="Submit", exact=True
+            )
+            # Find second ComboBox named "Save"
+            combo = manager.find_control(
+                window=window, control_type="ComboBox", 
+                control_name="Save", exact=True, found_index=1
+            )
+            # Find second ListBox (any name)
+            listbox = manager.find_control(
+                window=window, control_type="ListBox", found_index=1
+            )
+        """
+        # Bring window to foreground to ensure controls are accessible
+        self.window.set_focus()
+        matching_controls = self._get_matches_by_name(
+            control_type, control_name, exact)
+        return matching_controls[found_index]
+    
+    def find_all_by_name(
+        self,
+        control_type: str,
+        control_name: str = "",
+        exact: bool = False,
+    ) -> list[UIAWrapper]:
+        """
+        Find all UI controls matching type and name.
         
-        # Try multiple buttons in order
-        close_window_with_confirmation(
-            window, desktop, 
-            confirmation_buttons=["Don't Save", "No", "OK"]
-        )
+        Examples:
+            # Get all ComboBoxes named "Software Binning"
+            all_combos = manager.find_all_by_name(
+                control_type="ComboBox", 
+                control_name="Software Binning"
+            )
+        """
+        self.window.set_focus()
+        matching_controls = self._get_matches_by_name(
+            control_type, control_name, exact)
+        return matching_controls
+
+    def find_by_auto_id(
+        self,
+        control_type: str,
+        auto_id: str,
+    ) -> UIAWrapper:
+        """
+        Find a UI control by AutomationId.
+
+        Examples:
+            # Find button by AutomationId
+            button = manager.find_control_by_auto_id(auto_id="btnSubmit")
+
+            # Find edit control
+            edit = manager.find_control_by_auto_id(auto_id="txtUsername")
+        """
+        # Bring window to foreground to ensure controls are accessible
+        self.window.set_focus()
+
+        # Find all matching controls
+        matching_control = self._get_match_by_auto_id(
+            auto_id=auto_id, control_type=control_type)
+
+        return matching_control
+    
+    def find_child_window_by_title(self, window_title :str ) -> UIAWrapper | None:
+        """
+        Search for a visible child window within the parent window.
+        """
+        # Look for child window
+        child_window = self.window.child_window(control_type="Window", title = window_title)
+        if child_window.exists(timeout=DEFAULT_WAIT_TIME):
+            return child_window
+        raise WindowNotFoundError(f"Could not find child window with title '{window_title}'")
+
+
+class ControlSimulator:
+    """Provides an abstraction layer for some control simulations."""
+
+    def __init__(self, control: UIAWrapper):
+            self.control = control
+
+    def enable_checkbox(self) -> None:
+        """Enable/check the checkbox if it's not already checked."""
+        if not hasattr(self.control, 'get_toggle_state'):
+            raise AttributeError(f"Control does not support toggle state (not a checkbox/toggle button)")
         
-        # Custom wait time
-        close_window_with_confirmation(
-            window, desktop, confirmation_buttons=["Yes"], 
-            wait_for_dialog=2.0
-        )
-    """
-
-    # Bring window to foreground to ensure controls are accessible
-    window.set_focus()
-
-    # Attempt to close the window
-    print(f"Closing window: '{window.window_text()}'")
-    window.close()
-    conf_window = _find_confirmation_window(window=window)
-    if not conf_window:
-        print("  ✓ Window closed immediately (no confirmation needed)")
-        return True
-    click_sucess = _click_confirmation_button(confirmation_window=conf_window,
-                                              confirmation_buttons= confirmation_buttons)
-    return click_sucess
-
-
-
-def set_checkbox(
-    window: UIAWrapper,
-    checkbox_name: str,
-    activate: bool,
-    exact: bool = False
-) -> bool:
-    """
-    Check or uncheck a checkbox by name.
-  
-    Examples:
-        # Check a checkbox
-        set_checkbox(window, "Geocoding", activate=True)
+        if self.control.get_toggle_state() != 1:
+            self.control.click()
+    
+    def disable_checkbox(self) -> None:
+        """Disable/uncheck the checkbox if it's not already unchecked."""
+        if not hasattr(self.control, 'get_toggle_state'):
+            raise AttributeError(f"Control does not support toggle state (not a checkbox/toggle button)")
         
-        # Uncheck a checkbox
-        set_checkbox(window, "Raw Data Import", activate=False)
-        
-        # Partial match
-        set_checkbox(window, "Reflectance", activate=True)
-        
-        # Exact match
-        set_checkbox(window, "Geocoding", activate=True, exact=True)
-    """
-    checkbox = find_control(window, "CheckBox", checkbox_name, exact=exact)
-
-    if not checkbox:
-        print(f"⚠️ Checkbox not found: '{checkbox_name}'")
-        return False
-
-    current_state = checkbox.get_toggle_state()  # 0=Off, 1=On
-    desired_state = 1 if activate else 0
-
-    # Already in desired state
-    if current_state == desired_state:
-        action = "checked" if activate else "unchecked"
-        print(f"✓ '{checkbox.window_text()}' already {action}")
-        return True
-
-
-    # Toggle to desired state
-    checkbox.toggle()
-    action = "checked" if activate else "unchecked"
-    print(f"✓ {action.capitalize()}: '{checkbox.window_text()}'")
-    return True
+        if self.control.get_toggle_state() != 0:
+            self.control.click()

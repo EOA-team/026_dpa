@@ -2,12 +2,9 @@ import time
 
 from pathlib import Path
 from enum import StrEnum
-from code.pywinauto_helpers import find_control
-from code.pywinauto_helpers_new import (
-    ApplicationManager, DesktopManager, ControlFinder, ControlSimulator, UIAWrapper,DEFAULT_WAIT_TIME 
+from code.pywinauto_helpers import (
+    ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper,DEFAULT_WAIT_TIME 
 )
-
-from code.pipeline import PipelineFolder
 
 
 class HyspexRadApplication:
@@ -51,38 +48,11 @@ class HyspexRadApplication:
 
 
     
-    def __init__(self):
-        self.jobs: list[str] = ["re112o_250610", "re112o_250918"]
+    def __init__(self, input_folders: list[Path], output_folders: list[Path]):
+        self.input_folders= input_folders
+        self.output_folders = output_folders
+ 
 
-        # This folder is copied to process_inputs before processing
-        self.source_of_process_inputs : list[Path] = PipelineFolder(
-            basefolder=Path("D:/data/mjolnir"),
-            target="01_raw_data"
-            ).get_paths(self.jobs)# Example D:/data/mjolnir/re112o_250610/01_raw_data
-
-        # Here the processing takes place
-        self.process_inputs: list[Path] = PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="RAW"
-        ).get_paths(self.jobs) # Example E:/mjolnir_processing/re112o_250610/RAW
-
-        #Here the output data is stored
-        self.process_outputs: dict[str, list[Path]] = {
-            "VNIR": PipelineFolder(
-                basefolder=Path("E:/mjolnir_processing"),
-                target="VNIR"
-            ).get_paths(self.jobs), # Example E:/mjolnir_processing/re112o_250610/VNIR
-            "SWIR": PipelineFolder(
-                basefolder=Path("E:/mjolnir_processing"),
-                target="SWIR"
-            ).get_paths(self.jobs),  # Example E:/mjolnir_processing/re112o_250610/SWIR
-            "tmp": PipelineFolder(
-                basefolder=Path("E:/mjolnir_processing"),
-                target="tmp"
-            ).get_paths(self.jobs)  # Example E:/mjolnir_processing/re112o_250610/tmp
-        }
-
-   
         # Application
         self.app_path : str = "G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe"
         self.work_dir : str = "G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/"
@@ -118,7 +88,6 @@ class HyspexRadApplication:
         else:
             checkbox_simulator.disable_checkbox()
 
-        
     
     def _save_saturation_map(self, enable: bool, controlfinder: ControlFinder):
         checkbox = controlfinder.find_by_auto_id(control_type="CheckBox",
@@ -159,6 +128,10 @@ class HyspexRadApplication:
         # Wait for window to close
         img_sel_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
 
+        # Additional safety: ensure window is truly gone
+        time.sleep(1)  # Small buffer to ensure cleanup
+
+
     def _get_softwarebinning_idx(self, sensor : SoftwareBinning.Sensor, direction: SoftwareBinning.Direction):
         BINNING_INDEX_MAP = {
             (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.ACROSS_TRACK): 0,
@@ -193,11 +166,6 @@ class HyspexRadApplication:
             idx = self._get_softwarebinning_idx(sensor, direction)
             sofwarebinning_comboboxes[idx].select(binning_factor)
 
-    def _create_tmp_output_folder(self, job_index: int) -> Path:
-        tmp_output_folder = self.process_outputs["tmp"][job_index]
-        tmp_output_folder.mkdir(parents=True, exist_ok=True)
-        return tmp_output_folder
-
     def set_output_folder(self, controlfinder: ControlFinder, folder_path: Path):
         editbox = controlfinder.find_by_auto_id(control_type="Edit", auto_id="Widget.leftSideGroupBox.folderEdit")
         editbox.set_edit_text(str(folder_path) + '\\')
@@ -220,11 +188,7 @@ class HyspexRadApplication:
                 counter = 0  # Reset counter if progress is less than 100%
             time.sleep(1)  # Check every second
 
-            
-
-
-
-    def run (self):
+    def run(self):
         with ApplicationManager(app_path=self.app_path,
                                 work_dir=self.work_dir,
                                 window_title=self.window_title,
@@ -257,45 +221,17 @@ class HyspexRadApplication:
             
 
             # Run Jobs
-            for job_index in range(len(self.jobs)):
+            for input_folder, output_folder in zip(self.input_folders, self.output_folders):
                 self._select_input_images(controlfinder=main_window_cf, 
-                                          input_folder=self.process_inputs[job_index]
+                                          input_folder=input_folder
                                           )
-                main_window_cf.window.set_focus() # Make sure main window is focused after image selection 
-                self._set_softwarebinning(controlfinder=main_window_cf, binning_settings=binning_settings)
-                tmp_path= self._create_tmp_output_folder(job_index=job_index)
-                self.set_output_folder(controlfinder=main_window_cf, folder_path=tmp_path)
+                # Make sure main window is focused after image selection 
+                main_window_cf.window.set_focus() 
+                # Software binning is set after selecting input images because when returning to main window it may destroys settings
+                self._set_softwarebinning(controlfinder=main_window_cf, binning_settings=binning_settings) 
+                output_folder.mkdir(parents=True, exist_ok=True)
+                self.set_output_folder(controlfinder=main_window_cf, folder_path=output_folder)
                 self.start_processing(controlfinder=main_window_cf)
                 self.wait_for_processing_to_complete(controlfinder=main_window_cf)
 
               
-
-   
-            
-            
-
-
-            
-
-
-  
-           
-            
-
-
-        
-            
-            
-
-    
-        
-
-
-
-if __name__ == "__main__":
-
-    hyspexrad_app = HyspexRadApplication()
-    hyspexrad_app.run()
-    
-    
-
