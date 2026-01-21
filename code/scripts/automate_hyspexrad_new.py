@@ -2,13 +2,15 @@ import time
 
 from pathlib import Path
 from enum import StrEnum
+from code.pywinauto_helpers import find_control
 from code.pywinauto_helpers_new import (
-    ApplicationManager, DesktopManager, ControlFinder, ControlSimulator, UIAWrapper 
+    ApplicationManager, DesktopManager, ControlFinder, ControlSimulator, UIAWrapper,DEFAULT_WAIT_TIME 
 )
+
+from code.pipeline import PipelineFolder
 
 
 class HyspexRadApplication:
-
     class OutputFileFormat(StrEnum):
         INPUT = "input"
         BSQ = "bsq"
@@ -28,22 +30,65 @@ class HyspexRadApplication:
         BMP = "BMP"
         PNG = "PNG"
         JPG = "JPG"
+    
+    class SoftwareBinning:
+        class Factor(StrEnum):
+            X1 = "1X"
+            X2 = "2X"
+            X3 = "3X"
+            X4 = "4X"
+            X5 = "5X"
+            X6 = "6X"
+
+        class Sensor(StrEnum):
+            SWIR = "swir"
+            VNIR = "vnir"
+    
+        class Direction(StrEnum):
+            ACROSS_TRACK = "across_track"
+            SPECTRAL_DIRECTION = "spectral_direction"
+            ALONG_TRACK = "along_track"
 
 
-
+    
     def __init__(self):
         self.jobs: list[str] = ["re112o_250610", "re112o_250918"]
-        
-        # Base folders
-        self.input_basefolder = Path("D:/data/mjolnir")
-        self.output_basefolder = Path("E:/mjolnir_processing")
 
+        # This folder is copied to process_inputs before processing
+        self.source_of_process_inputs : list[Path] = PipelineFolder(
+            basefolder=Path("D:/data/mjolnir"),
+            target="01_raw_data"
+            ).get_paths(self.jobs)# Example D:/data/mjolnir/re112o_250610/01_raw_data
+
+        # Here the processing takes place
+        self.process_inputs: list[Path] = PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="RAW"
+        ).get_paths(self.jobs) # Example E:/mjolnir_processing/re112o_250610/RAW
+
+        #Here the output data is stored
+        self.process_outputs: dict[str, list[Path]] = {
+            "VNIR": PipelineFolder(
+                basefolder=Path("E:/mjolnir_processing"),
+                target="VNIR"
+            ).get_paths(self.jobs), # Example E:/mjolnir_processing/re112o_250610/VNIR
+            "SWIR": PipelineFolder(
+                basefolder=Path("E:/mjolnir_processing"),
+                target="SWIR"
+            ).get_paths(self.jobs),  # Example E:/mjolnir_processing/re112o_250610/SWIR
+            "tmp": PipelineFolder(
+                basefolder=Path("E:/mjolnir_processing"),
+                target="tmp"
+            ).get_paths(self.jobs)  # Example E:/mjolnir_processing/re112o_250610/tmp
+        }
+
+   
         # Application
         self.app_path : str = "G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe"
         self.work_dir : str = "G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/"
         self.window_title : str = "HyspexRad_V3.5"
         self.is_idl_application : bool = False
-    
+ 
     def _set_output_fileformat(self, controlfinder: ControlFinder, fileformat: OutputFileFormat):
         radio_button = controlfinder.find_by_auto_id(control_type= "RadioButton",
                                                      auto_id=f"Widget.leftSideGroupBox.fileFormatGroupBox.{fileformat}formatradioButton")
@@ -94,20 +139,13 @@ class HyspexRadApplication:
         imageselection_window = controlfinder.find_child_window_by_title(window_title="Select Images")
         return imageselection_window
     
-    def _get_next_job_folder(self):
-        if not self.jobs:
-            raise ValueError("No more jobs available.")
-        job_name = self.jobs.pop(0)
-        job_folder = self.output_basefolder / job_name
-        return job_folder
-    
     def _select_input_images(self, controlfinder: ControlFinder, input_folder: Path):
         self._open_imageselection_window(controlfinder)
         img_sel_cf = ControlFinder(window=self._get_imageselection_window(controlfinder)) 
 
         #Write Path 
         filename_editbox = img_sel_cf.find_by_name(control_type="Edit", control_name="file name:", exact=True)
-        filename_editbox.set_edit_text(str(self._get_next_job_folder() / "RAW"))
+        filename_editbox.set_edit_text(str(input_folder))
         filename_editbox.type_keys("{ENTER}")
 
         # Mark all items
@@ -118,27 +156,70 @@ class HyspexRadApplication:
         open_btn = img_sel_cf.find_by_auto_id(control_type="Button", 
                                              auto_id="1")   
         open_btn.click()
+        # Wait for window to close
+        img_sel_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
+
+    def _get_softwarebinning_idx(self, sensor : SoftwareBinning.Sensor, direction: SoftwareBinning.Direction):
+        BINNING_INDEX_MAP = {
+            (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.ACROSS_TRACK): 0,
+            (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.SPECTRAL_DIRECTION): 1,
+            (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.ALONG_TRACK): 2,
+            (self.SoftwareBinning.Sensor.VNIR, self.SoftwareBinning.Direction.ACROSS_TRACK): 3,
+            (self.SoftwareBinning.Sensor.VNIR, self.SoftwareBinning.Direction.SPECTRAL_DIRECTION): 4,
+            (self.SoftwareBinning.Sensor.VNIR, self.SoftwareBinning.Direction.ALONG_TRACK): 5,
+        }
+        return BINNING_INDEX_MAP[(sensor, direction)]
     
+ 
+    def _set_softwarebinning(
+        self, 
+        controlfinder: ControlFinder, 
+        binning_settings: dict[
+            tuple[SoftwareBinning.Sensor, SoftwareBinning.Direction], 
+            SoftwareBinning.Factor
+        ]
+    ):
+        """Set software binning for multiple sensor/direction combinations.
     
-    def _set_softwarebinning(self, controlfinder: ControlFinder ):
-        controlfinder.window.set_focus()
-        swir_across_track = controlfinder.find_by_name(control_type="ComboBox", control_name="Software Binning", found_index=0)
-        swir_across_track.select("1X")
+        """
+    
+        sofwarebinning_comboboxes = controlfinder.find_all_by_name(
+            control_type="ComboBox", 
+            control_name="Software Binning"
+        )
+        
+        # Apply each binning setting
+        for (sensor, direction), binning_factor in binning_settings.items():
+            idx = self._get_softwarebinning_idx(sensor, direction)
+            sofwarebinning_comboboxes[idx].select(binning_factor)
 
-        swir_spectral_direction = controlfinder.find_by_name(control_type="ComboBox", control_name="Software Binning", found_index=1)
-        swir_spectral_direction.select("1X")
+    def _create_tmp_output_folder(self, job_index: int) -> Path:
+        tmp_output_folder = self.process_outputs["tmp"][job_index]
+        tmp_output_folder.mkdir(parents=True, exist_ok=True)
+        return tmp_output_folder
 
-        swir_along_track = controlfinder.find_by_name(control_type="ComboBox", control_name="Software Binning", found_index=2)
-        swir_along_track.select("1X")
+    def set_output_folder(self, controlfinder: ControlFinder, folder_path: Path):
+        editbox = controlfinder.find_by_auto_id(control_type="Edit", auto_id="Widget.leftSideGroupBox.folderEdit")
+        editbox.set_edit_text(str(folder_path) + '\\')
 
-        vnir_across_track = controlfinder.find_by_name(control_type="ComboBox", control_name="Software Binning", found_index=3)
-        vnir_across_track.select("2X")
+    def start_processing(self, controlfinder: ControlFinder):
+        button = controlfinder.find_by_auto_id(control_type="Button", auto_id="Widget.rightsideGroupBox.runButton")
+        button.invoke()
 
-        vnir_spectral_direction = controlfinder.find_by_name(control_type="ComboBox", control_name="Software Binning", found_index=4)
-        vnir_spectral_direction.select("2X")
+    def wait_for_processing_to_complete(self, controlfinder: ControlFinder):
+        """Wait until processing is complete by monitoring the progress bar.
+        The progressbar should stay 100% for DEFAULT_WAIT_TIME seconds to consider processing complete.
+        This is important because progressbar starts from 0% for each new image processed in a batch."""
+        progress_bar = controlfinder.find_by_auto_id(control_type="ProgressBar", auto_id="Widget.leftSideGroupBox.progressBar")
+        counter = 0
+        while counter < DEFAULT_WAIT_TIME: 
+            progress_value = progress_bar.iface_range_value.CurrentValue
+            if progress_value >= 100:
+                counter += 1
+            elif progress_value < 100:
+                counter = 0  # Reset counter if progress is less than 100%
+            time.sleep(1)  # Check every second
 
-        vnir_along_track = controlfinder.find_by_name(control_type="ComboBox", control_name="Software Binning", found_index=5)
-        vnir_along_track.select("2X")
             
 
 
@@ -149,19 +230,48 @@ class HyspexRadApplication:
                                 window_title=self.window_title,
                                 is_idl_application=self.is_idl_application) as hyspexrad_manager:
             main_window_cf = ControlFinder(window=hyspexrad_manager.window)
+            main_window_cf.window.set_focus()
 
             # Settings
             self._set_output_fileformat(main_window_cf, self.OutputFileFormat.BSQ)
             self._set_output_datatype(main_window_cf, self.OutputDataType.FLOAT_32BIT)
             self._set_input_image_type(main_window_cf, self.InputImageType.RADIANCE)
-            self._save_rgb_image(enable=False, datatype=self.RGBFileFormat.JPG, controlfinder=main_window_cf)
+            self._save_rgb_image(enable=True, datatype=self.RGBFileFormat.JPG, controlfinder=main_window_cf)
             self._save_saturation_map(enable=False, controlfinder=main_window_cf)
 
+            # Software Binning Settings
+            binning_settings = {
+                (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.ACROSS_TRACK): 
+                    self.SoftwareBinning.Factor.X1,
+                (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.SPECTRAL_DIRECTION): 
+                    self.SoftwareBinning.Factor.X1,
+                (self.SoftwareBinning.Sensor.SWIR, self.SoftwareBinning.Direction.ALONG_TRACK): 
+                    self.SoftwareBinning.Factor.X1,
+                (self.SoftwareBinning.Sensor.VNIR, self.SoftwareBinning.Direction.ACROSS_TRACK): 
+                    self.SoftwareBinning.Factor.X2,
+                (self.SoftwareBinning.Sensor.VNIR, self.SoftwareBinning.Direction.SPECTRAL_DIRECTION): 
+                    self.SoftwareBinning.Factor.X2,
+                (self.SoftwareBinning.Sensor.VNIR, self.SoftwareBinning.Direction.ALONG_TRACK): 
+                    self.SoftwareBinning.Factor.X2,
+            }
+            
 
-            for job in range(len(self.jobs)):
-                self._select_input_images(main_window_cf, input_folder=self.input_basefolder)
-                self._set_softwarebinning(main_window_cf)
-                time.sleep(3)  # Placeholder for actual processing time
+            # Run Jobs
+            for job_index in range(len(self.jobs)):
+                self._select_input_images(controlfinder=main_window_cf, 
+                                          input_folder=self.process_inputs[job_index]
+                                          )
+                main_window_cf.window.set_focus() # Make sure main window is focused after image selection 
+                self._set_softwarebinning(controlfinder=main_window_cf, binning_settings=binning_settings)
+                tmp_path= self._create_tmp_output_folder(job_index=job_index)
+                self.set_output_folder(controlfinder=main_window_cf, folder_path=tmp_path)
+                self.start_processing(controlfinder=main_window_cf)
+                self.wait_for_processing_to_complete(controlfinder=main_window_cf)
+
+              
+
+   
+            
             
 
 

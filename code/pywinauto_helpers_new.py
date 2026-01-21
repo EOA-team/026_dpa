@@ -242,6 +242,27 @@ class ControlFinder:
         matching_controls = self._get_matches_by_name(
             control_type, control_name, exact)
         return matching_controls[found_index]
+    
+    def find_all_by_name(
+        self,
+        control_type: str,
+        control_name: str = "",
+        exact: bool = False,
+    ) -> list[UIAWrapper]:
+        """
+        Find all UI controls matching type and name.
+        
+        Examples:
+            # Get all ComboBoxes named "Software Binning"
+            all_combos = manager.find_all_by_name(
+                control_type="ComboBox", 
+                control_name="Software Binning"
+            )
+        """
+        self.window.set_focus()
+        matching_controls = self._get_matches_by_name(
+            control_type, control_name, exact)
+        return matching_controls
 
     def find_by_auto_id(
         self,
