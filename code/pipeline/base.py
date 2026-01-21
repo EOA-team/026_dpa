@@ -23,7 +23,8 @@ class PipelineFolder:
 
 class PipelineStep(ABC):
     """Base class for pipeline steps."""
-    def __init__(self, jobs: list[str], input_folder: PipelineFolder, output_folder: PipelineFolder):
+    def __init__(self, name:str , jobs: list[str], input_folder: PipelineFolder, output_folder: PipelineFolder):
+        self.name = name
         self.jobs = jobs
         self.input_folders = input_folder.get_paths(jobs)
         self.output_folders = output_folder.get_paths(jobs)
