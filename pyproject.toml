@@ -1,0 +1,9 @@
+[tool.mypy]
+exclude = [
+    "code/scripts",
+    "tests"
+]
+
+
+[tool.pylint.main]
+ignore = ["scripts", "tests"]

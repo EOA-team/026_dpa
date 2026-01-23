@@ -28,6 +28,7 @@ class ControlNotFoundError(WindowAutomationError):
     """Raised when a UI control cannot be found."""
     ...  # pylint: disable=unnecessary-ellipsis
 
+
 class WindowNotFoundError(WindowAutomationError):
     """Raised when a Window cannot be found."""
     ...  # pylint: disable=unnecessary-ellipsis
@@ -242,7 +243,7 @@ class ControlFinder:
         matching_controls = self._get_matches_by_name(
             control_type, control_name, exact)
         return matching_controls[found_index]
-    
+
     def find_all_by_name(
         self,
         control_type: str,
@@ -251,7 +252,7 @@ class ControlFinder:
     ) -> list[UIAWrapper]:
         """
         Find all UI controls matching type and name.
-        
+
         Examples:
             # Get all ComboBoxes named "Software Binning"
             all_combos = manager.find_all_by_name(
@@ -287,36 +288,40 @@ class ControlFinder:
             auto_id=auto_id, control_type=control_type)
 
         return matching_control
-    
-    def find_child_window_by_title(self, window_title :str ) -> UIAWrapper | None:
+
+    def find_child_window_by_title(self, window_title: str) -> UIAWrapper | None:
         """
         Search for a visible child window within the parent window.
         """
         # Look for child window
-        child_window = self.window.child_window(control_type="Window", title = window_title)
+        child_window = self.window.child_window(
+            control_type="Window", title=window_title)
         if child_window.exists(timeout=DEFAULT_WAIT_TIME):
             return child_window
-        raise WindowNotFoundError(f"Could not find child window with title '{window_title}'")
+        raise WindowNotFoundError(
+            f"Could not find child window with title '{window_title}'")
 
 
 class ControlSimulator:
     """Provides an abstraction layer for some control simulations."""
 
     def __init__(self, control: UIAWrapper):
-            self.control = control
+        self.control = control
 
     def enable_checkbox(self) -> None:
         """Enable/check the checkbox if it's not already checked."""
         if not hasattr(self.control, 'get_toggle_state'):
-            raise AttributeError(f"Control does not support toggle state (not a checkbox/toggle button)")
-        
+            raise AttributeError(
+                "Control does not support toggle state (not a checkbox/toggle button)")
+
         if self.control.get_toggle_state() != 1:
             self.control.click()
-    
+
     def disable_checkbox(self) -> None:
         """Disable/uncheck the checkbox if it's not already unchecked."""
         if not hasattr(self.control, 'get_toggle_state'):
-            raise AttributeError(f"Control does not support toggle state (not a checkbox/toggle button)")
-        
+            raise AttributeError(
+                "Control does not support toggle state (not a checkbox/toggle button)")
+
         if self.control.get_toggle_state() != 0:
             self.control.click()

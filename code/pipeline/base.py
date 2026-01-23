@@ -1,5 +1,12 @@
+""" In this module the base classes needed to build a pipeline are defined:
+1. A PipelineFolder : 
+Defines either a input or output folder for a specific step in the pipeline.
+2. A PipelineStep : 
+Defines a processing step in the pipeline, handling input and output folders for each job.
+"""
 from abc import ABC, abstractmethod
 from pathlib import Path
+
 
 class PipelineFolder:
     """A pipeline folder represents a base folder and a target subfolder.
@@ -12,29 +19,28 @@ class PipelineFolder:
         target: 01_raw_data
         job_name: ["re112o_250610", "re112o_250918"]
         -->[D:/data/mjolnir/re112o_250610/01_raw_data, D:/data/mjolnir/re112o_250918/01_raw_data]"""
-    
+
     def __init__(self, basefolder: Path, target: str):
         self.basefolder = basefolder
         self.target = target
-    
-    def get_paths(self, job_names: list[str]) -> list[Path]:
+
+    def get_job_paths(self, job_names: list[str]) -> list[Path]:
         """Get the full path for a specific job."""
         return [self.basefolder / name / self.target for name in job_names]
 
+
+
 class PipelineStep(ABC):
-    """Base class for pipeline steps."""
-    def __init__(self, name:str , jobs: list[str], input_folder: PipelineFolder, output_folder: PipelineFolder):
+    """Base class for pipeline steps.
+    Already generates input and output folder paths for each job during initialization
+    Subclasses must implement the run method.
+    """
+    def __init__(self, name: str, jobs: list[str],
+                 input_folder: PipelineFolder, output_folder: PipelineFolder):
         self.name = name
         self.jobs = jobs
-        self.input_folders = input_folder.get_paths(jobs)
-        self.output_folders = output_folder.get_paths(jobs)
-    
+        self.input_folders = input_folder.get_job_paths(jobs)
+        self.output_folders = output_folder.get_job_paths(jobs)
     @abstractmethod
     def run(self) -> bool:
         """Run the pipeline step. Must be implemented by subclasses."""
-        pass
-
-    def get_paths(self) -> list[Path]:
-        """Get the full path for a specific job."""
-        return [self.input_folder / self.jobs / self.target for job in self.jobs]
-
