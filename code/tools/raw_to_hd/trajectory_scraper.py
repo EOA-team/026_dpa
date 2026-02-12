@@ -51,53 +51,64 @@ logger = logging.getLogger(__name__)
 
 # Configurations
 GECKO_DRIVER_PATH = "C:/Users/HySpex_user/tools/geckodriver.exe" # Installation Path on DAU onboard computer
-
+APX20_URL = "http://192.168.168.100"
 
 
 
 class TrajectoryScraper:
     """Trajectory Data Scraper"""
     def __init__(self, wait_time_seconds: int = 5):
+        load_dotenv()
         self.webdriver = create_firefox_driver(geckodriver_path=GECKO_DRIVER_PATH)
         self.wait  = WebDriverWait(self.webdriver, wait_time_seconds)
-        self.service_url = "http://192.168.168.100" # Service to Fetch Trajectory Data from APX-20
+        self.service_url = APX20_URL
+        self.username = os.getenv("APX_USER")
+        self.password = os.getenv("APX_PW")
+
+        if not self.username or not self.password:
+            raise ValueError("APX_USER or APX_PW not found in environment variables")
+        logger.info(f"Credentials loaded for user: {self.username}")
 
     def open_page(self):
+        logger.info(f"Opening APX-20 web interface at {self.service_url}")
         self.webdriver.get(self.service_url)
-        logger.info("Open Page")
 
     def close_page(self):
         self.webdriver.quit()
         logger.info("Close Page")
 
 
+    def login(self):
+        """Login to APX-20 web interface."""
 
+        # Wait for and switch to the iframe
+        self.wait.until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "main"))
+        )
+        # Switch to the nested dataFrame
+        self.wait.until(
+            EC.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
+        )
 
-# def switch_to_iframe():
-#     # Wait for the main iframe to load
-#     wait = WebDriverWait(webdrvr, 10)
-#     logger.info("Waiting for main iframe to load...")
-#     main_frame = wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, "main")))
-#     logger.info("Switched to main iframe")
-#
-#
-#     iframe = WebDriverWait(self.driver, self.wait_time).until(
-#         EC.presence_of_element_located((By.TAG_NAME, "iframe"))
-#     )
-#     self.scroll_to_element(iframe)
-#     self.driver.switch_to.frame(iframe)
-#
-#
-# def login(webdrvr: webdriver.Firefox):
-#     """Login to APX-20 web interface"""
-#     load_dotenv()
-#     wait = WebDriverWait(webdrvr, 10)
-#     input_user = wait.until(EC.visibility_of_element_located((By.NAME, "username")))
-#     input_user.clear()
-#     input_user.send_keys(os.getenv("APX_USER"))
-#     input_pw = wait.until(EC.visibility_of_element_located((By.NAME, "password")))
-#     input_pw.clear()
-#     input_pw.send_keys(os.getenv("APX_PW"))
+        # Type Username
+        username_field = self.wait.until(
+            EC.visibility_of_element_located((By.NAME, "username"))
+        )
+        username_field.clear()
+        username_field.send_keys(self.username)
+
+        # Type Password
+        password_field = self.wait.until(
+            EC.visibility_of_element_located((By.NAME, "password"))
+        )
+        password_field.clear()
+        password_field.send_keys(self.password)
+
+        # Submit the form instead of clicking the button
+        form = self.webdriver.find_element(By.NAME, "theForm")
+        form.submit()
+        logger.info("Login Successful...")
+
 
 
 def main():
@@ -109,7 +120,8 @@ def main():
 
     scraper = TrajectoryScraper()
     scraper.open_page()
-    time.sleep(5)
+    scraper.login()
+    time.sleep(10)
     scraper.close_page()
 
 
