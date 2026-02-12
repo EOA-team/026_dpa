@@ -67,3 +67,6 @@ Thumbs.db
 
 # Env Files
 *.env
+
+# Pycharm Specific
+.idea/
