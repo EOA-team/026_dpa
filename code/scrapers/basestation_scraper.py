@@ -1,4 +1,4 @@
-from code.scrapers.selenium_utils import create_webdriver
+from code.scrapers.selenium_utils import create_webdriver, BrowserType
 from code.scrapers.base_scraper import BaseScraper
 import os
 from dotenv import load_dotenv
@@ -12,7 +12,7 @@ class BasestationScraper(BaseScraper):
         self,
         config_path: str | Path | None = None,
         driver_path: str | None = None,
-        browser: str | None = None,
+        browser: BrowserType | None = None,
         timeout: int | None = None,
         output_path: str | None = None,
         service_url: str | None = None,

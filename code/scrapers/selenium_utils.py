@@ -42,34 +42,34 @@ def create_webdriver(
         >>> driver = create_webdriver('chrome', 'C:/tools/chromedriver.exe')
         >>> driver = create_webdriver('edge', 'C:/tools/msedgedriver.exe')
     """
-    browser = browser.lower()
     
     try:
         logger.info(f"Initializing {browser.capitalize()} Driver...")
         
         if browser == "firefox":
-            options = webdriver.FirefoxOptions()
-            options.add_argument('--start-maximized')
-            service = FirefoxService(executable_path=driver_path)
-            driver = webdriver.Firefox(service=service, options=options)
+            firefox_options = webdriver.FirefoxOptions()
+            firefox_options.add_argument('--start-maximized')
+            firefox_service = FirefoxService(executable_path=driver_path)
+            firefox_driver = webdriver.Firefox(service=firefox_service, options=firefox_options)
+            return firefox_driver
             
         elif browser == "chrome":
-            options = webdriver.ChromeOptions()
-            options.add_argument('--start-maximized')
-            service = ChromeService(executable_path=driver_path)
-            driver = webdriver.Chrome(service=service, options=options)
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument('--start-maximized')
+            chrome_service = ChromeService(executable_path=driver_path)
+            chrome_driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+            return chrome_driver
             
         elif browser == "edge":
-            options = webdriver.EdgeOptions()
-            options.add_argument('--start-maximized')
-            service = EdgeService(executable_path=driver_path)
-            driver = webdriver.Edge(service=service, options=options)
+            edge_options = webdriver.EdgeOptions()
+            edge_options.add_argument('--start-maximized')
+            edge_service = EdgeService(executable_path=driver_path)
+            edge_driver = webdriver.Edge(service=edge_service, options=edge_options)
+            return edge_driver
             
         else:
             raise ValueError(f"Unsupported browser: {browser}. Choose from: 'firefox', 'chrome', 'edge'")
         
-        logger.info(f"{browser.capitalize()} Driver initialized successfully")
-        return driver
         
     except Exception as e:
         logger.error(

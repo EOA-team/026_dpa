@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from selenium.webdriver.support.ui import WebDriverWait
-from code.scrapers.selenium_utils import create_webdriver
+from code.scrapers.selenium_utils import create_webdriver, BrowserType
 import yaml
 
 class BaseScraper(ABC):
@@ -10,8 +10,8 @@ class BaseScraper(ABC):
     def __init__(
         self, 
         config_path: str | Path | None = None,
-        driver_path: str | None = None,
-        browser: str | None = None,
+        driver_path: str |None = None,
+        browser: BrowserType | None = None,
         timeout: int | None = None,
         output_path: str | Path | None = None,
         service_url: str | None = None,
@@ -30,13 +30,22 @@ class BaseScraper(ABC):
             password = config['password']
         else:
             # Validate that manual parameters are provided
-            if not all([driver_path, browser, timeout, output_path]):
+            if not all([driver_path, browser, timeout, output_path, service_url, username, password]):
                 raise ValueError(
-                    "Either provide config_path OR all manual parameters "
-                    "(driver_path, browser, timeout, output_path, service_url)"
+                    "When config_path is not provided, all parameters are required: "
+                    "driver_path, browser, timeout, output_path, service_url, username, password"
                 )
-            
-        # Store configuration
+        
+        # Type narrowing for mypy - we know these are not None after validation
+        assert driver_path is not None
+        assert browser is not None
+        assert timeout is not None
+        assert output_path is not None
+        assert service_url is not None
+        assert username is not None
+        assert password is not None
+        
+        # Scraper URL and credentials
         self.service_url = service_url
         self.username = username
         self.password = password
