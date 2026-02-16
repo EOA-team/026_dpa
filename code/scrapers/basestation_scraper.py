@@ -1,5 +1,5 @@
 from code.scrapers.selenium_utils import create_webdriver, BrowserType
-from code.scrapers.base_scraper import BaseScraper
+from code.scrapers.base_scraper import BaseScraper, ScraperConfig
 import os
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
@@ -8,26 +8,13 @@ import time
 
 
 class BasestationScraper(BaseScraper):
-    def __init__(
-        self,
-        config_path: str | Path | None = None,
-        driver_path: str | None = None,
-        browser: BrowserType | None = None,
-        timeout: int | None = None,
-        output_path: str | None = None,
-        service_url: str | None = None,
-        username: str | None = None,
-        password: str | None = None
+    def __init__(self,
+                 config: ScraperConfig | None = None,
+                 config_path: str | Path | None = None,
     ):
         super().__init__(
-            config_path=config_path,
-            driver_path=driver_path,
-            browser=browser,
-            timeout=timeout,
-            output_path=output_path,
-            service_url=service_url,
-            username=username,
-            password=password
+            config=config,
+            config_path=config_path
         )
 
     def login(self):
@@ -60,14 +47,15 @@ class BasestationScraper(BaseScraper):
 
 if __name__ == "__main__":
     load_dotenv()  # Load environment variables from .env file
-    scraper = BasestationScraper(browser="edge", 
-                                 driver_path="C:/Tools/webdrivers/msedgedriver.exe",
-                                 output_path="C:/Users/F80877978/Downloads/Rinex_output",
-                                 service_url="https://shop.swipos.ch/",
-                                 username=os.getenv("SWIPOS_USER"),
-                                 password=os.getenv("SWIPOS_PW"),
-                                 timeout=5)
-    
-   
+    config = ScraperConfig(
+        driver_path="C:/Tools/webdrivers/msedgedriver.exe",
+        browser="edge",
+        timeout=5,
+        output_path="C:/Users/F80877978/Downloads/Rinex_output",
+        service_url="https://shop.swipos.ch/",
+        username=os.getenv("SWIPOS_USER") ,
+        password=os.getenv("SWIPOS_PW")
+    )
+    scraper = BasestationScraper(config=config)
         
     scraper.scrape()
