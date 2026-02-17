@@ -20,11 +20,12 @@ Note:
 
 from pathlib import Path
 import logging
-import time
 import os
+import re
 from code.scrapers.base_scraper import BaseScraper, ScraperConfig
-from selenium.webdriver.common.by import By
 from dotenv import load_dotenv
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 logger = logging.getLogger(__name__)
@@ -39,17 +40,32 @@ class TrajectoryScraper(BaseScraper):
             config=config,
             config_path=config_path
         )
-    def login(self):
-        
-        """Login to APX-20 web interface."""
-        # Wait for and switch to the iframe
+        self._last_download_status: str = ""
+
+    def switch_to_data_frame(self) -> None:
+        """Switch WebDriver context into the nested dataFrame where page content is rendered.
+
+        The APX-20 web interface uses a two-level frame structure:
+          - 'main' iframe: top-level container loaded on page open
+          - 'dataFrame' frame: nested inside 'main', holds all actual page content
+            (file manager, login form, data logger, etc.)
+
+        Any interaction with page elements must be preceded by this context switch,
+        otherwise Selenium searches the top-level document and finds nothing.
+        Always call switch_to.default_content() before calling this method
+        to reset the context from a previous frame.
+        """
         self.wait.until(
             EC.frame_to_be_available_and_switch_to_it((By.ID, "main"))
         )
-        # Switch to the nested dataFrame
         self.wait.until(
             EC.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
         )
+
+    def login(self):
+        
+        """Login to APX-20 web interface."""
+        self.switch_to_data_frame()
 
         # Type Username
         username_field = self.wait.until(
@@ -76,7 +92,7 @@ class TrajectoryScraper(BaseScraper):
 
         try:
             # Wait for the floating div to be visible
-            floating_div = self.wait.until(
+            self.wait.until(
                 EC.visibility_of_element_located((By.ID, "idFloatingDiv"))
             )
             # Dismiss via JS - same as clicking the red X
@@ -108,24 +124,100 @@ class TrajectoryScraper(BaseScraper):
         logger.info("Navigated to Data Files")
 
     def select_internal_tab(self) -> None:
-        """Switch to Internal tab in the file manager."""
+        """Navigate into the Internal directory in the file manager.
+
+        The file manager shows Internal/External as directory links, not tabs.
+        Clicking Internal calls changeDir('Internal') via JavaScript, which
+        reloads the contents div with files from the /Internal path.
+        """
         self.webdriver.switch_to.default_content()
+        self.switch_to_data_frame()
 
-        self.wait.until(
-            EC.frame_to_be_available_and_switch_to_it((By.ID, "main"))
-        )
-        self.wait.until(
-            EC.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
-        )
-
-        internal_tab = self.wait.until(
+        internal_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.XPATH,
-                 "//a[contains(text(), 'Internal')] | //input[@value='Internal'] | //td[contains(text(), 'Internal')]")
+                (By.XPATH, "//a[@href=\"javascript:changeDir('Internal')\"]")
             )
         )
-        internal_tab.click()
-        logger.info("Clicked Internal tab")
+        internal_link.click()
+        logger.info("Navigated into Internal directory")
+
+    def select_all_files(self) -> None:
+        """Click the Select All button in the file manager.
+
+        Select All is rendered as an image link calling javascript:selectAll().
+        Only appears after navigating into a subdirectory (not at root /).
+        """
+        # Wait for the selectAll link to appear after directory load
+        select_all_link = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//a[@href='javascript:selectAll()']")
+            )
+        )
+        select_all_link.click()
+        logger.info("Selected all files")
+
+    def download_selected_files(self) -> None:
+        """Click the Download Selected Files button.
+
+        Download is rendered as an image link calling javascript:downloadMultiple('').
+        Triggers a confirmation dialog — handled via wait for alert.
+        """
+        download_link = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//a[@href=\"javascript:downloadMultiple('')\"]")
+            )
+        )
+        download_link.click()
+        logger.info("Download clicked, handling confirmation dialog...")
+
+        # downloadMultiple() shows a confirm() dialog before downloading
+        self.wait.until(EC.alert_is_present())
+        alert = self.webdriver.switch_to.alert
+        alert.accept()
+        logger.info("Download confirmed")
+
+    def wait_for_downloads_complete(self, timeout: int = 3600, max_files: int | None = None) -> None:
+        """Wait until all files have been downloaded from the APX-20.
+
+        During download the page updates contentsDiv with progress like:
+            'Downloading[ 2 / 691 ]   filename.T04'
+        and finally sets it to:
+            'Downloads Complete'
+        when all files are done. We poll this element until that final
+        state is reached.
+
+        Args:
+            timeout: Maximum seconds to wait before raising TimeoutException.
+                     Defaults to 3600s (1 hour) since 691 files can take a while.
+            max_files: If set, stop after this many files have downloaded.
+                       Useful for debugging without downloading the full set.
+        """
+        logger.info("Waiting for downloads to complete...")
+
+        def downloads_complete(driver) -> bool:
+            try:
+                text = driver.find_element(By.ID, "contentsDiv").text
+
+                if text != self._last_download_status:
+                    logger.info("Download status: %s", text.strip())
+                    self._last_download_status = text
+
+                if "Downloads Complete" in text:
+                    return True
+
+                if max_files is not None:
+                    match = re.search(r"Downloading\[\s*(\d+)\s*/", text)
+                    if match and int(match.group(1)) > max_files:
+                        logger.debug("Debug limit reached: stopped after %d files", max_files)
+                        return True
+
+                return False
+            except Exception:
+                return False
+
+        WebDriverWait(self.webdriver, timeout).until(downloads_complete)
+        logger.info("All downloads complete")
+
 
     def scrape(self) -> None:
         self.open()
@@ -133,16 +225,11 @@ class TrajectoryScraper(BaseScraper):
         self.login()
         self.navigate_to_data_files()
         self.select_internal_tab()
-        time.sleep(10) # Time to press next page
+        self.select_all_files()
+        self.download_selected_files()
+        self.wait_for_downloads_complete(max_files = 10)
         self.close()
-        #self.webdriver.switch_to.default_content()
-        #self.debug_page_state("after_login")
-        #time.sleep(10) # Time to press on data
-        #self.debug_page_state("after_go_to_data")
-        #time.sleep(10) # Time to press external data
-        #self.debug_page_state("after_external_data")
-        #time.sleep(10)
-        #self.close()
+
 
     def debug_page_state(self, step_name: str):
         """Debug helper to capture page state."""
@@ -158,6 +245,12 @@ class TrajectoryScraper(BaseScraper):
         print(f"Debug saved: {step_name}")
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    logging.getLogger("selenium").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     load_dotenv()  # Load environment variables from .env file
     manual_config = ScraperConfig(
