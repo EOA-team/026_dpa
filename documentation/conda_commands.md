@@ -39,8 +39,19 @@ conda env create -f environment.yml
 This will create a new Conda environment with the same name and packages as saved.
 
 ---
+## 4. Update Environment from YAML
 
-## 4. List All Conda Environments
+To update a conda environment from a YAML file:
+
+```bash
+conda env update --file environment.yml --prune
+```
+
+This will create a new Conda environment with the same name and packages as saved.
+
+---
+
+## 5. List All Conda Environments
 
 Verify your environments with:
 
