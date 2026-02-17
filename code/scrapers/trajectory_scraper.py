@@ -70,17 +70,79 @@ class TrajectoryScraper(BaseScraper):
         form.submit()
         logger.info("Login Successful...")
 
+    def dismiss_splash_popup(self) -> None:
+        """Dismiss the Applanix splash screen that appears on page open."""
+        self.webdriver.switch_to.default_content()
+
+        try:
+            # Wait for the floating div to be visible
+            floating_div = self.wait.until(
+                EC.visibility_of_element_located((By.ID, "idFloatingDiv"))
+            )
+            # Dismiss via JS - same as clicking the red X
+            self.webdriver.execute_script("hideFloatingDiv(true);")
+            logger.info("Splash popup dismissed")
+        except Exception:
+            # Popup may not appear if quickStart cookie is already set
+            logger.debug("No splash popup found, continuing")
+
+    def navigate_to_data_files(self) -> None:
+        """Navigate to Data Logging > Data Files via the menu."""
+        self.webdriver.switch_to.default_content()
+
+        # Click "Data Logging" main menu item (index 2)
+        data_logging_link = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//a[@class='MenuMainItemDiv' and contains(text(), 'Data Logging')]")
+            )
+        )
+        data_logging_link.click()
+
+        # Click "Data Files" submenu item -> loads xml/fileManager.html into the iframe
+        data_files_link = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//a[@class='MenuSubItemDiv' and contains(., 'Data Files')]")
+            )
+        )
+        data_files_link.click()
+        logger.info("Navigated to Data Files")
+
+    def select_internal_tab(self) -> None:
+        """Switch to Internal tab in the file manager."""
+        self.webdriver.switch_to.default_content()
+
+        self.wait.until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "main"))
+        )
+        self.wait.until(
+            EC.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
+        )
+
+        internal_tab = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH,
+                 "//a[contains(text(), 'Internal')] | //input[@value='Internal'] | //td[contains(text(), 'Internal')]")
+            )
+        )
+        internal_tab.click()
+        logger.info("Clicked Internal tab")
+
     def scrape(self) -> None:
         self.open()
+        self.dismiss_splash_popup()
         self.login()
+        self.navigate_to_data_files()
+        self.select_internal_tab()
         time.sleep(10) # Time to press next page
-        self.debug_page_state("after_login")
-        time.sleep(10) # Time to press on data
-        self.debug_page_state("after_go_to_data")
-        time.sleep(10) # Time to press external data
-        self.debug_page_state("after_external_data")
-        time.sleep(10)
         self.close()
+        #self.webdriver.switch_to.default_content()
+        #self.debug_page_state("after_login")
+        #time.sleep(10) # Time to press on data
+        #self.debug_page_state("after_go_to_data")
+        #time.sleep(10) # Time to press external data
+        #self.debug_page_state("after_external_data")
+        #time.sleep(10)
+        #self.close()
 
     def debug_page_state(self, step_name: str):
         """Debug helper to capture page state."""
@@ -105,7 +167,8 @@ if __name__ == "__main__":
         output_path="D:/HySpexAir/TrajectoryData/",
         service_url="http://192.168.168.100",
         username=os.getenv("APX_USER"),
-        password=os.getenv("APX_PW")
+        password=os.getenv("APX_PW"),
+        delete_after_download=False
     )
     scraper = TrajectoryScraper(config=manual_config)
 
