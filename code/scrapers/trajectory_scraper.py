@@ -22,6 +22,7 @@ from pathlib import Path
 import logging
 import os
 import re
+import shutil
 from code.scrapers.base_scraper import BaseScraper, ScraperConfig
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
@@ -176,7 +177,22 @@ class TrajectoryScraper(BaseScraper):
         alert.accept()
         logger.info("Download confirmed")
 
-    def wait_for_downloads_complete(self, timeout: int = 3600, max_files: int | None = None) -> None:
+    def stop_downloads(self) -> None:
+        """Stop any in-progress downloads before closing the browser.
+
+        Firefox shows a native OS confirmation dialog when closing mid-download.
+        This prevents that by clearing the download queue via JavaScript before close.
+        Chrome and Edge cancel downloads silently so this is not needed there.
+        """
+        if 'firefox' not in self.webdriver.name.lower():
+            return
+
+        self.webdriver.switch_to.default_content()
+        self.switch_to_data_frame()
+        self.webdriver.execute_script("downloadFiles = [];")
+        logger.info("Download queue cleared")
+
+    def wait_for_downloads_complete(self, timeout: int = 3600, file_limit: int | None = None) -> None:
         """Wait until all files have been downloaded from the APX-20.
 
         During download the page updates contentsDiv with progress like:
@@ -189,8 +205,8 @@ class TrajectoryScraper(BaseScraper):
         Args:
             timeout: Maximum seconds to wait before raising TimeoutException.
                      Defaults to 3600s (1 hour) since 691 files can take a while.
-            max_files: If set, stop after this many files have downloaded.
-                       Useful for debugging without downloading the full set.
+            file_limit: If set, only download this many files and stop.
+                        Useful when only the most recent files are needed.
         """
         logger.info("Waiting for downloads to complete...")
 
@@ -205,10 +221,10 @@ class TrajectoryScraper(BaseScraper):
                 if "Downloads Complete" in text:
                     return True
 
-                if max_files is not None:
+                if file_limit is not None:
                     match = re.search(r"Downloading\[\s*(\d+)\s*/", text)
-                    if match and int(match.group(1)) > max_files:
-                        logger.debug("Debug limit reached: stopped after %d files", max_files)
+                    if match and int(match.group(1)) > file_limit:
+                        logger.info("Reached file limit: stopping after %d files", file_limit)
                         return True
 
                 return False
@@ -216,7 +232,76 @@ class TrajectoryScraper(BaseScraper):
                 return False
 
         WebDriverWait(self.webdriver, timeout).until(downloads_complete)
-        logger.info("All downloads complete")
+        self.debug_page_state("after_downloads_finished")
+        self.stop_downloads() # Ensure downloading is stopped
+        logger.info("Downloads complete")
+
+    def move_downloaded_files(self) -> None:
+        """Move downloaded .T04 files from the browser downloads folder to output path.
+
+        The browser saves files to the default downloads folder. This function
+        collects all .T04 files from there and moves them to the configured
+        output path.
+        """
+        downloads_folder = Path.home() / "Downloads"
+        t04_files = list(downloads_folder.glob("*.T04"))
+
+        if not t04_files:
+            logger.warning("No .T04 files found in %s", downloads_folder)
+            return
+
+        logger.info("Found %d .T04 files to move", len(t04_files))
+
+        for file in t04_files:
+            destination = self.output_path / file.name
+            shutil.move(str(file), str(destination))
+            logger.info("Moved %s -> %s", file.name, destination)
+
+        logger.info("All .T04 files moved to %s", self.output_path)
+
+    def delete_selected_files(self) -> None:
+        """Click the Delete Selected Files button.
+
+        Delete is rendered as an image link calling javascript:deleteSelectedFiles().
+        Triggers a confirmation dialog — handled via wait for alert.
+        Only available when deleteAllowed is true on the device.
+        """
+        delete_link = self.wait.until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//a[@href='javascript:deleteSelectedFiles()']")
+            )
+        )
+        delete_link.click()
+        logger.info("Delete clicked, handling confirmation dialog...")
+
+        self.wait.until(EC.alert_is_present())
+        self.webdriver.switch_to.alert.accept()
+        logger.info("Delete confirmed")
+
+    def wait_for_delete_complete(self) -> None:
+        """Wait until all selected files have been deleted from the APX-20.
+
+        During deletion the page updates contentsDiv with:
+            'Deleting Files [N].'
+        and finally sets it to:
+            'Delete Finished'
+        """
+        logger.info("Waiting for deletion to complete...")
+
+        def delete_complete(driver) -> bool:
+            try:
+                text = driver.find_element(By.ID, "contentsDiv").text
+
+                if text != self._last_download_status:
+                    logger.info("Delete status: %s", text.strip())
+                    self._last_download_status = text
+
+                return "Delete Finished" in text
+            except Exception:
+                return False
+
+        WebDriverWait(self.webdriver, self.config.timeout).until(delete_complete)
+        logger.info("All files deleted")
 
 
     def scrape(self) -> None:
@@ -227,8 +312,18 @@ class TrajectoryScraper(BaseScraper):
         self.select_internal_tab()
         self.select_all_files()
         self.download_selected_files()
-        self.wait_for_downloads_complete(max_files = 10)
+        self.wait_for_downloads_complete(file_limit = 10)
         self.close()
+        self.move_downloaded_files()
+        if self.delete_after_download:
+            self.open()
+            self.dismiss_splash_popup()
+            self.navigate_to_data_files()
+            self.select_internal_tab()
+            self.select_all_files()
+            self.delete_selected_files()
+            self.wait_for_delete_complete()
+            self.close()
 
 
     def debug_page_state(self, step_name: str):
