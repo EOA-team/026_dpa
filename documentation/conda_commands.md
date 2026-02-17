@@ -47,8 +47,6 @@ To update a conda environment from a YAML file:
 conda env update --file environment.yml --prune
 ```
 
-This will create a new Conda environment with the same name and packages as saved.
-
 ---
 
 ## 5. List All Conda Environments
