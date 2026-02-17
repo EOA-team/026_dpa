@@ -22,6 +22,7 @@ from pathlib import Path
 import logging
 import os
 import re
+import time
 import shutil
 from code.scrapers.base_scraper import BaseScraper, ScraperConfig
 from dotenv import load_dotenv
@@ -85,7 +86,10 @@ class TrajectoryScraper(BaseScraper):
         # Submit the form instead of clicking the button
         form = self.webdriver.find_element(By.NAME, "theForm")
         form.submit()
+        # Wait 1 sec to make sure login works correctly
+        time.sleep(1)
         logger.info("Login Successful...")
+
 
     def dismiss_splash_popup(self) -> None:
         """Dismiss the Applanix splash screen that appears on page open."""
