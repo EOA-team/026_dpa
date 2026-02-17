@@ -70,7 +70,8 @@ if __name__ == "__main__":
         output_path="C:/Users/F80877978/Downloads/Rinex_output",
         service_url="https://shop.swipos.ch/",
         username=os.getenv("SWIPOS_USER"),
-        password=os.getenv("SWIPOS_PW")
+        password=os.getenv("SWIPOS_PW"),
+        delete_after_download=False
     )
     scraper = BasestationScraper(config=manual_config)
 

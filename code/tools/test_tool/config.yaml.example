@@ -1,8 +1,15 @@
 # Scraper Configuration
-browser: "chrome"  # Options: chrome, firefox, edge
-driver_path: "C:/path/to/chromedriver.exe"  # Change this on each computer
-timeout: 5  # WebDriverWait in seconds for handling dynamic content
-output_path: "C:/path/to/output/folder"  # Where to save downloaded files
-service_url: "https://your-service-portal.com"
-username: "your_username"  # Service login username
-password: "your_password"  # Service login password
+scraper:
+    browser: "chrome"  # Options: chrome, firefox, edge
+    driver_path: "C:/path/to/chromedriver.exe"  # Change this on each computer
+    timeout: 5  # WebDriverWait in seconds for handling dynamic content
+    output_path: "C:/path/to/output/folder"  # Where to save downloaded files
+    service_url: "https://your-service-portal.com"
+    username: "your_username"  # Service login username
+    password: "your_password"  # Service login password
+    delete_after_download: false  # Whether to delete files from the service after downloading
+
+file_transfer:
+    source_path: "C:/path/to/output/folder"
+    destination_path: "C:/path/to/output/folder"
+    delete_after_transfer: false  # Whether to delete source files after transfer

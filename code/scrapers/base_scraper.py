@@ -20,6 +20,7 @@ class ScraperConfig:
     service_url: str
     username: str
     password: str
+    delete_after_download: bool
 
 
 class BaseScraper(ABC):
@@ -29,22 +30,25 @@ class BaseScraper(ABC):
         # Load from config file or use provided config
         if config_path is not None:
             config_dict = self.load_config(config_path)
+            scraper_dict = config_dict['scraper']
             config = ScraperConfig(
-                driver_path=config_dict['driver_path'],
-                browser=cast(BrowserType, config_dict['browser']),
-                timeout=config_dict['timeout'],
-                output_path=config_dict['output_path'],
-                service_url=config_dict['service_url'],
-                username=config_dict['username'],
-                password=config_dict['password']
+                driver_path=scraper_dict['driver_path'],
+                browser=cast(BrowserType, scraper_dict['browser']),
+                timeout=scraper_dict['timeout'],
+                output_path=scraper_dict['output_path'],
+                service_url=scraper_dict['service_url'],
+                username=scraper_dict['username'],
+                password=scraper_dict['password'],
+                delete_after_download=scraper_dict['delete_after_download']
             )
         if config is None:
             raise ValueError("Either config or config_path must be provided")
 
-        # Store configuration
+        # Service configuration
         self.service_url = config.service_url
         self.username = config.username
         self.password = config.password
+        self.delete_after_download = config.delete_after_download
 
         # Output path setup
         self.output_path = Path(config.output_path)
