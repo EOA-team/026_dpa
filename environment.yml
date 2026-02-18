@@ -135,4 +135,5 @@ dependencies:
       - requests==2.32.5
       - types-pyyaml==6.0.12.20250915
       - webdriver-manager==4.0.2
+      - pyinstaller==6.12.0
 prefix: C:\Users\F80877978\AppData\Local\miniforge3\envs\026_dpa_py312
