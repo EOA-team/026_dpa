@@ -1,16 +1,11 @@
-""" """
 from shutil import copytree, rmtree, copy2
 import sys
 import os 
 from pathlib import Path
-from pyprojroot import here
 import yaml
 import logging
 import subprocess
 from code.scrapers.trajectory_scraper import TrajectoryScraper
-
-
-BASE_PATH = here() / "code" / "tools" / "raw_to_hd"
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +35,9 @@ def get_config_path() -> Path:
         # Running as executable (PyInstaller)
         base_path = Path(sys.executable).parent
     else:
-        # Running as script - use pyprojroot only in dev
-        base_path = BASE_PATH
+        # Running as script - use pyprojroot only when running as python script
+        from pyprojroot import here
+        base_path = here() / "code" / "tools" / "raw_to_hd"
     
     return base_path / "config.yaml"
 
@@ -85,60 +81,69 @@ def copy_with_logging(src, dst):
     return copy2(src, dst)
 
 if __name__ == "__main__":
-
-
     # Logger Settings
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers = [
+            logging.StreamHandler()  # Force console output
+        ]
     )
     logging.getLogger("selenium").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-    # Load Config
-    config_path = get_config_path()
-    config_dict = load_config(config_path)
+    try:
 
-    # Load Filetransfer Settings
-    source_path_trajectory = get_source_path(config=config_dict, filetransfer="trajectory")
-    destination_path_trajectory = get_destination_path(config=config_dict, filetransfer="trajectory")
-    delete_trajectory_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="trajectory")
+        # Load Config
+        config_path = get_config_path()
+        config_dict = load_config(config_path)
 
-    source_path_recordings = get_source_path(config=config_dict, filetransfer="recordings")
-    destination_path_recordings = get_destination_path(config=config_dict, filetransfer="recordings")
-    delete_recordings_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="recordings")
+        # Load Filetransfer Settings
+        source_path_trajectory = get_source_path(config=config_dict, filetransfer="trajectory")
+        destination_path_trajectory = get_destination_path(config=config_dict, filetransfer="trajectory")
+        delete_trajectory_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="trajectory")
 
-    # Scrape APX Trajectory Data
-    logger.info("Starting trajectory data scraping...")
-    scraper = TrajectoryScraper(config_path=config_path)
-    scraper.scrape()
-    logger.info("Trajectory data scraping complete")
+        source_path_recordings = get_source_path(config=config_dict, filetransfer="recordings")
+        destination_path_recordings = get_destination_path(config=config_dict, filetransfer="recordings")
+        delete_recordings_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="recordings")
 
-    # Transfer Trajectory Data
-    logger.info("Transferring trajectory data...")
-    check_drive_mounted(path=destination_path_trajectory)
-    check_path_exists(path=source_path_trajectory)
-    copytree(source_path_trajectory, destination_path_trajectory, dirs_exist_ok=True, copy_function=copy_with_logging)
-    logger.info("Copied %s to %s", source_path_trajectory, destination_path_trajectory)
+        # Scrape APX Trajectory Data
+        logger.info("Starting trajectory data scraping...")
+        scraper = TrajectoryScraper(config_path=config_path)
+        scraper.scrape()
+        logger.info("Trajectory data scraping complete")
 
-    if delete_trajectory_after_transfer:
-        clear_folder(source_path_trajectory)
-        logger.info("Deleted all files in %s", source_path_trajectory)
+        # Transfer Trajectory Data
+        logger.info("Transferring trajectory data...")
+        check_drive_mounted(path=destination_path_trajectory)
+        check_path_exists(path=source_path_trajectory)
+        copytree(source_path_trajectory, destination_path_trajectory, dirs_exist_ok=True, copy_function=copy_with_logging)
+        logger.info("Copied %s to %s", source_path_trajectory, destination_path_trajectory)
 
-    # Transfer Recordings Data
-    logger.info("Transferring recordings data...")
-    check_drive_mounted(path=destination_path_recordings)
-    check_path_exists(path=source_path_recordings)
-    copytree(source_path_recordings, destination_path_recordings, dirs_exist_ok=True, copy_function=copy_with_logging)
-    logger.info("Copied %s to %s", source_path_recordings, destination_path_recordings)
+        if delete_trajectory_after_transfer:
+            clear_folder(source_path_trajectory)
+            logger.info("Deleted all files in %s", source_path_trajectory)
 
-    if delete_recordings_after_transfer:
-        clear_folder(source_path_recordings)
-        logger.info("Deleted all files in %s", source_path_recordings)
+        # Transfer Recordings Data
+        logger.info("Transferring recordings data...")
+        check_drive_mounted(path=destination_path_recordings)
+        check_path_exists(path=source_path_recordings)
+        copytree(source_path_recordings, destination_path_recordings, dirs_exist_ok=True, copy_function=copy_with_logging)
+        logger.info("Copied %s to %s", source_path_recordings, destination_path_recordings)
+
+        if delete_recordings_after_transfer:
+            clear_folder(source_path_recordings)
+            logger.info("Deleted all files in %s", source_path_recordings)
 
 
-    logger.info("All transfers complete")
-    logger.warning("Please unmount Drive before disconnecting!")
+        logger.info("All transfers complete")
+        logger.warning("Please unmount Drive before disconnecting!")
+
+    except Exception as e:
+        logger.error("Program failed: %s", e, exc_info=True)
+
+    finally:
+        input("\nPress Enter to exit...")
 
 
 
