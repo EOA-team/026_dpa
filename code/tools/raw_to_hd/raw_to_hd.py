@@ -1,11 +1,14 @@
 """ """
-from shutil import copytree, rmtree
+from shutil import copytree, rmtree, copy2
 import sys
 import os 
 from pathlib import Path
 from pyprojroot import here
 import yaml
 import logging
+import subprocess
+from code.scrapers.trajectory_scraper import TrajectoryScraper
+
 
 BASE_PATH = here() / "code" / "tools" / "raw_to_hd"
 
@@ -16,18 +19,18 @@ def load_config(config_path: str | Path) -> dict:
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
         
-def get_source_path(config: dict) -> Path:
-    file_transfer_dict = config['file_transfer']
+def get_source_path(config: dict, filetransfer: str) -> Path:
+    file_transfer_dict = config['file_transfer'][filetransfer]
     _source_path = Path(file_transfer_dict['source_path'])
     return _source_path
 
-def get_destination_path(config: dict) -> Path:
-    file_transfer_dict = config['file_transfer']
+def get_destination_path(config: dict, filetransfer: str) -> Path:
+    file_transfer_dict = config['file_transfer'][filetransfer]
     _destination_path = Path(file_transfer_dict['destination_path'])
     return _destination_path
 
-def get_delete_after_transfer(config: dict) -> bool:
-    file_transfer_dict = config['file_transfer']
+def get_delete_after_transfer(config: dict, filetransfer: str) -> bool:
+    file_transfer_dict = config['file_transfer'][filetransfer]
     delete_after_transfer = file_transfer_dict['delete_after_transfer'] #should be bool type
     return delete_after_transfer
 
@@ -57,7 +60,6 @@ def check_drive_mounted(path: str | Path) -> None:
             "Check that the drive is mounted or network share is connected."
         )
 
-    logger.info("Drive mounted: %s", mount_point)
 
 def check_path_exists(path: str | Path) -> None:
     """Check if path exists.
@@ -70,28 +72,77 @@ def check_path_exists(path: str | Path) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Path does not exist: {path}")
 
-    logger.info("Path exists: %s", path)
+def clear_folder(folder_path: Path | str) -> None:
+    """Remove all contents and recreate the empty folder."""
+    folder_path = Path(folder_path)
+    rmtree(folder_path)
+    folder_path.mkdir(parents=True, exist_ok=True)
 
+def copy_with_logging(src, dst):
+    """Copy function with size info."""
+    size = Path(src).stat().st_size / (1024 * 1024)  # MB
+    logger.info("Copying %s (%.2f MB)", Path(src).name, size)
+    return copy2(src, dst)
 
 if __name__ == "__main__":
 
+
+    # Logger Settings
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    logging.getLogger("selenium").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+    # Load Config
     config_path = get_config_path()
     config_dict = load_config(config_path)
-    source_path = get_source_path(config_dict)
-    destination_path = get_destination_path(config_dict)
 
-    check_drive_mounted(path=destination_path)
-    check_path_exists(path=source_path)
+    # Load Filetransfer Settings
+    source_path_trajectory = get_source_path(config=config_dict, filetransfer="trajectory")
+    destination_path_trajectory = get_destination_path(config=config_dict, filetransfer="trajectory")
+    delete_trajectory_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="trajectory")
 
-    print(f"Source path: {source_path}")
-    print(f"Destination path: {destination_path}")
+    source_path_recordings = get_source_path(config=config_dict, filetransfer="recordings")
+    destination_path_recordings = get_destination_path(config=config_dict, filetransfer="recordings")
+    delete_recordings_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="recordings")
 
-    copytree(source_path, destination_path, dirs_exist_ok=True)
-    print(f"Copied {source_path} to {destination_path}")
+    # Scrape APX Trajectory Data
+    logger.info("Starting trajectory data scraping...")
+    scraper = TrajectoryScraper(config_path=config_path)
+    scraper.scrape()
+    logger.info("Trajectory data scraping complete")
 
-    if get_delete_after_transfer(config_dict):
-        print(f"Delete {source_path} ")
-        rmtree(source_path)
+    # Transfer Trajectory Data
+    logger.info("Transferring trajectory data...")
+    check_drive_mounted(path=destination_path_trajectory)
+    check_path_exists(path=source_path_trajectory)
+    copytree(source_path_trajectory, destination_path_trajectory, dirs_exist_ok=True, copy_function=copy_with_logging)
+    logger.info("Copied %s to %s", source_path_trajectory, destination_path_trajectory)
+
+    if delete_trajectory_after_transfer:
+        clear_folder(source_path_trajectory)
+        logger.info("Deleted all files in %s", source_path_trajectory)
+
+    # Transfer Recordings Data
+    logger.info("Transferring recordings data...")
+    check_drive_mounted(path=destination_path_recordings)
+    check_path_exists(path=source_path_recordings)
+    copytree(source_path_recordings, destination_path_recordings, dirs_exist_ok=True, copy_function=copy_with_logging)
+    logger.info("Copied %s to %s", source_path_recordings, destination_path_recordings)
+
+    if delete_recordings_after_transfer:
+        clear_folder(source_path_recordings)
+        logger.info("Deleted all files in %s", source_path_recordings)
+
+
+    logger.info("All transfers complete")
+    logger.warning("Please unmount Drive before disconnecting!")
+
+
+
+
 
 
 

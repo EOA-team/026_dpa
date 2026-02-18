@@ -9,6 +9,11 @@ scraper:
     delete_after_download: false  # Whether to delete files from the service after downloading
 
 file_transfer:
-    source_path: "C:/path/to/output/folder"
-    destination_path: "C:/path/to/output/folder"
-    delete_after_transfer: false  # Whether to delete source files after transfer
+    trajectory:
+        source_path: "C:/path/to/output/folder"
+        destination_path: "C:/path/to/output/folder"
+        delete_after_transfer: false  # Whether to delete source files after transfer
+    recordings:
+        source_path: "C:/path/to/output/folder"
+        destination_path: "C:/path/to/output/folder"
+        delete_after_transfer: false  # Whether to delete source files after transfer
