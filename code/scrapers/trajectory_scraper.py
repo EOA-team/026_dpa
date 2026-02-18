@@ -177,21 +177,6 @@ class TrajectoryScraper(BaseScraper):
         alert.accept()
         logger.info("Download confirmed")
 
-    def stop_downloads(self) -> None:
-        """Stop any in-progress downloads before closing the browser.
-
-        Firefox shows a native OS confirmation dialog when closing mid-download.
-        This prevents that by clearing the download queue via JavaScript before close.
-        Chrome and Edge cancel downloads silently so this is not needed there.
-        """
-        if 'firefox' not in self.webdriver.name.lower():
-            return
-
-        self.webdriver.switch_to.default_content()
-        self.switch_to_data_frame()
-        self.webdriver.execute_script("downloadFiles = [];")
-        logger.info("Download queue cleared")
-
     def wait_for_downloads_complete(self) -> None:
         """Wait until all files have been downloaded from the APX-20.
         During download the page updates contentsDiv with progress like:
@@ -215,7 +200,6 @@ class TrajectoryScraper(BaseScraper):
 
             time.sleep(1)
 
-        self.stop_downloads()
         logger.info("Downloads complete")
 
     def move_downloaded_files(self) -> None:
@@ -291,17 +275,14 @@ class TrajectoryScraper(BaseScraper):
         self.select_all_files()
         self.download_selected_files()
         self.wait_for_downloads_complete()
-        self.close()
-        self.move_downloaded_files()
+
         if self.delete_after_download:
-            self.open()
-            self.dismiss_splash_popup()
-            self.navigate_to_data_files()
-            self.select_internal_tab()
             self.select_all_files()
             self.delete_selected_files()
             self.wait_for_delete_complete()
-            self.close()
+
+        self.close()
+        self.move_downloaded_files()
 
 
     def debug_page_state(self, step_name: str):
@@ -334,7 +315,7 @@ if __name__ == "__main__":
         service_url="http://192.168.168.100",
         username=os.getenv("APX_USER"),
         password=os.getenv("APX_PW"),
-        delete_after_download=False
+        delete_after_download=True
     )
     scraper = TrajectoryScraper(config=manual_config)
 
