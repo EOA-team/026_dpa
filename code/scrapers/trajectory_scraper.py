@@ -192,47 +192,30 @@ class TrajectoryScraper(BaseScraper):
         self.webdriver.execute_script("downloadFiles = [];")
         logger.info("Download queue cleared")
 
-    def wait_for_downloads_complete(self, timeout: int = 3600, file_limit: int | None = None) -> None:
+    def wait_for_downloads_complete(self) -> None:
         """Wait until all files have been downloaded from the APX-20.
-
         During download the page updates contentsDiv with progress like:
             'Downloading[ 2 / 691 ]   filename.T04'
         and finally sets it to:
             'Downloads Complete'
-        when all files are done. We poll this element until that final
+        when all files are done. Poll this element until that final
         state is reached.
-
-        Args:
-            timeout: Maximum seconds to wait before raising TimeoutException.
-                     Defaults to 3600s (1 hour) since 691 files can take a while.
-            file_limit: If set, only download this many files and stop.
-                        Useful when only the most recent files are needed.
         """
         logger.info("Waiting for downloads to complete...")
 
-        def downloads_complete(driver) -> bool:
-            try:
-                text = driver.find_element(By.ID, "contentsDiv").text
+        while True:
+            text = self.webdriver.find_element(By.ID, "contentsDiv").text
 
-                if text != self._last_download_status:
-                    logger.info("Download status: %s", text.strip())
-                    self._last_download_status = text
+            if text != self._last_download_status:
+                logger.info("Download status: %s", text.strip())
+                self._last_download_status = text
 
-                if "Downloads Complete" in text:
-                    return True
+            if "Downloads Complete" in text:
+                break
 
-                if file_limit is not None:
-                    match = re.search(r"Downloading\[\s*(\d+)\s*/", text)
-                    if match and int(match.group(1)) > file_limit:
-                        logger.info("Reached file limit: stopping after %d files", file_limit)
-                        return True
+            time.sleep(1)
 
-                return False
-            except Exception:
-                return False
-
-        WebDriverWait(self.webdriver, timeout).until(downloads_complete)
-        self.stop_downloads() # Ensure downloading is stopped
+        self.stop_downloads()
         logger.info("Downloads complete")
 
     def move_downloaded_files(self) -> None:
@@ -278,28 +261,24 @@ class TrajectoryScraper(BaseScraper):
         logger.info("Delete confirmed")
 
     def wait_for_delete_complete(self) -> None:
-        """Wait until all selected files have been deleted from the APX-20.
+        """Wait until all files have been deleted from the APX-20.
 
-        During deletion the page updates contentsDiv with:
-            'Deleting Files [N].'
-        and finally sets it to:
-            'Delete Finished'
+        The page shows 'Delete Finished' when complete.
         """
         logger.info("Waiting for deletion to complete...")
 
-        def delete_complete(driver) -> bool:
-            try:
-                text = driver.find_element(By.ID, "contentsDiv").text
+        while True:
+            text = self.webdriver.find_element(By.ID, "contentsDiv").text
 
-                if text != self._last_download_status:
-                    logger.info("Delete status: %s", text.strip())
-                    self._last_download_status = text
+            if text != self._last_download_status:
+                logger.info("Delete status: %s", text.strip())
+                self._last_download_status = text
 
-                return "Delete Finished" in text
-            except Exception:
-                return False
+            if "Delete Finished" in text:
+                break
 
-        WebDriverWait(self.webdriver, self.config.timeout).until(delete_complete)
+            time.sleep(1)
+
         logger.info("All files deleted")
 
 
@@ -311,7 +290,7 @@ class TrajectoryScraper(BaseScraper):
         self.select_internal_tab()
         self.select_all_files()
         self.download_selected_files()
-        self.wait_for_downloads_complete(file_limit = 10)
+        self.wait_for_downloads_complete()
         self.close()
         self.move_downloaded_files()
         if self.delete_after_download:
