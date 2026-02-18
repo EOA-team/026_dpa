@@ -94,18 +94,14 @@ class TrajectoryScraper(BaseScraper):
     def dismiss_splash_popup(self) -> None:
         """Dismiss the Applanix splash screen that appears on page open."""
         self.webdriver.switch_to.default_content()
+        # Wait for the floating div to be visible
+        self.wait.until(
+            EC.visibility_of_element_located((By.ID, "idFloatingDiv"))
+        )
+        # Dismiss via JS - same as clicking the red X
+        self.webdriver.execute_script("hideFloatingDiv(true);")
+        logger.info("Splash popup dismissed")
 
-        try:
-            # Wait for the floating div to be visible
-            self.wait.until(
-                EC.visibility_of_element_located((By.ID, "idFloatingDiv"))
-            )
-            # Dismiss via JS - same as clicking the red X
-            self.webdriver.execute_script("hideFloatingDiv(true);")
-            logger.info("Splash popup dismissed")
-        except Exception:
-            # Popup may not appear if quickStart cookie is already set
-            logger.debug("No splash popup found, continuing")
 
     def navigate_to_data_files(self) -> None:
         """Navigate to Data Logging > Data Files via the menu."""
@@ -236,7 +232,6 @@ class TrajectoryScraper(BaseScraper):
                 return False
 
         WebDriverWait(self.webdriver, timeout).until(downloads_complete)
-        self.debug_page_state("after_downloads_finished")
         self.stop_downloads() # Ensure downloading is stopped
         logger.info("Downloads complete")
 
