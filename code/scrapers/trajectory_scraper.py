@@ -313,8 +313,8 @@ if __name__ == "__main__":
         timeout=5,
         output_path="D:/HySpexAir/TrajectoryData/",
         service_url="http://192.168.168.100",
-        username=os.getenv("APX_USER"),
-        password=os.getenv("APX_PW"),
+        username=BaseScraper.load_environment_variable("APX_USER"),
+        password=BaseScraper.load_environment_variable("APX_PW"),
         delete_after_download=True
     )
     scraper = TrajectoryScraper(config=manual_config)

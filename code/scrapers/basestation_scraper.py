@@ -10,7 +10,6 @@ All the data comes in RINEX format, which is a standard for GNSS data.
 
 """
 
-import os
 import time
 from pathlib import Path
 from code.scrapers.base_scraper import BaseScraper, ScraperConfig
@@ -69,8 +68,8 @@ if __name__ == "__main__":
         timeout=5,
         output_path="C:/Users/F80877978/Downloads/Rinex_output",
         service_url="https://shop.swipos.ch/",
-        username=os.getenv("SWIPOS_USER"),
-        password=os.getenv("SWIPOS_PW"),
+        username= BaseScraper.load_environment_variable("SWIPOS_USER"),
+        password= BaseScraper.load_environment_variable("SWIPOS_PW"),
         delete_after_download=False
     )
     scraper = BasestationScraper(config=manual_config)
