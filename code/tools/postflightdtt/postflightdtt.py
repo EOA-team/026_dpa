@@ -35,9 +35,8 @@ def get_config_path() -> Path:
         # Running as executable (PyInstaller)
         base_path = Path(sys.executable).parent
     else:
-        # Running as script - use pyprojroot only when running as python script
-        from pyprojroot import here
-        base_path = here() / "code" / "tools" / "raw_to_hd"
+
+        base_path = Path(__file__).parent
     
     return base_path / "config.yaml"
 
