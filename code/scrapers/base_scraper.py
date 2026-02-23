@@ -1,13 +1,13 @@
 """This module provides an abstract base class `BaseScraper` and a configuration
 dataclass `ScraperConfig` for web scrapers. 
 """
+import os
 from code.scrapers.selenium_utils import create_webdriver, BrowserType
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import cast
 from selenium.webdriver.support.ui import WebDriverWait
-import os
 import yaml
 
 
@@ -67,7 +67,7 @@ class BaseScraper(ABC):
         """Load configuration from YAML file."""
         with open(config_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
-    
+
     @staticmethod
     def load_environment_variable(variable_name : str) -> str:
         """Load environment variable."""

@@ -13,21 +13,18 @@ See code/scrapers/selenium_utils.py for browser and WebDriver setup instructions
 
 Note:
 ------------
- APX-15 internal sensor should be accessible directly via DAU, but could not yet manage to access it via
- the http://192.168.168.100/. Need to contact Applanix support. But for the moment APX-20 is sufficient.
+ APX-15 internal sensor should be accessible directly via DAU, but could not yet access it via
+ http://192.168.168.100/. Need to contact Applanix support. 
 
 """
 
 from pathlib import Path
 import logging
-import os
-import re
 import time
 import shutil
 from code.scrapers.base_scraper import BaseScraper, ScraperConfig
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 logger = logging.getLogger(__name__)
@@ -65,7 +62,6 @@ class TrajectoryScraper(BaseScraper):
         )
 
     def login(self):
-        
         """Login to APX-20 web interface."""
         self.switch_to_data_frame()
 
@@ -290,12 +286,12 @@ class TrajectoryScraper(BaseScraper):
         # Take screenshot
         screenshot_path = self.output_path / f"debug_{step_name}.png"
         self.webdriver.save_screenshot(str(screenshot_path))
-        
+
         # Save page source
         html_path = self.output_path / f"debug_{step_name}.html"
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(self.webdriver.page_source)
-        
+
         print(f"Debug saved: {step_name}")
 
 if __name__ == "__main__":
@@ -320,5 +316,3 @@ if __name__ == "__main__":
     scraper = TrajectoryScraper(config=manual_config)
 
     scraper.scrape()
-
-
