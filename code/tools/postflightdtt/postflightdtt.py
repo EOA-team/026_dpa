@@ -1,18 +1,13 @@
 from shutil import copytree, rmtree, copy2
 import sys
-import os 
 from pathlib import Path
-import yaml
 import logging
-import subprocess
+from code.yamlconfig_helper import load_config
 from code.scrapers.trajectory_scraper import TrajectoryScraper
 
 logger = logging.getLogger(__name__)
 
-def load_config(config_path: str | Path) -> dict:
-    """Load configuration from YAML file."""
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
+
         
 def get_source_path(config: dict, filetransfer: str) -> Path:
     file_transfer_dict = config['file_transfer'][filetransfer]
@@ -29,16 +24,7 @@ def get_delete_after_transfer(config: dict, filetransfer: str) -> bool:
     delete_after_transfer = file_transfer_dict['delete_after_transfer'] #should be bool type
     return delete_after_transfer
 
-def get_config_path() -> Path:
-    """Get config path - works for both script and executable."""
-    if getattr(sys, 'frozen', False):
-        # Running as executable (PyInstaller)
-        base_path = Path(sys.executable).parent
-    else:
 
-        base_path = Path(__file__).parent
-    
-    return base_path / "config.yaml"
 
 def check_drive_mounted(path: str | Path) -> None:
     """Check if the drive or mount point for the given path is mounted.
@@ -78,6 +64,17 @@ def copy_with_logging(src, dst):
     size = Path(src).stat().st_size / (1024 * 1024)  # MB
     logger.info("Copying %s (%.2f MB)", Path(src).name, size)
     return copy2(src, dst)
+
+def get_config_path() -> Path:
+    """Get config path - works for both script and executable."""
+    if getattr(sys, 'frozen', False):
+        # Running as executable (PyInstaller)
+        base_path = Path(sys.executable).parent
+    else:
+
+        base_path = Path(__file__).parent
+    
+    return base_path / "config.yaml"
 
 if __name__ == "__main__":
     # Logger Settings

@@ -2,19 +2,19 @@
 dataclass `ScraperConfig` for web scrapers. 
 """
 import os
+from code.yamlconfig_helper import load_config
 from code.scrapers.selenium_utils import create_webdriver, BrowserType
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import cast
 from selenium.webdriver.support.ui import WebDriverWait
-import yaml
 
 
 @dataclass
 class ScraperConfig:
     """Configuration for web scrapers."""
-    driver_path: str
+    driver_path: str | Path
     browser: BrowserType
     timeout: int
     output_path: str | Path
@@ -30,7 +30,7 @@ class BaseScraper(ABC):
     def __init__(self, config: ScraperConfig | None = None, config_path: str | Path | None = None):
         # Load from config file or use provided config
         if config_path is not None:
-            config_dict = self.load_config(config_path)
+            config_dict = load_config(config_path)
             scraper_dict = config_dict['scraper']
             config = ScraperConfig(
                 driver_path=scraper_dict['driver_path'],
@@ -61,12 +61,6 @@ class BaseScraper(ABC):
             browser=config.browser
         )
         self.wait = WebDriverWait(self.webdriver, config.timeout)
-
-    @staticmethod
-    def load_config(config_path: str | Path) -> dict:
-        """Load configuration from YAML file."""
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
 
     @staticmethod
     def load_environment_variable(variable_name : str) -> str:

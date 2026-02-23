@@ -73,3 +73,6 @@ Thumbs.db
 
 # Ignore Config files
 *config.yaml
+
+# Ignore bin folders
+bin/
