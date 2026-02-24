@@ -34,15 +34,16 @@ def get_flight_folder(recordings_path: Path) -> Path:
 
     return flight_folders[0].name
 
-def get_resolved_config(config: dict, flight_folder: str) -> dict:
-    """Replace placeholders and resolve relative paths in config."""
-    replaced_config = replace_config_placeholder(
-        config=config, 
-        placeholder="{flight_folder}", 
-        replacement=flight_folder
-    )
+def get_resolved_config(config: dict, flight_folder: str | None = None) -> dict:
+    """Replace placeholders with flight folder if available and resolve relative paths in config."""
+    if flight_folder is not None:
+        config = replace_config_placeholder(
+            config=config,
+            placeholder="{flight_folder}",
+            replacement=flight_folder
+        )
     resolved_config = resolve_relative_paths(
-        config=replaced_config, 
+        config=config,
         base_path=get_base_path(__file__)
     )
     return resolved_config
