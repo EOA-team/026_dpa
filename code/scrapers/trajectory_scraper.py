@@ -310,8 +310,8 @@ if __name__ == "__main__":
     load_dotenv()  # Load environment variables from .env file
 
     config = {
-        "browser": "edge",
-        "driver_path": "./bin/msedgedriver.exe",
+        "browser": "firefox",
+        "driver_path": "./bin/geckodriver.exe",
         "timeout": 5,
         "destination_path": "C:/Users/F80877978/Downloads/HyspexAir/Recordings/{flight_folder}/apx/",
         "service_url": "http://192.168.168.100",

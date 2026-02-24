@@ -2,8 +2,9 @@ from shutil import copytree, rmtree, copy2
 import sys
 from pathlib import Path
 import logging
-from code.yamlconfig_helper import load_config
+from code.yamlconfig_helper import load_config_from_yamlfile, resolve_relative_paths,replace_config_placeholder
 from code.scrapers.trajectory_scraper import TrajectoryScraper
+from code.tools.postflightdtt.drone_to_hd import drone_to_hd_transfer
 
 logger = logging.getLogger(__name__)
 
@@ -26,32 +27,10 @@ def get_delete_after_transfer(config: dict, filetransfer: str) -> bool:
 
 
 
-def check_drive_mounted(path: str | Path) -> None:
-    """Check if the drive or mount point for the given path is mounted.
-
-    Raises:
-        FileNotFoundError: If the drive/mount point is not mounted.
-    """
-    path = Path(path)
-    mount_point = path.anchor  # e.g. '/' on Linux, 'D:\\' on Windows
-
-    if not Path(mount_point).exists():
-        raise FileNotFoundError(
-            f"Drive or mount point not accessible: {mount_point}\n"
-            "Check that the drive is mounted or network share is connected."
-        )
 
 
-def check_path_exists(path: str | Path) -> None:
-    """Check if path exists.
 
-    Raises:
-        FileNotFoundError: If path does not exist.
-    """
-    path = Path(path)
 
-    if not path.exists():
-        raise FileNotFoundError(f"Path does not exist: {path}")
 
 def clear_folder(folder_path: Path | str) -> None:
     """Remove all contents and recreate the empty folder."""
@@ -65,8 +44,8 @@ def copy_with_logging(src, dst):
     logger.info("Copying %s (%.2f MB)", Path(src).name, size)
     return copy2(src, dst)
 
-def get_config_path() -> Path:
-    """Get config path - works for both script and executable."""
+def get_base_path() -> Path:
+    """Get base path - works for both script and executable."""
     if getattr(sys, 'frozen', False):
         # Running as executable (PyInstaller)
         base_path = Path(sys.executable).parent
@@ -74,7 +53,29 @@ def get_config_path() -> Path:
 
         base_path = Path(__file__).parent
     
-    return base_path / "config.yaml"
+    return base_path 
+
+
+    
+
+def get_new_flight_folder(source_path: Path) -> str:
+    """On Drone Onboard computer a new flight is saved in config"""
+
+
+
+
+# def do_later:
+#     replaced_config = replace_config_placeholder(
+#         config=config_dict, 
+#         placeholder="{flight_folder}", 
+#         replacement="re112o_250610")
+#     resolved_config = resolve_relative_paths(
+#         config=replaced_config, 
+#         base_path=config_path.parent)
+#     return resolved_config
+
+
+
 
 if __name__ == "__main__":
     # Logger Settings
@@ -89,10 +90,17 @@ if __name__ == "__main__":
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     try:
-
+        config_path = get_base_path() / "config.yaml"
+        config = load_config_from_yamlfile(config_path)
+    
         # Load Config
-        config_path = get_config_path()
-        config_dict = load_config(config_path)
+        if config['mode'] == "drone_to_hd":
+            drone_to_hd_transfer(config)
+        elif config['mode'] == "hd_to_drone":
+            print("Mode: Hard Drive to Drone Transfer")
+        else:
+            raise ValueError(f"Invalid mode in config: {config['mode']}")
+        
 
         # Load Filetransfer Settings
         source_path_trajectory = get_source_path(config=config_dict, filetransfer="trajectory")
