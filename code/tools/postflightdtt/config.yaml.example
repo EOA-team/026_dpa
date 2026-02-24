@@ -9,23 +9,22 @@ mode: "drone_to_hd"
 #                                        ├── apx/
 #                                        └── ...
 
-trajectory_scraper:
+trajectory_scraper: 
     browser: "firefox"  # Options: chrome, firefox, edge
     driver_path: "./bin/geckodriver.exe"  # Webdriver executable path
     timeout: 5  # WebDriverWait in seconds for handling dynamic content
-    destination: "D:/HySpexAir/Recordings/{flight_folder}/apx/"  # e.g. -> D:/HySpexAir/Recordings/re112o_250610/apx/
+    destination_path: "D:/HySpexAir/Recordings/{flight_folder}/apx/"  # e.g. -> D:/HySpexAir/Recordings/re112o_250610/apx/
     service_url: "http://192.168.168.100"
     username: "user"  # Service login username
     password: "pw"    # Service login password
 
 file_transfer:
   drone_to_hd: # Moves D:/HySpexAir/Recordings/re112o_250610/ to E:/HySpexAir/Recordings/re112o_250610/
-    source:      "D:/HySpexAir/Recordings/{flight_folder}/"  # e.g. -> D:/HySpexAir/Recordings/re112o_250610/
+    source_path:      "D:/HySpexAir/Recordings/{flight_folder}/"  # e.g. -> D:/HySpexAir/Recordings/re112o_250610/
     destination: "E:/HySpexAir/Recordings/{flight_folder}/"  # e.g. -> E:/HySpexAir/Recordings/re112o_250610/
-    backup: false  # If true, source is backed up (copied) to D:/Backup/HySpexAir/Recordings/{flight_folder}
-
+    backup: true  # If true, source is backed up to D:/HySpexAir/Backup/re112o_250610/ before transfer
 
   hd_to_nas: # Moves E:/HySpexAir/Recordings/re112o_250610/ to //nas/.../raw/re112o_250610/
-    source:      "E:/HySpexAir/Recordings/{flight_folder}/"  # e.g. -> E:/HySpexAir/Recordings/re112o_250610/
-    destination: "//ags-vre-1040.agsad.admin.ch/Data-EODron/drone/DERIS/raw/{flight_folder}/"  # e.g. -> //ags-.../raw/re112o_250610/
-    backup: true  # If true, source is backed up (copied) to D:/Backup/HySpexAir/Recordings/{flight_folder}
+    source_path:      "E:/HySpexAir/Recordings/{flight_folder}/"  # e.g. -> E:/HySpexAir/Recordings/re112o_250610/
+    destination_path: "//ags-vre-1040.agsad.admin.ch/Data-EODron/drone/DERIS/raw/{flight_folder}/"  # e.g. -> //ags-.../raw/re112o_250610/
+    backup: true  # If true, source is backed up to E:/HySpexAir/Backup/re112o_250610/ before transfer

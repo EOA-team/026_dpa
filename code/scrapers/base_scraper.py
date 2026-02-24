@@ -16,8 +16,8 @@ class BaseScraper(ABC):
         self.password = str(config['password'])
 
         #Destination for downloaded data
-        self.destination = Path(config['destination'])
-        self.destination.mkdir(parents=True, exist_ok=True)
+        self.destination_path = Path(config['destination_path'])
+        self.destination_path.mkdir(parents=True, exist_ok=True)
         # Initialize WebDriver
         self.webdriver = create_webdriver(
             driver_path=Path(config['driver_path']),
@@ -34,7 +34,7 @@ class BaseScraper(ABC):
         return value
 
     @abstractmethod
-    def scrape(self) -> None:
+    def run(self) -> None:
         """Abstract method - implement scraping logic in subclasses."""
         pass
 

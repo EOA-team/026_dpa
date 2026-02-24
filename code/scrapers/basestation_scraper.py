@@ -63,7 +63,7 @@ if __name__ == "__main__":
         "browser": "edge",
         "driver_path": "./bin/msedgedriver.exe",
         "timeout": 5,
-        "destination": "C:/Users/F80877978/Downloads/{flight_folder}/rinex/",
+        "destination_path": "C:/Users/F80877978/Downloads/{flight_folder}/rinex/",
         "service_url": "https://shop.swipos.ch/",
         "username": BaseScraper.load_environment_variable("SWIPOS_USER"),
         "password": BaseScraper.load_environment_variable("SWIPOS_PW"),

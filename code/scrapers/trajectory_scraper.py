@@ -20,9 +20,10 @@ Note:
 import os
 from pathlib import Path
 import logging
+import re
 import time
 import shutil
-from code.yamlconfig_helper import replace_config_placeholder, load_config_from_dict
+from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
 from code.scrapers.base_scraper import BaseScraper
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
@@ -194,11 +195,11 @@ class TrajectoryScraper(BaseScraper):
         logger.info("Downloads complete")
 
     def move_downloaded_files(self) -> None:
-        """Move downloaded .T04 files from the browser downloads folder to output path.
+        """Move downloaded .T04 files from the browser downloads folder to destination path.
 
         The browser saves files to the default downloads folder. This function
         collects all .T04 files from there and moves them to the configured
-        output path.
+        destination path.
         """
         downloads_folder = Path.home() / "Downloads"
         t04_files = list(downloads_folder.glob("*.T04"))
@@ -210,12 +211,11 @@ class TrajectoryScraper(BaseScraper):
         logger.info("Found %d .T04 files to move", len(t04_files))
 
         for file in t04_files:
-            destination = self.output_path / file.name
+            destination = self.destination_path / file.name
             shutil.move(str(file), str(destination))
             logger.info("Moved %s -> %s", file.name, destination)
 
-        logger.info("All .T04 files moved to %s", self.output_path)
-
+        logger.info("All .T04 files moved to %s", self.destination_path)
     def delete_selected_files(self) -> None:
         """Click the Delete Selected Files button.
 
@@ -256,8 +256,18 @@ class TrajectoryScraper(BaseScraper):
 
         logger.info("All files deleted")
 
+    def run_test(self) -> None:
+        """Simulates scraping by creating test .T04 files in the downloads folder and moving them to destination."""
+        print(self.destination_path)
+        logger.info("Simulation! Downloaded 10 test .T04 files")
+        for i in range(1, 11):
+            (Path.home() / "Downloads" / f"file_{i}.T04").touch()
 
-    def scrape(self) -> None:
+        self.move_downloaded_files()
+        
+
+
+    def run(self) -> None:
         self.open()
         self.dismiss_splash_popup()
         self.login()
@@ -279,11 +289,11 @@ class TrajectoryScraper(BaseScraper):
     def debug_page_state(self, step_name: str):
         """Debug helper to capture page state."""
         # Take screenshot
-        screenshot_path = self.output_path / f"debug_{step_name}.png"
+        screenshot_path = self.destination_path_path / f"debug_{step_name}.png"
         self.webdriver.save_screenshot(str(screenshot_path))
 
         # Save page source
-        html_path = self.output_path / f"debug_{step_name}.html"
+        html_path = self.destination_path / f"debug_{step_name}.html"
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(self.webdriver.page_source)
 
@@ -303,20 +313,25 @@ if __name__ == "__main__":
         "browser": "edge",
         "driver_path": "./bin/msedgedriver.exe",
         "timeout": 5,
-        "destination": "C:/Users/F80877978/Downloads/HyspexAir/TrajectoryData/{flight_folder}/apx/",
+        "destination_path": "C:/Users/F80877978/Downloads/HyspexAir/Recordings/{flight_folder}/apx/",
         "service_url": "http://192.168.168.100",
         "username": BaseScraper.load_environment_variable("APX_USER"),
         "password": BaseScraper.load_environment_variable("APX_PW"),
     }
 
-    resolved_config = load_config_from_dict(config=config, 
-                          base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt")
-
     flight_folder = "re112o_250610"  # Example flight folder
-    scraper_config = replace_config_placeholder(config=resolved_config, 
-                                                placeholder="{flight_folder}", 
-                                                replacement=flight_folder)
+    replaced_config = replace_config_placeholder(
+        config=config, 
+        placeholder="{flight_folder}", 
+        replacement=flight_folder
+    )
 
-    scraper = TrajectoryScraper(config=scraper_config)
+    resolved_config = resolve_relative_paths(
+        config=replaced_config, 
+        base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt"
+    )
 
-    scraper.scrape()
+
+    scraper = TrajectoryScraper(config=resolved_config)
+
+    scraper.run_test()

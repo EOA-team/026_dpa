@@ -29,20 +29,12 @@ def resolve_relative_paths(config: dict, base_path: str | Path) -> dict:
             resolved[key] = value
     return resolved
 
-
-def load_config_from_dict(config: dict, base_path: str | Path) -> dict:
-    """Load configuration from dictionary and resolve relative paths."""
-    resolved_config = resolve_relative_paths(config=config, base_path=base_path)
-    return resolved_config
-
 def load_config_from_yamlfile(config_path: str | Path) -> dict:
-    """Load configuration from YAML file and resolve relative paths."""
+    """Load configuration from YAML file"""
     config_path = Path(config_path)
     with open(config_path, 'r', encoding='utf-8') as f:
         config_dict = yaml.safe_load(f)
-    base_path = Path(config_path).parent
-    resolved_config = resolve_relative_paths(config=config_dict, base_path=base_path)
-    return resolved_config
+    return config_dict
 
 
 def replace_config_placeholder(config: dict, placeholder: str, replacement: str) -> dict:
