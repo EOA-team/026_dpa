@@ -30,22 +30,39 @@ def resolve_relative_paths(config: dict, base_path: str | Path) -> dict:
     return resolved
 
 
-def load_config(config_path: str | Path) -> dict:
-    """Load YAML config as dictionary."""
+def load_config_from_dict(config: dict, base_path: str | Path) -> dict:
+    """Load configuration from dictionary and resolve relative paths."""
+    resolved_config = resolve_relative_paths(config=config, base_path=base_path)
+    return resolved_config
+
+def load_config_from_yamlfile(config_path: str | Path) -> dict:
+    """Load configuration from YAML file and resolve relative paths."""
     config_path = Path(config_path)
     with open(config_path, 'r', encoding='utf-8') as f:
-        config = yaml.safe_load(f)
-    return config
+        config_dict = yaml.safe_load(f)
+    base_path = Path(config_path).parent
+    resolved_config = resolve_relative_paths(config=config_dict, base_path=base_path)
+    return resolved_config
 
-def load_config_section(config_path: str | Path, section: str) -> dict:
-    """Load configuration section from YAML file.
-    Examples
-    --------
-    >>> load_config_section("config.yaml", "trajectory_scraper")
-    >>> load_config_section("config.yaml", "file_transfer")
+
+def replace_config_placeholder(config: dict, placeholder: str, replacement: str) -> dict:
+    """Replace placeholder in all string values of a config dict.
+
+    Example
+    -------
+    >>> replace_config_placeholder(config, "{flight_folder}", "re112o_250610")
+
+    Before:  "destination": "D:/Recordings/{flight_folder}/apx/"
+    After:   "destination": "D:/Recordings/re112o_250610/apx/"
     """
-    config_dict = load_config(config_path)[section]
-    if section not in config_dict:
-        raise KeyError(f"Section '{section}' not found in config file: {config_path}")
-    return config_dict[section]
+    resolved = {}
+    for key, val in config.items():
+        if isinstance(val, dict):
+            resolved[key] = replace_config_placeholder(config=val, placeholder=placeholder, replacement=replacement)
+        elif isinstance(val, str):
+            resolved[key] = val.replace(placeholder, replacement)
+        else:
+            resolved[key] = val
+    return resolved
+
 

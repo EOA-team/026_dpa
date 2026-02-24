@@ -17,12 +17,13 @@ Note:
  http://192.168.168.100/. Need to contact Applanix support. 
 
 """
-
+import os
 from pathlib import Path
 import logging
 import time
 import shutil
-from code.scrapers.base_scraper import BaseScraper, ScraperConfig
+from code.yamlconfig_helper import replace_config_placeholder, load_config_from_dict
+from code.scrapers.base_scraper import BaseScraper
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -31,14 +32,8 @@ logger = logging.getLogger(__name__)
 
 class TrajectoryScraper(BaseScraper):
     """Trajectory Data Scraper for APX-20 GNSS-Inertial sensor"""
-    def __init__(self,
-                 config: ScraperConfig | None = None,
-                 config_path: str | Path | None = None,
-                 ):
-        super().__init__(
-            config=config,
-            config_path=config_path
-        )
+    def __init__(self,config: dict ):
+        super().__init__(config=config)
         self._last_download_status: str = ""
 
     def switch_to_data_frame(self) -> None:
@@ -303,16 +298,25 @@ if __name__ == "__main__":
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     load_dotenv()  # Load environment variables from .env file
-    manual_config = ScraperConfig(
-        driver_path="C:/Users/HySpex_user/tools/geckodriver.exe",
-        browser="firefox",
-        timeout=5,
-        output_path="D:/HySpexAir/TrajectoryData/",
-        service_url="http://192.168.168.100",
-        username=BaseScraper.load_environment_variable("APX_USER"),
-        password=BaseScraper.load_environment_variable("APX_PW"),
-        delete_after_download=True
-    )
-    scraper = TrajectoryScraper(config=manual_config)
+
+    config = {
+        "browser": "edge",
+        "driver_path": "./bin/msedgedriver.exe",
+        "timeout": 5,
+        "destination": "C:/Users/F80877978/Downloads/HyspexAir/TrajectoryData/{flight_folder}/apx/",
+        "service_url": "http://192.168.168.100",
+        "username": BaseScraper.load_environment_variable("APX_USER"),
+        "password": BaseScraper.load_environment_variable("APX_PW"),
+    }
+
+    resolved_config = load_config_from_dict(config=config, 
+                          base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt")
+
+    flight_folder = "re112o_250610"  # Example flight folder
+    scraper_config = replace_config_placeholder(config=resolved_config, 
+                                                placeholder="{flight_folder}", 
+                                                replacement=flight_folder)
+
+    scraper = TrajectoryScraper(config=scraper_config)
 
     scraper.scrape()

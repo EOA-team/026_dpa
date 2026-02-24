@@ -10,9 +10,11 @@ All the data comes in RINEX format, which is a standard for GNSS data.
 
 """
 
+import os
 import time
 from pathlib import Path
-from code.scrapers.base_scraper import BaseScraper, ScraperConfig
+from code.scrapers.base_scraper import BaseScraper
+from code.yamlconfig_helper import replace_config_placeholder, load_config_from_dict
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 
@@ -20,14 +22,8 @@ from selenium.webdriver.common.by import By
 class BasestationScraper(BaseScraper):
     """Scraper for Swiss Positioning Service (Swipos) to download RINEX observation data."""
 
-    def __init__(self,
-                 config: ScraperConfig | None = None,
-                 config_path: str | Path | None = None,
-                 ):
-        super().__init__(
-            config=config,
-            config_path=config_path
-        )
+    def __init__(self,config: dict):
+        super().__init__(config=config)
 
     def login(self):
         """Log in to the Swipos service using credentials from the configuration."""
@@ -62,16 +58,25 @@ class BasestationScraper(BaseScraper):
 
 if __name__ == "__main__":
     load_dotenv()  # Load environment variables from .env file
-    manual_config = ScraperConfig(
-        driver_path="C:/Tools/webdrivers/msedgedriver.exe",
-        browser="edge",
-        timeout=5,
-        output_path="C:/Users/F80877978/Downloads/Rinex_output",
-        service_url="https://shop.swipos.ch/",
-        username= BaseScraper.load_environment_variable("SWIPOS_USER"),
-        password= BaseScraper.load_environment_variable("SWIPOS_PW"),
-        delete_after_download=False
-    )
-    scraper = BasestationScraper(config=manual_config)
+
+    config = {
+        "browser": "edge",
+        "driver_path": "./bin/msedgedriver.exe",
+        "timeout": 5,
+        "destination": "C:/Users/F80877978/Downloads/{flight_folder}/rinex/",
+        "service_url": "https://shop.swipos.ch/",
+        "username": BaseScraper.load_environment_variable("SWIPOS_USER"),
+        "password": BaseScraper.load_environment_variable("SWIPOS_PW"),
+    }
+
+    resolved_config = load_config_from_dict(config=config, 
+                          base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt")
+
+    flight_folder = "re112o_250610"  # Example flight folder
+    scraper_config = replace_config_placeholder(config=resolved_config, 
+                                                placeholder="{flight_folder}", 
+                                                replacement=flight_folder)
+
+    scraper = BasestationScraper(config=scraper_config)
 
     scraper.scrape()
