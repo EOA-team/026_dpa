@@ -263,6 +263,7 @@ class TrajectoryScraper(BaseScraper):
         for i in range(1, 11):
             (Path.home() / "Downloads" / f"file_{i}.T04").touch()
 
+        self.close()
         self.move_downloaded_files()
         
 

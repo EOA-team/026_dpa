@@ -3,10 +3,25 @@ from pathlib import Path
 from shutil import copytree, rmtree
 from code.file_utils import check_path_exists, check_drive_mounted,copy_with_logging, get_base_path
 from code.yamlconfig_helper import  replace_config_placeholder, resolve_relative_paths
+from code.scrapers.trajectory_scraper import TrajectoryScraper
 
 logger = logging.getLogger(__name__)
 
-
+def drone_to_hd_transfer(config: dict) -> None:
+    logger.info("Starting Drone to Hard Drive Transfer")
+    #Abort if Hard Drive not mounted
+    check_drive_mounted(
+        path=Path(config['file_transfer']['drone_to_hd']['destination_path']))
+    #Get Flight Folder
+    flight_folder = get_flight_folder(
+        recordings_path= Path(config['file_transfer']['drone_to_hd']['source_path']).parent)
+    #Load Resolve Config
+    resolved_config =get_resolved_config(
+        config=config, 
+        flight_folder=flight_folder)
+    #Processing Steps
+    scrape_trajectory_data(config=resolved_config)
+    transfer_recordings_data(config=resolved_config)
 
 def get_flight_folder(recordings_path: Path) -> Path:
     """Get the single recorded flight folder in recordings path after a flight.
@@ -40,22 +55,6 @@ def get_flight_folder(recordings_path: Path) -> Path:
 
     return flight_folders[0].name
 
-def drone_to_hd_transfer(config: dict) -> None:
-    logger.info("Starting Drone to Hard Drive Transfer")
-    #Abort if Hard Drive not mounted
-    check_drive_mounted(
-        path=Path(config['file_transfer']['drone_to_hd']['destination_path']))
-    #Get Flight Folder
-    flight_folder = get_flight_folder(
-        recordings_path= Path(config['file_transfer']['drone_to_hd']['source_path']).parent)
-    #Load Resolve Config
-    resolved_config =get_resolved_config(
-        config=config, 
-        flight_folder=flight_folder)
-    #Transfer Recordings Data
-    transfer_recordings_data(config=resolved_config)
-
-
 def get_resolved_config(config: dict, flight_folder: str) -> dict:
     """Replace placeholders and resolve relative paths in config."""
     replaced_config = replace_config_placeholder(
@@ -65,10 +64,18 @@ def get_resolved_config(config: dict, flight_folder: str) -> dict:
     )
     resolved_config = resolve_relative_paths(
         config=replaced_config, 
-        base_path=get_base_path()
+        base_path=get_base_path(__file__)
     )
     return resolved_config
 
+# Scrape APX Trajectory Data
+def scrape_trajectory_data(config) -> None:
+    print(config['trajectory_scraper'])
+    logger.info("Starting trajectory data scraping...")
+    scraper = TrajectoryScraper(config=config['trajectory_scraper'])
+    scraper.run_test()
+    # TODO : Replace with correct run method 
+    logger.info("Trajectory data scraping complete")
 
 def transfer_recordings_data(config) -> None:
     # Transfer Recordings Data
@@ -96,6 +103,8 @@ def transfer_recordings_data(config) -> None:
     #Cleanup
     rmtree(source_path)
     logger.info("Deleted all files in %s", source_path)
+
+
 
 
 

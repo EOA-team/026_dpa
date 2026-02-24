@@ -100,45 +100,6 @@ if __name__ == "__main__":
             print("Mode: Hard Drive to Drone Transfer")
         else:
             raise ValueError(f"Invalid mode in config: {config['mode']}")
-        
-
-        # Load Filetransfer Settings
-        source_path_trajectory = get_source_path(config=config_dict, filetransfer="trajectory")
-        destination_path_trajectory = get_destination_path(config=config_dict, filetransfer="trajectory")
-        delete_trajectory_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="trajectory")
-
-        source_path_recordings = get_source_path(config=config_dict, filetransfer="recordings")
-        destination_path_recordings = get_destination_path(config=config_dict, filetransfer="recordings")
-        delete_recordings_after_transfer = get_delete_after_transfer(config=config_dict, filetransfer="recordings")
-
-        # Scrape APX Trajectory Data
-        logger.info("Starting trajectory data scraping...")
-        scraper = TrajectoryScraper(config_path=config_path)
-        scraper.scrape()
-        logger.info("Trajectory data scraping complete")
-
-        # Transfer Trajectory Data
-        logger.info("Transferring trajectory data...")
-        check_drive_mounted(path=destination_path_trajectory)
-        check_path_exists(path=source_path_trajectory)
-        copytree(source_path_trajectory, destination_path_trajectory, dirs_exist_ok=True, copy_function=copy_with_logging)
-        logger.info("Copied %s to %s", source_path_trajectory, destination_path_trajectory)
-
-        if delete_trajectory_after_transfer:
-            clear_folder(source_path_trajectory)
-            logger.info("Deleted all files in %s", source_path_trajectory)
-
-        # Transfer Recordings Data
-        logger.info("Transferring recordings data...")
-        check_drive_mounted(path=destination_path_recordings)
-        check_path_exists(path=source_path_recordings)
-        copytree(source_path_recordings, destination_path_recordings, dirs_exist_ok=True, copy_function=copy_with_logging)
-        logger.info("Copied %s to %s", source_path_recordings, destination_path_recordings)
-
-        if delete_recordings_after_transfer:
-            clear_folder(source_path_recordings)
-            logger.info("Deleted all files in %s", source_path_recordings)
-
 
         logger.info("All transfers complete")
         logger.warning("Please unmount Drive before disconnecting!")

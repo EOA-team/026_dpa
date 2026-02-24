@@ -19,11 +19,17 @@ def check_path_exists(path: str | Path, message: str = "") -> None:
             f"Path does not exist: {path}"
         )
     
-def get_base_path() -> Path:
-    """Get base path - works for both script and PyInstaller executable."""
+def get_base_path(caller_file: str | Path) -> Path:
+    """Get base path - works for both script and PyInstaller executable.
+    
+    Parameters
+    ----------
+    caller_file : str | Path
+        Pass __file__ from the calling script.
+    """
     if getattr(sys, 'frozen', False):
         return Path(sys.executable).parent
-    return Path(__file__).parent
+    return Path(caller_file).parent
     
 def check_drive_mounted(path: str | Path) -> None:
     """Check if the drive or mount point for the given path is mounted.
