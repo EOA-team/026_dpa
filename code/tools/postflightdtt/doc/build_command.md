@@ -1,1 +1,1 @@
-pyinstaller --onefile --console  code/tools/raw_to_hd/raw_to_hd.py
+pyinstaller --onefile --console  code/tools/postflightdtt/postflightdtt.py
