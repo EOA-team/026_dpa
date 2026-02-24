@@ -42,15 +42,22 @@ def get_flight_folder(recordings_path: Path) -> Path:
 
 def drone_to_hd_transfer(config: dict) -> None:
     logger.info("Starting Drone to Hard Drive Transfer")
-    #Get Paths from Config
-    destination_path = Path(config['file_transfer']['drone_to_hd']['destination_path'])
-    source_path = Path(config['file_transfer']['drone_to_hd']['source_path'])
     #Abort if Hard Drive not mounted
-    check_drive_mounted(destination_path)
+    check_drive_mounted(
+        path=Path(config['file_transfer']['drone_to_hd']['destination_path']))
     #Get Flight Folder
-    recordings_path = source_path.parent
-    flight_folder = get_flight_folder(recordings_path)
-    #Resolve Config
+    flight_folder = get_flight_folder(
+        recordings_path= Path(config['file_transfer']['drone_to_hd']['source_path']).parent)
+    #Load Resolve Config
+    resolved_config =get_resolved_config(
+        config=config, 
+        flight_folder=flight_folder)
+    #Transfer Recordings Data
+    transfer_recordings_data(config=resolved_config)
+
+
+def get_resolved_config(config: dict, flight_folder: str) -> dict:
+    """Replace placeholders and resolve relative paths in config."""
     replaced_config = replace_config_placeholder(
         config=config, 
         placeholder="{flight_folder}", 
@@ -60,14 +67,18 @@ def drone_to_hd_transfer(config: dict) -> None:
         config=replaced_config, 
         base_path=get_base_path()
     )
+    return resolved_config
+
+
+def transfer_recordings_data(config) -> None:
     # Transfer Recordings Data
-    source_path = resolved_config['file_transfer']['drone_to_hd']['source_path']
-    destination_path = resolved_config['file_transfer']['drone_to_hd']['destination_path']
+    source_path = config['file_transfer']['drone_to_hd']['source_path']
+    destination_path = config['file_transfer']['drone_to_hd']['destination_path']
     # Backup before transfer if enabled in config
-    backup = resolved_config['file_transfer']['drone_to_hd']['backup']
+    backup = config['file_transfer']['drone_to_hd']['backup']
     if backup:
         logger.info("Backup enabled - backing up source before transfer")
-        backup_path = resolved_config['file_transfer']['drone_to_hd']['backup_path']
+        backup_path = config['file_transfer']['drone_to_hd']['backup_path']
         copytree(src=source_path.parent, 
                  dst=backup_path, 
                  dirs_exist_ok=True,  # Allow overwriting existing data
@@ -85,10 +96,6 @@ def drone_to_hd_transfer(config: dict) -> None:
     #Cleanup
     rmtree(source_path)
     logger.info("Deleted all files in %s", source_path)
-
-
-
-
 
 
 
