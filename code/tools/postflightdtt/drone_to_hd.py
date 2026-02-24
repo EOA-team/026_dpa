@@ -25,7 +25,6 @@ def drone_to_hd_transfer(config: dict) -> None:
 
 # Scrape APX Trajectory Data
 def scrape_trajectory_data(config) -> None:
-    print(config['trajectory_scraper'])
     logger.info("Starting trajectory data scraping...")
     scraper = TrajectoryScraper(config=config['trajectory_scraper'])
     scraper.run_test()
