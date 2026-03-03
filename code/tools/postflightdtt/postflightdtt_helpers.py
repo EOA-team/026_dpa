@@ -2,7 +2,7 @@ from code.file_utils import check_path_exists,  get_base_path
 from code.yamlconfig_helper import  replace_config_placeholder, resolve_relative_paths
 from pathlib import Path
 
-def get_flight_folder(recordings_path: Path) -> Path:
+def get_flight_folder(recordings_path: Path) -> str:
     """Get the single recorded flight folder in recordings path after a flight.
 
     In case of multiple folders the pilot needs to be reminded to always run
