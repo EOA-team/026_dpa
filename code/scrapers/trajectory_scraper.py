@@ -20,7 +20,6 @@ Note:
 import os
 from pathlib import Path
 import logging
-import re
 import time
 import shutil
 from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
@@ -31,9 +30,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 logger = logging.getLogger(__name__)
 
+
 class TrajectoryScraper(BaseScraper):
     """Trajectory Data Scraper for APX-20 GNSS-Inertial sensor"""
-    def __init__(self,config: dict ):
+
+    def __init__(self, config: dict):
         super().__init__(config=config)
         self._last_download_status: str = ""
 
@@ -82,7 +83,6 @@ class TrajectoryScraper(BaseScraper):
         time.sleep(1)
         logger.info("Login Successful...")
 
-
     def dismiss_splash_popup(self) -> None:
         """Dismiss the Applanix splash screen that appears on page open."""
         self.webdriver.switch_to.default_content()
@@ -94,7 +94,6 @@ class TrajectoryScraper(BaseScraper):
         self.webdriver.execute_script("hideFloatingDiv(true);")
         logger.info("Splash popup dismissed")
 
-
     def navigate_to_data_files(self) -> None:
         """Navigate to Data Logging > Data Files via the menu."""
         self.webdriver.switch_to.default_content()
@@ -102,7 +101,8 @@ class TrajectoryScraper(BaseScraper):
         # Click "Data Logging" main menu item (index 2)
         data_logging_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.XPATH, "//a[@class='MenuMainItemDiv' and contains(text(), 'Data Logging')]")
+                (By.XPATH,
+                 "//a[@class='MenuMainItemDiv' and contains(text(), 'Data Logging')]")
             )
         )
         data_logging_link.click()
@@ -110,7 +110,8 @@ class TrajectoryScraper(BaseScraper):
         # Click "Data Files" submenu item -> loads xml/fileManager.html into the iframe
         data_files_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.XPATH, "//a[@class='MenuSubItemDiv' and contains(., 'Data Files')]")
+                (By.XPATH,
+                 "//a[@class='MenuSubItemDiv' and contains(., 'Data Files')]")
             )
         )
         data_files_link.click()
@@ -216,6 +217,7 @@ class TrajectoryScraper(BaseScraper):
             logger.info("Moved %s -> %s", file.name, destination)
 
         logger.info("All .T04 files moved to %s", self.destination_path)
+
     def delete_selected_files(self) -> None:
         """Click the Delete Selected Files button.
 
@@ -257,7 +259,8 @@ class TrajectoryScraper(BaseScraper):
         logger.info("All files deleted")
 
     def run_test(self) -> None:
-        """Simulates scraping by creating test .T04 files in the downloads folder and moving them to destination."""
+        """Simulates scraping by creating test .T04 files in the 
+        downloads folder and moving them to destination."""
         print(self.destination_path)
         logger.info("Simulation! Downloaded 10 test .T04 files")
         for i in range(1, 11):
@@ -265,8 +268,6 @@ class TrajectoryScraper(BaseScraper):
 
         self.close()
         self.move_downloaded_files()
-        
-
 
     def run(self) -> None:
         self.open()
@@ -277,20 +278,17 @@ class TrajectoryScraper(BaseScraper):
         self.select_all_files()
         self.download_selected_files()
         self.wait_for_downloads_complete()
-
-        if self.delete_after_download:
-            self.select_all_files()
-            self.delete_selected_files()
-            self.wait_for_delete_complete()
-
+        # Delete after Download
+        self.select_all_files()
+        self.delete_selected_files()
+        self.wait_for_delete_complete()
         self.close()
         self.move_downloaded_files()
-
 
     def debug_page_state(self, step_name: str):
         """Debug helper to capture page state."""
         # Take screenshot
-        screenshot_path = self.destination_path_path / f"debug_{step_name}.png"
+        screenshot_path = self.destination_path / f"debug_{step_name}.png"
         self.webdriver.save_screenshot(str(screenshot_path))
 
         # Save page source
@@ -299,6 +297,7 @@ class TrajectoryScraper(BaseScraper):
             f.write(self.webdriver.page_source)
 
         print(f"Debug saved: {step_name}")
+
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -310,28 +309,28 @@ if __name__ == "__main__":
 
     load_dotenv()  # Load environment variables from .env file
 
-    config = {
+    CONFIG = {
         "browser": "firefox",
         "driver_path": "./bin/geckodriver.exe",
         "timeout": 5,
-        "destination_path": "C:/Users/F80877978/Downloads/HyspexAir/Recordings/{flight_folder}/apx/",
+        "destination_path": 
+        "C:/Users/F80877978/Downloads/HyspexAir/Recordings/{flight_folder}/apx/",
         "service_url": "http://192.168.168.100",
         "username": BaseScraper.load_environment_variable("APX_USER"),
         "password": BaseScraper.load_environment_variable("APX_PW"),
     }
 
-    flight_folder = "re112o_250610"  # Example flight folder
+    FLIGHT_FOLDER = "re112o_250610"  # Example flight folder
     replaced_config = replace_config_placeholder(
-        config=config, 
-        placeholder="{flight_folder}", 
-        replacement=flight_folder
+        config=CONFIG,
+        placeholder="{flight_folder}",
+        replacement=FLIGHT_FOLDER
     )
 
     resolved_config = resolve_relative_paths(
-        config=replaced_config, 
+        config=replaced_config,
         base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt"
     )
-
 
     scraper = TrajectoryScraper(config=resolved_config)
 
