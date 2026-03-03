@@ -14,7 +14,7 @@ import os
 import time
 from pathlib import Path
 from code.scrapers.base_scraper import BaseScraper
-from code.yamlconfig_helper import replace_config_placeholder, load_config_from_dict
+from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 
@@ -22,7 +22,7 @@ from selenium.webdriver.common.by import By
 class BasestationScraper(BaseScraper):
     """Scraper for Swiss Positioning Service (Swipos) to download RINEX observation data."""
 
-    def __init__(self,config: dict):
+    def __init__(self, config: dict):
         super().__init__(config=config)
 
     def login(self):
@@ -48,7 +48,7 @@ class BasestationScraper(BaseScraper):
         login_btn.click()
         time.sleep(testdelay_s)
 
-    def scrape(self) -> None:
+    def run(self) -> None:
         self.open()
         self.login()
         # Implementation TBD
@@ -59,7 +59,7 @@ class BasestationScraper(BaseScraper):
 if __name__ == "__main__":
     load_dotenv()  # Load environment variables from .env file
 
-    config = {
+    CONFIG = {
         "browser": "edge",
         "driver_path": "./bin/msedgedriver.exe",
         "timeout": 5,
@@ -68,15 +68,18 @@ if __name__ == "__main__":
         "username": BaseScraper.load_environment_variable("SWIPOS_USER"),
         "password": BaseScraper.load_environment_variable("SWIPOS_PW"),
     }
+    FLIGHT_FOLDER = "re112o_250610"  # Example flight folder
+    replaced_config = replace_config_placeholder(
+        config=CONFIG,
+        placeholder="{flight_folder}",
+        replacement=FLIGHT_FOLDER
+    )
 
-    resolved_config = load_config_from_dict(config=config, 
-                          base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt")
+    resolved_config = resolve_relative_paths(
+        config=replaced_config,
+        base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt"
+    )
 
-    flight_folder = "re112o_250610"  # Example flight folder
-    scraper_config = replace_config_placeholder(config=resolved_config, 
-                                                placeholder="{flight_folder}", 
-                                                replacement=flight_folder)
+    scraper = BasestationScraper(config=resolved_config)
 
-    scraper = BasestationScraper(config=scraper_config)
-
-    scraper.scrape()
+    scraper.run()
