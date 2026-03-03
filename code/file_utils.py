@@ -1,6 +1,7 @@
+""" Basic utility functions for file handling and  path management"""
 
 import logging
-from shutil import rmtree, copy2
+from shutil import copy2
 import sys
 from pathlib import Path
 
@@ -18,19 +19,18 @@ def check_path_exists(path: str | Path, message: str = "") -> None:
             f"Path does not exist: {path}\n{message}" if message else
             f"Path does not exist: {path}"
         )
-    
+
+
 def get_base_path(caller_file: str | Path) -> Path:
     """Get base path - works for both script and PyInstaller executable.
-    
-    Parameters
-    ----------
     caller_file : str | Path
         Pass __file__ from the calling script.
     """
     if getattr(sys, 'frozen', False):
         return Path(sys.executable).parent
     return Path(caller_file).parent
-    
+
+
 def check_drive_mounted(path: str | Path) -> None:
     """Check if the drive or mount point for the given path is mounted.
 
@@ -45,6 +45,7 @@ def check_drive_mounted(path: str | Path) -> None:
             f"Drive or mount point not accessible: {mount_point}\n"
             "Check that the drive is mounted or network share is connected."
         )
+
 
 def copy_with_logging(src, dst):
     """Copy function with size info."""
