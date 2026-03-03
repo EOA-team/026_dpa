@@ -1,6 +1,9 @@
+""" Basic helper functions for PostFlightDTT tool, 
+which are being used in both drone_to_hd and hd_to_nas transfer modules."""
 from code.file_utils import check_path_exists,  get_base_path
-from code.yamlconfig_helper import  replace_config_placeholder, resolve_relative_paths
+from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
 from pathlib import Path
+
 
 def get_flight_folder(recordings_path: Path) -> str:
     """Get the single recorded flight folder in recordings path after a flight.
@@ -16,7 +19,8 @@ def get_flight_folder(recordings_path: Path) -> str:
         If more than one flight folder is found — PostFlightDTT was not run
         after the previous flight.
     """
-    check_path_exists(recordings_path, message="Check that the path is correct and HySpexAir recorded correctly.")
+    check_path_exists(
+        recordings_path, message="Check that the path is correct and HySpexAir recorded correctly.")
     flight_folders = [f for f in recordings_path.iterdir() if f.is_dir()]
 
     if len(flight_folders) == 0:
@@ -33,6 +37,7 @@ def get_flight_folder(recordings_path: Path) -> str:
         )
 
     return flight_folders[0].name
+
 
 def get_resolved_config(config: dict, flight_folder: str | None = None) -> dict:
     """Replace placeholders with flight folder if available and resolve relative paths in config."""
