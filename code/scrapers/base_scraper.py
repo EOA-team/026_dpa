@@ -1,5 +1,8 @@
 """Abstract base class `BaseScraper` for web scrapers.
-All scrapers must implement a `run()` method containing the scraping logic.
+
+- Provides BaseScraper, which handles WebDriver setup, credential loading,
+  and destination directory creation.
+- All scrapers must implement a `run()` method containing the scraping logic.
 """
 
 import os
