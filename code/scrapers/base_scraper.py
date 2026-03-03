@@ -1,12 +1,13 @@
-"""This module provides an abstract base class `BaseScraper` and a configuration
-dataclass `ScraperConfig` for web scrapers. 
+"""Abstract base class `BaseScraper` for web scrapers.
+All scrapers must implement a `run()` method containing the scraping logic.
 """
+
 import os
 from code.scrapers.selenium_utils import create_webdriver, BrowserType
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import cast
-from selenium.webdriver.support.ui import WebDriverWait  
+from selenium.webdriver.support.ui import WebDriverWait
 
 class BaseScraper(ABC):
     """Abstract base class for web scrapers."""
@@ -24,7 +25,7 @@ class BaseScraper(ABC):
             browser=cast(BrowserType, config['browser'])
         )
         self.wait = WebDriverWait(self.webdriver, config['timeout'])
-    
+
     @staticmethod
     def load_environment_variable(variable_name : str) -> str:
         """Load environment variable."""
@@ -36,7 +37,7 @@ class BaseScraper(ABC):
     @abstractmethod
     def run(self) -> None:
         """Abstract method - implement scraping logic in subclasses."""
-        pass
+        pass #pylint: disable=unnecessary-pass
 
     def close(self) -> None:
         """Close WebDriver connection."""
