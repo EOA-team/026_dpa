@@ -24,7 +24,7 @@ class BaseScraper(ABC):
         self.destination_path.mkdir(parents=True, exist_ok=True)
         # Initialize WebDriver
         self.webdriver = create_webdriver(
-            driver_path=Path(config['driver_path']),
+            driver_path= config['driver_path'],
             browser=cast(BrowserType, config['browser'])
         )
         self.wait = WebDriverWait(self.webdriver, config['timeout'])

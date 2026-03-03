@@ -1,6 +1,7 @@
 """Default helper functions for working with YAML config files."""
 
 from pathlib import Path
+from typing import Any
 import yaml
 
 
@@ -17,9 +18,9 @@ def relative_to_absolute_path( path: str | Path, base_path: str | Path,) -> Path
     """
     return (Path(base_path) / path).resolve()
 
-def resolve_relative_paths(config: dict, base_path: str | Path) -> dict:
+def resolve_relative_paths(config: dict[str, Any], base_path: str | Path) -> dict[str, Any]:
     """Resolve all values whose key contains 'path' to absolute paths with base_path as reference."""
-    resolved = {}
+    resolved: dict[str, Any] = {}
     for key, value in config.items():
         if isinstance(value, dict):
             resolved[key] = resolve_relative_paths(config=value, base_path=base_path)
@@ -29,7 +30,7 @@ def resolve_relative_paths(config: dict, base_path: str | Path) -> dict:
             resolved[key] = value
     return resolved
 
-def load_config_from_yamlfile(config_path: str | Path) -> dict:
+def load_config_from_yamlfile(config_path: str | Path) -> dict[str, Any]:
     """Load configuration from YAML file"""
     config_path = Path(config_path)
     with open(config_path, 'r', encoding='utf-8') as f:
@@ -37,7 +38,7 @@ def load_config_from_yamlfile(config_path: str | Path) -> dict:
     return config_dict
 
 
-def replace_config_placeholder(config: dict, placeholder: str, replacement: str) -> dict:
+def replace_config_placeholder(config: dict[str, Any], placeholder: str, replacement: str) -> dict[str, Any]:
     """Replace placeholder in all string values of a config dict.
 
     Example
@@ -47,7 +48,7 @@ def replace_config_placeholder(config: dict, placeholder: str, replacement: str)
     Before:  "destination": "D:/Recordings/{flight_folder}/apx/"
     After:   "destination": "D:/Recordings/re112o_250610/apx/"
     """
-    resolved = {}
+    resolved: dict[str, Any] = {}
     for key, val in config.items():
         if isinstance(val, dict):
             resolved[key] = replace_config_placeholder(config=val, placeholder=placeholder, replacement=replacement)
