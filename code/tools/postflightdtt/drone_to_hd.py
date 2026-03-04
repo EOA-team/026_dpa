@@ -41,7 +41,7 @@ def scrape_trajectory_data(config) -> None:
     """Scrape trajectory data from APX-20 and save to recordings data folder."""
     logger.info("Starting trajectory data scraping...")
     scraper = TrajectoryScraper(config=config['trajectory_scraper'])
-    scraper.run_test()
+    scraper.run()
     logger.info("Trajectory data scraping complete")
 
 
