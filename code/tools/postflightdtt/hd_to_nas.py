@@ -3,9 +3,13 @@ Supports multiple flight folders since trajectory matching is already complete.
 """
 import logging
 from pathlib import Path
-from shutil import copytree, rmtree
-from code.file_utils import check_drive_mounted, copy_with_logging
-from code.tools.postflightdtt.postflightdtt_helpers import get_resolved_config
+from code.file_utils import check_drive_mounted
+from code.tools.postflightdtt.postflightdtt_helpers import (
+    get_resolved_config,
+    backup_source,
+    transfer_data,
+    cleanup_source
+)
 
 
 logger = logging.getLogger(__name__)
@@ -31,23 +35,11 @@ def transfer_harddisk_data(config) -> None:
     # Backup before transfer if enabled in config
     backup = config['file_transfer']['hd_to_nas']['backup']
     if backup:
-        logger.info("Backup enabled - backing up source before transfer")
         backup_path = config['file_transfer']['hd_to_nas']['backup_path']
-        copytree(src=source_path,  # backup the entire recordings folder
-                 dst=backup_path,
-                 dirs_exist_ok=True,  # Allow overwriting existing data
-                 copy_function=copy_with_logging
-                 )
-        logger.info("Backed up %s to %s", source_path, backup_path)
+        backup_source(src_path=source_path, dst_path=backup_path)
     # Transfer data
     logger.info("Transferring Hard Disk data to NAS...")
-    copytree(src=source_path,  # transfer the entire recordings folder
-             dst=destination_path,
-             dirs_exist_ok=True,  # Allow overwriting existing data
-             copy_function=copy_with_logging
-             )
-    logger.info("Copied %s to %s", source_path, destination_path)
+    transfer_data(src_path=source_path, dst_path=destination_path)
     # Cleanup
-    rmtree(source_path)
+    cleanup_source(src_path=source_path)
     source_path.mkdir()  # Recreate empty recordings folder after transfer
-    logger.info("Deleted all files in %s", source_path.parent)

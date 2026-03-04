@@ -3,7 +3,7 @@
 Reads config.yaml and runs either the drone_to_hd or hd_to_nas transfer module.
 
 - drone_to_hd: Transfers data from drone to hard drive immediately after a flight.
-  Only supports one flight folder at a time to ensure correct trajectory matching.
+  Only supports one flight folder at a time to ensure matching of trajectory data with recordings.
 - hd_to_nas: Transfers data from hard drive to NAS. Supports multiple flight
   folders since trajectory matching is already completed.
 """
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         logger.info("All transfers complete")
         logger.warning("Please unmount Drive before disconnecting!")
 
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         logger.error("Program failed: %s", e, exc_info=True)
 
     finally:

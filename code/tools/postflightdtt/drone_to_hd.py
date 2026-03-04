@@ -2,13 +2,18 @@
 
 Scrapes trajectory data from the APX-20 sensor and transfers recording data
 from the drone to the hard drive. Only supports one flight folder at a time
-to ensure correct trajectory matching.
+to ensure matching of trajectory data with recordings.
 """
 import logging
 from pathlib import Path
-from shutil import copytree, rmtree
-from code.file_utils import check_drive_mounted, copy_with_logging
-from code.tools.postflightdtt.postflightdtt_helpers import get_flight_folder, get_resolved_config
+from code.file_utils import check_drive_mounted
+from code.tools.postflightdtt.postflightdtt_helpers import (
+    get_flight_folder,
+    get_resolved_config,
+    backup_source,
+    cleanup_source,
+    transfer_data
+)
 from code.scrapers.trajectory_scraper import TrajectoryScraper
 
 logger = logging.getLogger(__name__)
@@ -36,7 +41,7 @@ def scrape_trajectory_data(config) -> None:
     """Scrape trajectory data from APX-20 and save to recordings data folder."""
     logger.info("Starting trajectory data scraping...")
     scraper = TrajectoryScraper(config=config['trajectory_scraper'])
-    scraper.run()
+    scraper.run_test()
     logger.info("Trajectory data scraping complete")
 
 
@@ -49,22 +54,10 @@ def transfer_recordings_data(config) -> None:
     # Backup before transfer if enabled in config
     backup = config['file_transfer']['drone_to_hd']['backup']
     if backup:
-        logger.info("Backup enabled - backing up source before transfer")
         backup_path = config['file_transfer']['drone_to_hd']['backup_path']
-        copytree(src=source_path.parent,
-                 dst=backup_path,
-                 dirs_exist_ok=True,  # Allow overwriting existing data
-                 copy_function=copy_with_logging
-                 )
-        logger.info("Backed up %s to %s", source_path.parent, backup_path)
+        backup_source(src_path=source_path.parent, dst_path=backup_path)
     # Transfer data
-    logger.info("Transferring recordings data...")
-    copytree(src=source_path,
-             dst=destination_path,
-             dirs_exist_ok=True,  # Allow overwriting existing data
-             copy_function=copy_with_logging
-             )
-    logger.info("Copied %s to %s", source_path, destination_path)
+    logger.info("Transferring drone recordings to Hard Disk...")
+    transfer_data(src_path=source_path, dst_path=destination_path)
     # Cleanup
-    rmtree(source_path)
-    logger.info("Deleted all files in %s", source_path)
+    cleanup_source(src_path=source_path)
