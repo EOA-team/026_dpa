@@ -7,6 +7,9 @@ Link to github repo: https://github.com/EOA-team/026_dpa
 
 
 ## Changes
+**2026-03-04**
+- PostFlightDTT v1.0.0 released as portable executable — automates APX-20 trajectory scraping and drone-to-HD/HD-to-NAS data transfer 
+
 **2026-01-21**
 - Pipeline Support run with : > python -m code.pipeline.runner
 - HyspexRad implemented as application
