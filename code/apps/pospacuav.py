@@ -21,7 +21,8 @@ class PosPacUav:
         # Application
         self.app_path: str = "C:/Program Files/Applanix/POSPac UAV 9.3/POSPacUAV.exe"
         self.work_dir: str = "C:/Program Files/Applanix/POSPac UAV 9.3/"
-        self.window_title: str = "POSPac UAV"
+        self.window_title: str = "POSPac UAV"# TODO: Remove window title and use auto_id instead
+        self.auto_id: str = "MainFormBase"  
         self.is_idl_application: bool = False
     
     def _create_default_project(self, controlfinder: ControlFinder):
@@ -33,11 +34,7 @@ class PosPacUav:
 
     
     def _open_saveas_window(self, controlfinder: ControlFinder):
-        btn = controlfinder.find_by_auto_id(
-            control_type="Button",
-            auto_id="[QuickAccessToolbar Tools] Tool : Save - Index : 3 ")  
-        btn.invoke()
-     
+       controlfinder.window.type_keys("^s") # Ctrl + S is the shortcut to open Save As window 
 
 
     def _get_saveas_window(self, controlfinder: ControlFinder) -> UIAWrapper:
@@ -71,15 +68,18 @@ class PosPacUav:
         with ApplicationManager(app_path=self.app_path,
                                 work_dir=self.work_dir,
                                 window_title=self.window_title,
+                                auto_id=self.auto_id,
                                 is_idl_application=self.is_idl_application) as pospac_manager:
             main_window_cf = ControlFinder(window=pospac_manager.window)
             main_window_cf.window.set_focus()
 
-            self._create_default_project(main_window_cf)
+
             
-            # for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-            #     self._create_project(main_window_cf, output_folder)
-            #     time.sleep(1)  # Wait for window to be focused
+            
+            for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+                print(output_folder)
+                self._create_project(main_window_cf, output_folder)
+                time.sleep(1)  # Wait for window to be focused
          
     
 

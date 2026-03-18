@@ -86,10 +86,11 @@ class ApplicationManager:
     """Manages a Window application lifecycle using a context manager. This ensures that
     the application is properly started and closed."""
 
-    def __init__(self, app_path: str, window_title: str,
+    def __init__(self, app_path: str, window_title: str, auto_id: str ,  # TODO: Remove window title
                  is_idl_application: bool = False, work_dir: str | None = None):
         self.app_path = app_path
         self.window_title = window_title
+        self.auto_id = auto_id
         self.work_dir: str | None = work_dir
         # Some applications use IDL VM that needs special handling
         self.is_idl_application = is_idl_application
@@ -110,7 +111,7 @@ class ApplicationManager:
                 handle=self.window.handle)
             return self
 
-        self.window = self.app.window(title=self.window_title)
+        self.window = self.app.window(auto_id=self.auto_id)
         self.window.wait('exists', timeout=DEFAULT_WAIT_TIME)
         return self
 
