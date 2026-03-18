@@ -11,6 +11,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
+from code.apps.pospacuav import PosPacUavApplication
 from code.filehandling_helper import move_files_by_regex
 
 from shutil import copytree
@@ -59,5 +60,21 @@ class BinaryToRadiance(PipelineStep):
         hyspexrad = HyspexRadApplication(
             input_folders=self.input_folders, output_folders=self.output_folders)
         hyspexrad.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+class EstimateTrajectory(PipelineStep):
+    """Estimates flight trajectory from raw GNSS/IMU data for each job."""
+
+    def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
+                 output_folder: PipelineFolder, app_instance="PosPacUavApplication"):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.app_instance = app_instance
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        pospacuav = PosPacUavApplication(
+            input_folders=self.input_folders, output_folders=self.output_folders)
+        pospacuav.run()
         print(f"Finished Step: {self.name} ✅")
         return True

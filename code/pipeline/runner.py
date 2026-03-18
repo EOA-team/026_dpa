@@ -8,7 +8,7 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles
+from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, EstimateTrajectory
 from code.pipeline.base import PipelineFolder, Path
 
 if __name__ == "__main__":
@@ -45,11 +45,19 @@ if __name__ == "__main__":
                                    Path("E:/mjolnir_processing"), "SWIR"),
                                jobs=selected_jobs,
                                regex_pattern=r"s620")  # s620 for VNIR
+    
+    estimate_trajectory = EstimateTrajectory(name="Estimate Trajectory",
+                               input_folder=PipelineFolder(
+                                   Path("E:/mjolnir_processing"), "RAW"),
+                               output_folder=PipelineFolder(
+                                   Path("E:/mjolnir_processing"), "tmp"),
+                               jobs=selected_jobs)  
 
     # Run Steps
     fetch_raw_data.run()
     binary_to_radiance.run()
     get_vnir_files.run()
     get_swir_files.run()
+    estimate_trajectory.run()
 
     print("All Pipeline steps completed.")

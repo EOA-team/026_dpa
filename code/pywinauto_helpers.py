@@ -84,12 +84,24 @@ class DesktopManager:
 
 class ApplicationManager:
     """Manages a Window application lifecycle using a context manager. This ensures that
-    the application is properly started and closed."""
+    the application is properly started and closed.
+    
+    Note on window identification:
+        Different applications expose their main window differently via UI Automation.
+        Some applications provide a stable automation ID for their main
+        window, which is the preferred way to identify it. Other applications 
+        do not expose an automation ID for the main window and must be identified by title.
+        This can be critical if  the window titles change dynamically during runtime.
+        At least one of 'window_title' or 'window_auto_id' must therefore be provided!
+    """
 
-    def __init__(self, app_path: str, window_title: str,
+    def __init__(self, app_path: str, window_title: str | None, window_auto_id: str | None , 
                  is_idl_application: bool = False, work_dir: str | None = None):
+        if not window_title and not window_auto_id:
+            raise ValueError("At least one of 'window_title' or 'window_auto_id' must be provided.")
         self.app_path = app_path
         self.window_title = window_title
+        self.window_auto_id = window_auto_id
         self.work_dir: str | None = work_dir
         # Some applications use IDL VM that needs special handling
         self.is_idl_application = is_idl_application
@@ -110,7 +122,12 @@ class ApplicationManager:
                 handle=self.window.handle)
             return self
 
-        self.window = self.app.window(title=self.window_title)
+        # Identify main window either by auto_id or title depending on what is provided
+        if self.window_auto_id:
+            self.window = self.app.window(auto_id=self.window_auto_id)
+        else:
+            self.window = self.app.window(title=self.window_title)
+
         self.window.wait('exists', timeout=DEFAULT_WAIT_TIME)
         return self
 
