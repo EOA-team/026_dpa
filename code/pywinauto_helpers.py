@@ -122,7 +122,12 @@ class ApplicationManager:
                 handle=self.window.handle)
             return self
 
-        self.window = self.app.window(auto_id=self.window_auto_id)
+        # Identify main window either by auto_id or title depending on what is provided
+        if self.window_auto_id:
+            self.window = self.app.window(auto_id=self.window_auto_id)
+        else:
+            self.window = self.app.window(title=self.window_title)
+
         self.window.wait('exists', timeout=DEFAULT_WAIT_TIME)
         return self
 
