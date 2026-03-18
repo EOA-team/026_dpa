@@ -6,7 +6,7 @@ from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
 
-class PosPacUav:
+class PosPacUavApplication:
     """
     Class to simulate POSPac UAV which is only available as a Windows Application
     Allows to load the settings, start the processing and wait until process is finished.
@@ -21,8 +21,7 @@ class PosPacUav:
         # Application
         self.app_path: str = "C:/Program Files/Applanix/POSPac UAV 9.3/POSPacUAV.exe"
         self.work_dir: str = "C:/Program Files/Applanix/POSPac UAV 9.3/"
-        self.window_title: str = "POSPac UAV"# TODO: Remove window title and use auto_id instead
-        self.auto_id: str = "MainFormBase"  
+        self.window_auto_id: str = "MainFormBase"  # Identify by auto_id insted of window_title because title changes dynamically 
         self.is_idl_application: bool = False
     
     def _create_default_project(self, controlfinder: ControlFinder):
@@ -40,12 +39,15 @@ class PosPacUav:
     def _get_saveas_window(self, controlfinder: ControlFinder) -> UIAWrapper:
         self._open_saveas_window(controlfinder)
         imageselection_window = controlfinder.find_child_window_by_title(
-            window_title="Save As")
+            window_title="Save As") # Make sure there is no cached window
         return imageselection_window
     
     def _create_project(self, controlfinder: ControlFinder, output_folder: Path, project_name: str = "pospac_project"):
         self._create_default_project(controlfinder)
         saveas_cf = ControlFinder(window=self._get_saveas_window(controlfinder))
+
+        #Make sure output folder exists --> otherwise confirmation popup appears which is hard to handle
+        output_folder.mkdir(parents=True, exist_ok=True)
 
         # Write Path
         filename_editbox = saveas_cf.find_by_name(
@@ -67,17 +69,13 @@ class PosPacUav:
     def run(self):
         with ApplicationManager(app_path=self.app_path,
                                 work_dir=self.work_dir,
-                                window_title=self.window_title,
-                                auto_id=self.auto_id,
+                                window_title=None,  # Not needed when using auto_id
+                                window_auto_id=self.window_auto_id,
                                 is_idl_application=self.is_idl_application) as pospac_manager:
             main_window_cf = ControlFinder(window=pospac_manager.window)
             main_window_cf.window.set_focus()
-
-
-            
             
             for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-                print(output_folder)
                 self._create_project(main_window_cf, output_folder)
                 time.sleep(1)  # Wait for window to be focused
          
@@ -85,7 +83,7 @@ class PosPacUav:
 
 
 if __name__ == "__main__":
-    pospacuav = PosPacUav(input_folders=[Path("E:/mjolnir_processing/RAW")],
+    pospacuav = PosPacUavApplication(input_folders=[Path("E:/mjolnir_processing/RAW")],
                           output_folders=[Path("E:/mjolnir_processing/tmp")])
     
     pospacuav.run()
