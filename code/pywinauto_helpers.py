@@ -7,7 +7,7 @@ from pywinauto import Application, Desktop  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
 # Configure Module
-DEFAULT_WAIT_TIME = 5
+DEFAULT_WAIT_TIME = 8
 DEFAULT_BACKEND = "uia"
 IDL_VM_WINDOW_TITLE = "Runtime App"
 
@@ -317,6 +317,14 @@ class ControlFinder:
             return child_window
         raise WindowNotFoundError(
             f"Could not find child window with title '{window_title}'")
+    
+    def debug_print_controls(self) -> None:
+        """Print all controls with their type, name and auto_id for debugging."""
+        for ctrl in self.window.descendants():
+            ctrl_type = ctrl.element_info.control_type
+            ctrl_name = ctrl.window_text().strip()
+            ctrl_auto_id = ctrl.element_info.automation_id
+            print(f"{ctrl_type} | name='{ctrl_name}' | auto_id='{ctrl_auto_id}'")
 
 
 class ControlSimulator:

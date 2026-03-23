@@ -1,5 +1,6 @@
 """Contains class to simulate PosPac Windows Application """
 import time
+from shutil import copytree, rmtree
 from pathlib import Path
 from enum import StrEnum
 from code.pywinauto_helpers import (
@@ -23,46 +24,78 @@ class PosPacUavApplication:
         self.work_dir: str = "C:/Program Files/Applanix/POSPac UAV 9.3/"
         self.window_auto_id: str = "MainFormBase"  # Identify by auto_id insted of window_title because title changes dynamically 
         self.is_idl_application: bool = False
+
+    def _open_project_window(self, controlfinder: ControlFinder):
+       controlfinder.window.type_keys("^o") # Ctrl + O is the shortcut to open Open Project window 
     
-    def _create_default_project(self, controlfinder: ControlFinder):
-        btn = controlfinder.find_by_auto_id(
-            control_type="Button",
-            auto_id="[Group : Project Tools] Tool : New - Index : 0 ") 
-        btn.invoke()
-
-
+    def _get_openproject_window(self, controlfinder: ControlFinder) -> UIAWrapper:
+        openproject_window = controlfinder.find_child_window_by_title(
+            window_title="Open File") 
+        return openproject_window
     
-    def _open_saveas_window(self, controlfinder: ControlFinder):
-       controlfinder.window.type_keys("^s") # Ctrl + S is the shortcut to open Save As window 
+    def _open_default_project(self, controlfinder: ControlFinder, output_folder: Path):
+        self._open_project_window(controlfinder)
+        openproject_window = self._get_openproject_window(controlfinder)
+        open_project_cf = ControlFinder(window=openproject_window)
 
-
-    def _get_saveas_window(self, controlfinder: ControlFinder) -> UIAWrapper:
-        self._open_saveas_window(controlfinder)
-        imageselection_window = controlfinder.find_child_window_by_title(
-            window_title="Save As") # Make sure there is no cached window
-        return imageselection_window
-    
-    def _create_project(self, controlfinder: ControlFinder, output_folder: Path, project_name: str = "pospac_project"):
-        self._create_default_project(controlfinder)
-        saveas_cf = ControlFinder(window=self._get_saveas_window(controlfinder))
-
-        #Make sure output folder exists --> otherwise confirmation popup appears which is hard to handle
-        output_folder.mkdir(parents=True, exist_ok=True)
-
-        # Write Path
-        filename_editbox = saveas_cf.find_by_name(
+        filename_editbox = open_project_cf.find_by_name(
             control_type="Edit", control_name="file name:", exact=True)
-        projec_folder = output_folder / project_name
-        filename_editbox.set_edit_text(str(projec_folder))
-
-        #Confirm to create project
+        
+        default_projecfile_path = output_folder / "pospac_tmp.pospac"
+        filename_editbox.set_edit_text(str(default_projecfile_path))
         filename_editbox.type_keys("{ENTER}")
 
-        # Wait for window to close
-        saveas_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
+        time.sleep(2)  # Wait for project to load
 
-        # Additional safety: ensure window is truly gone
-        time.sleep(1)  # Small buffer to ensure cleanup
+        # Wait for window to close
+        openproject_window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
+        time.sleep(1)  # Small buffer to ensure window is fully closed
+
+    def initialize_default_project(self, output_folder: Path):
+        output_folder.mkdir(parents=True, exist_ok=True)
+        default_project_folder = Path(__file__).parent / "templates" / "default_pospac_project"
+        output_project_folder = output_folder 
+        copytree(src=default_project_folder, dst=output_project_folder, dirs_exist_ok=True)
+
+
+    def _open_import_panel(self, controlfinder: ControlFinder):
+        btn = controlfinder.find_by_auto_id(
+            control_type="Button",
+            auto_id="[Group : Import Tools] Tool : Import - Index : 0 ") 
+        btn.invoke()
+
+    def _set_import_folder(self, controlfinder: ControlFinder, import_folder: Path):
+        filename_editbox = controlfinder.find_by_auto_id(
+            control_type="Edit", auto_id="[Editor] Edit Area")
+        filename_editbox.set_edit_text(str(import_folder))
+
+    
+    def _select_all_in_list(self, controlfinder: ControlFinder):
+        import_list = controlfinder.find_by_auto_id(
+            control_type="List",
+            auto_id="importList")
+        import_list.type_keys("^a")
+
+    def _import_selected_files(self, controlfinder: ControlFinder):
+        btn = controlfinder.find_by_auto_id(
+            control_type="Button",
+            auto_id="Ok") 
+        btn.invoke()
+
+    
+
+    def _import_trajectory_data(self, controlfinder: ControlFinder, input_folder: Path):
+        self._open_import_panel(controlfinder)
+        self._set_import_folder(
+             controlfinder, 
+             import_folder=input_folder / "apx")
+        self._select_all_in_list(controlfinder)
+        self._import_selected_files(controlfinder)
+        
+
+
+    
+     
 
 
 
@@ -74,16 +107,21 @@ class PosPacUavApplication:
                                 is_idl_application=self.is_idl_application) as pospac_manager:
             main_window_cf = ControlFinder(window=pospac_manager.window)
             main_window_cf.window.set_focus()
-            
             for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-                self._create_project(main_window_cf, output_folder)
-                time.sleep(1)  # Wait for window to be focused
+                self.initialize_default_project(output_folder) 
+                self._open_default_project(main_window_cf, output_folder)
+                #self._import_trajectory_data(main_window_cf, input_folder)
+                
+                time.sleep(5)  # Wait for window to be focused
          
     
 
 
 if __name__ == "__main__":
-    pospacuav = PosPacUavApplication(input_folders=[Path("E:/mjolnir_processing/RAW")],
-                          output_folders=[Path("E:/mjolnir_processing/tmp")])
+    test_output_folders = [Path("E:/mjolnir_processing/re112o_250610/tmp"), Path("E:/mjolnir_processing/re112o_250918/tmp")]
+    test_input_folders = [Path("E:/mjolnir_processing//re112o_250610/RAW"), Path("E:/mjolnir_processing/re112o_250918/RAW")]
+    pospacuav = PosPacUavApplication(input_folders=test_input_folders,
+                                     output_folders=test_output_folders)
     
     pospacuav.run()
+    
