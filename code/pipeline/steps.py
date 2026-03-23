@@ -12,6 +12,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
 from code.apps.pospacuav import PosPacUavApplication
+from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher
 from code.filehandling_helper import move_files_by_regex
 
 from shutil import copytree
@@ -25,6 +26,23 @@ class CopyJobFolders(PipelineStep):
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
             copytree(input_folder, output_folder)
             print(f"Copied {input_folder} to {output_folder}")
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+    
+class ScrapeBaseStationData(PipelineStep):
+    """Scrapes base station data from Swipos for each job and saves it to the output folder."""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            print(output_folder)
+            obs = TrajectoryObservationTimeFetcher(apx_folder=input_folder)
+            print(f"Flight start:  {obs.flight_start}")
+            print(f"Flight end:    {obs.flight_end}")
+            print(f"Duration:      {obs.duration_hours:02d}h {obs.duration_minutes:02d}min")
+            print(f"Date:          {obs.date}")
+            print(f"Start time:    {obs.start_hour:02d}:{obs.start_minute:02d}:{obs.start_second:02d}")
 
         print(f"Finished Step: {self.name} ✅")
         return True

@@ -8,7 +8,7 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, EstimateTrajectory
+from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, EstimateTrajectory, ScrapeBaseStationData
 from code.pipeline.base import PipelineFolder, Path
 
 if __name__ == "__main__":
@@ -22,6 +22,13 @@ if __name__ == "__main__":
                                     output_folder=PipelineFolder(
                                         Path("E:/mjolnir_processing"), "RAW"),
                                     jobs=selected_jobs)
+    download_base_station_data = ScrapeBaseStationData(name="Download Base Station Data",
+                                    input_folder=PipelineFolder(
+                                        Path("E:/mjolnir_processing"), "RAW/apx"), #Use data from APX folder to get flight time info for scraper
+                                    output_folder=PipelineFolder(
+                                        Path("E:/mjolnir_processing"), "RAW/rinex"),
+                                    jobs = selected_jobs)
+    
 
     binary_to_radiance = BinaryToRadiance(name="Binary to Radiance",
                                           input_folder=PipelineFolder(
@@ -55,9 +62,10 @@ if __name__ == "__main__":
 
     # Run Steps
     #fetch_raw_data.run()
+    download_base_station_data.run()
     #binary_to_radiance.run()
     #get_vnir_files.run()
     #get_swir_files.run()
-    estimate_trajectory.run()
+    #estimate_trajectory.run()
 
     print("All Pipeline steps completed.")
