@@ -65,17 +65,24 @@ class PosPacUavApplication:
             auto_id="[Group : Import Tools] Tool : Import - Index : 0 ") 
         btn.invoke()
 
+    def _get_import_panel(self, controlfinder: ControlFinder) -> UIAWrapper:
+        openproject_window = controlfinder.find_by_auto_id(
+            control_type="Pane",
+            auto_id= "ImportCmdUI"
+        ) 
+        return openproject_window
+
     def _set_import_folder(self, controlfinder: ControlFinder, import_folder: Path):
         filename_editbox = controlfinder.find_by_auto_id(
             control_type="Edit", auto_id="[Editor] Edit Area")
         filename_editbox.set_edit_text(str(import_folder))
 
     
-    def _select_all_in_list(self, controlfinder: ControlFinder):
+    def _select_all_in_importlist(self, controlfinder: ControlFinder):
         import_list = controlfinder.find_by_auto_id(
-            control_type="List",
+            control_type="Table",
             auto_id="importList")
-        import_list.type_keys("^a")
+        ControlSimulator(import_list).select_all_rows()
 
     def _import_selected_files(self, controlfinder: ControlFinder):
         btn = controlfinder.find_by_auto_id(
@@ -86,13 +93,25 @@ class PosPacUavApplication:
     
 
     def _import_trajectory_data(self, controlfinder: ControlFinder, input_folder: Path):
+
         self._open_import_panel(controlfinder)
+        #Get new control finder for open project window
+        import_panel = self._get_import_panel(controlfinder)
+        import_panel_cf = ControlFinder(window=import_panel)
+
+        time.sleep(2)
+  
+
+   
         self._set_import_folder(
-             controlfinder, 
+             controlfinder=import_panel_cf, 
              import_folder=input_folder / "apx")
-        self._select_all_in_list(controlfinder)
-        self._import_selected_files(controlfinder)
-        
+        self._select_all_in_importlist(import_panel_cf)
+        time.sleep(4)
+        #self._import_selected_files(import_panel_cf)
+
+        time.sleep(5)  # Wait for import to finish
+
 
 
     
@@ -111,7 +130,7 @@ class PosPacUavApplication:
             for input_folder, output_folder in zip(self.input_folders, self.output_folders):
                 self.initialize_default_project(output_folder) 
                 self._open_default_project(main_window_cf, output_folder)
-                #self._import_trajectory_data(main_window_cf, input_folder)
+                self._import_trajectory_data(main_window_cf, input_folder)
                 
                 time.sleep(5)  # Wait for window to be focused
          

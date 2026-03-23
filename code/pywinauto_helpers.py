@@ -350,3 +350,20 @@ class ControlSimulator:
 
         if self.control.get_toggle_state() != 0:
             self.control.click()
+
+    
+    def select_all_rows(self) -> None:
+        """Select all rows in a table control by shift-clicking first and last row."""
+        import pywinauto.keyboard as kb
+
+        rows = [c for c in self.control.descendants()
+                if c.element_info.control_type == "Custom"
+                and c.element_info.name.startswith("Row ")]
+
+        if not rows:
+            raise RuntimeError(f"No rows found in table control '{self.control.element_info.name}'")
+
+        rows[0].click_input()
+        kb.send_keys("{VK_SHIFT down}")
+        rows[-1].click_input()
+        kb.send_keys("{VK_SHIFT up}")
