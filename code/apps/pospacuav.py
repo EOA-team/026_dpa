@@ -45,8 +45,6 @@ class PosPacUavApplication:
         filename_editbox.set_edit_text(str(default_projecfile_path))
         filename_editbox.type_keys("{ENTER}")
 
-        time.sleep(2)  # Wait for project to load
-
         # Wait for window to close
         openproject_window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
         time.sleep(1)  # Small buffer to ensure window is fully closed
