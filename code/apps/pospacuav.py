@@ -25,6 +25,12 @@ class PosPacUavApplication:
         self.window_auto_id: str = "MainFormBase"  # Identify by auto_id insted of window_title because title changes dynamically 
         self.is_idl_application: bool = False
 
+    def initialize_default_project(self, output_folder: Path):
+        output_folder.mkdir(parents=True, exist_ok=True)
+        default_project_folder = Path(__file__).parent / "templates" / "default_pospac_project"
+        output_project_folder = output_folder 
+        copytree(src=default_project_folder, dst=output_project_folder, dirs_exist_ok=True)
+
     def _open_project_window(self, controlfinder: ControlFinder):
        controlfinder.window.type_keys("^o") # Ctrl + O is the shortcut to open Open Project window 
     
@@ -33,28 +39,25 @@ class PosPacUavApplication:
             window_title="Open File") 
         return openproject_window
     
-    def _open_default_project(self, controlfinder: ControlFinder, output_folder: Path):
-        self._open_project_window(controlfinder)
-        openproject_window = self._get_openproject_window(controlfinder)
-        open_project_cf = ControlFinder(window=openproject_window)
-
-        filename_editbox = open_project_cf.find_by_name(
+    def _enter_default_project_path(self, controlfinder: ControlFinder, output_folder: Path):
+        filename_editbox = controlfinder.find_by_name(
             control_type="Edit", control_name="file name:", exact=True)
         
         default_projecfile_path = output_folder / "pospac_tmp.pospac"
         filename_editbox.set_edit_text(str(default_projecfile_path))
         filename_editbox.type_keys("{ENTER}")
-
+    
+    def _open_default_project(self, controlfinder: ControlFinder, output_folder: Path):
+        self._open_project_window(controlfinder)
+        #Get new control finder for open project window
+        openproject_window = self._get_openproject_window(controlfinder)
+        open_project_cf = ControlFinder(window=openproject_window)
+        # Enter default project path and open project
+        self._enter_default_project_path(controlfinder=open_project_cf, 
+                                         output_folder=output_folder)
         # Wait for window to close
         openproject_window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
         time.sleep(1)  # Small buffer to ensure window is fully closed
-
-    def initialize_default_project(self, output_folder: Path):
-        output_folder.mkdir(parents=True, exist_ok=True)
-        default_project_folder = Path(__file__).parent / "templates" / "default_pospac_project"
-        output_project_folder = output_folder 
-        copytree(src=default_project_folder, dst=output_project_folder, dirs_exist_ok=True)
-
 
     def _open_import_panel(self, controlfinder: ControlFinder):
         btn = controlfinder.find_by_auto_id(
