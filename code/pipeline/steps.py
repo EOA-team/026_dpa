@@ -8,14 +8,17 @@ for advanced operations, e.g., automatic georeferencing of orthomosaics using GD
 3. **Calls to a Windows application** 
 for steps that cannot yet be implemented in Python and must be simulated.
 """
+from shutil import copytree
+from dotenv import load_dotenv
 
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
 from code.apps.pospacuav import PosPacUavApplication
-from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher
+from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher, BasestationScraper
 from code.filehandling_helper import move_files_by_regex
+from code.scrapers.base_scraper import BaseScraper
 
-from shutil import copytree
+
 
 
 class CopyJobFolders(PipelineStep):
@@ -34,15 +37,25 @@ class ScrapeBaseStationData(PipelineStep):
     """Scrapes base station data from Swipos for each job and saves it to the output folder."""
 
     def run(self) -> bool:
+        load_dotenv()  # Load environment variables from .env file
         print(f"Starting Step: {self.name} ⏳")
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
             print(output_folder)
             obs = TrajectoryObservationTimeFetcher(apx_folder=input_folder)
-            print(f"Flight start:  {obs.flight_start}")
-            print(f"Flight end:    {obs.flight_end}")
-            print(f"Duration:      {obs.duration_hours:02d}h {obs.duration_minutes:02d}min")
-            print(f"Date:          {obs.date}")
-            print(f"Start time:    {obs.start_hour:02d}:{obs.start_minute:02d}:{obs.start_second:02d}")
+
+            config_dict = {
+                "browser": "firefox",
+                "driver_path": "C:/Tools/webdrivers/geckodriver.exe",
+                "timeout": 5,
+                "destination_path": output_folder,
+                "service_url": "https://shop.swipos.ch/",
+                "username": BaseScraper.load_environment_variable("SWIPOS_USER"),
+                "password": BaseScraper.load_environment_variable("SWIPOS_PW"),
+            }
+
+
+            scraper = BasestationScraper(config=config_dict, observation_time=obs)
+            scraper.run()
 
         print(f"Finished Step: {self.name} ✅")
         return True
