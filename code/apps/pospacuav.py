@@ -6,6 +6,7 @@ from enum import StrEnum
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
+from code.file_utils import wait_for_folder_stable
 
 class PosPacUavApplication:
     """
@@ -32,6 +33,7 @@ class PosPacUavApplication:
         copytree(src=default_project_folder, dst=output_project_folder, dirs_exist_ok=True)
 
     def _open_project_window(self, controlfinder: ControlFinder):
+       controlfinder.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
        controlfinder.window.type_keys("^o") # Ctrl + O is the shortcut to open Open Project window 
     
     def _get_openproject_window(self, controlfinder: ControlFinder) -> UIAWrapper:
@@ -84,38 +86,51 @@ class PosPacUavApplication:
             auto_id="importList")
         ControlSimulator(import_list).select_all_rows()
 
+    def _enable_close_panel_after_import(self, controlfinder: ControlFinder) -> None:
+        checkbox = controlfinder.find_by_auto_id(
+            control_type="CheckBox",
+            auto_id="closeAfterImportBox")
+        ControlSimulator(checkbox).enable_checkbox()
+
     def _import_selected_files(self, controlfinder: ControlFinder):
-        btn = controlfinder.find_by_auto_id(
-            control_type="Button",
-            auto_id="Ok") 
-        btn.invoke()
+        controlfinder.window.type_keys("{ENTER}")
 
-    
+    def confirm_warnig_popup(self, controlfinder: ControlFinder):
+        """After importing trajectory data, a warning popup appears, confirm it by pressing enter""" 
+        controlfinder.window.type_keys("{ENTER}")
 
-    def _import_trajectory_data(self, controlfinder: ControlFinder, input_folder: Path):
+    def _wait_and_confirm_import_dialog(self,controlfinder: ControlFinder,
+                                timeout: int = 240)-> None:
+        """Wait until the import completion dialog appears
+        Import Process takes ~3min --> when longer 4min--> issue."""
+        import_dialog = controlfinder.window.child_window(auto_id="InternalMessageBox")
+        import_dialog.wait('exists', timeout=timeout)
+        import_dialog.type_keys("{ENTER}")
+        print("Importing is Finished ")
+
+
+    def _import_trajectory_data(self, controlfinder: ControlFinder, input_folder: Path, output_folder: Path):
 
         self._open_import_panel(controlfinder)
         #Get new control finder for open project window
         import_panel = self._get_import_panel(controlfinder)
         import_panel_cf = ControlFinder(window=import_panel)
 
-        time.sleep(2)
-  
-
-   
         self._set_import_folder(
              controlfinder=import_panel_cf, 
              import_folder=input_folder / "apx")
         self._select_all_in_importlist(import_panel_cf)
-        time.sleep(4)
-        #self._import_selected_files(import_panel_cf)
+        self._enable_close_panel_after_import(import_panel_cf)
+        self._import_selected_files(import_panel_cf)
 
-        time.sleep(5)  # Wait for import to finish
+    def _save_project(self, controlfinder: ControlFinder) -> None:
+        """Save current project state using Ctrl+S."""
+        controlfinder.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
+        controlfinder.window.type_keys("^s")
+        
+            
+        
 
-
-
-    
-     
 
 
 
@@ -126,13 +141,25 @@ class PosPacUavApplication:
                                 window_auto_id=self.window_auto_id,
                                 is_idl_application=self.is_idl_application) as pospac_manager:
             main_window_cf = ControlFinder(window=pospac_manager.window)
-            main_window_cf.window.set_focus()
             for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+                #Make sure Window is ready before starting next iteration
+                main_window_cf.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
+                main_window_cf.window.set_focus()
+                #Next iteration
                 self.initialize_default_project(output_folder) 
                 self._open_default_project(main_window_cf, output_folder)
-                self._import_trajectory_data(main_window_cf, input_folder)
+                self._import_trajectory_data(controlfinder = main_window_cf, 
+                                             input_folder = input_folder, 
+                                             output_folder = output_folder)
+                self._wait_and_confirm_import_dialog(main_window_cf)
+                self._save_project(main_window_cf)
+
+
+                #Most often import has warnings, so confirm warning popup if it appears
+                #self.confirm_warnig_popup(main_window_cf)
                 
-                time.sleep(5)  # Wait for window to be focused
+                
+    
          
     
 

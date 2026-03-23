@@ -3,6 +3,8 @@
 import logging
 from shutil import copy2
 import sys
+from datetime import datetime
+import time 
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -52,3 +54,36 @@ def copy_with_logging(src, dst):
     size = Path(src).stat().st_size / (1024 * 1024)  # MB
     logger.info("Copying %s (%.2f MB)", Path(src).name, size)
     return copy2(src, dst,)
+
+def wait_for_folder_stable(folder:Path, timeout:int, 
+                            stable_seconds:int, debug:bool) -> None:
+    
+    """Wait until no files in folder are modified for stable_seconds consecutive seconds."""
+    start = time.time()
+    last_mtime = 0.0
+    stable_count = 0
+    last_printed_file: Path | None = None
+
+    while stable_count < stable_seconds:
+        if time.time() - start > timeout:
+            raise TimeoutError(f"Folder did not stabilize within {timeout}s: {folder}")
+
+        files = [f for f in folder.rglob("*") if f.is_file()]
+        current_mtime = max((f.stat().st_mtime for f in files), default=0.0)
+        newest_file = max(files, key=lambda f: f.stat().st_mtime, default=None)
+
+        if debug and newest_file and newest_file != last_printed_file:
+            timestamp = datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S.%f')[:-3]
+            print(f"Newest: {newest_file.name} - {timestamp}")
+            last_printed_file = newest_file
+
+        stable_count = stable_count + 1 if current_mtime == last_mtime else 0
+        last_mtime = current_mtime
+        time.sleep(1)
+
+    print(f"Folder stable: {folder}")
+
+
+
+
+
