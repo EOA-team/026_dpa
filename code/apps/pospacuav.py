@@ -27,7 +27,7 @@ class PosPacUavApplication:
         self.window_auto_id: str = "MainFormBase"
         self.is_idl_application: bool = False
 
-    def initialize_default_project(self, output_folder: Path):
+    def initialize_default_project(self, output_folder: Path)-> None:
         """Copy the default POSPac project template to the output folder for the current job.
         The template is located at code/apps/templates/default_pospac_project and contains
         a pre-configured POSPac project file with default settings.
@@ -43,7 +43,7 @@ class PosPacUavApplication:
         copytree(src=default_project_folder,
                  dst=output_project_folder, dirs_exist_ok=True)
 
-    def _open_project_window(self, controlfinder: ControlFinder):
+    def _open_project_window(self, controlfinder: ControlFinder)-> None:
         """Open the 'Open Project' dialog in POSPac UAV using the shortcut."""
         controlfinder.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
         # Ctrl + O is the shortcut to open Open Project window
@@ -55,7 +55,7 @@ class PosPacUavApplication:
             window_title="Open File")
         return openproject_window
 
-    def _enter_default_project_path(self, controlfinder: ControlFinder, output_folder: Path):
+    def _enter_default_project_path(self, controlfinder: ControlFinder, output_folder: Path)-> None:
         """Enter the default project file path as filename and confirm with enter"""
         filename_editbox = controlfinder.find_by_name(
             control_type="Edit", control_name="file name:", exact=True)
@@ -64,7 +64,7 @@ class PosPacUavApplication:
         filename_editbox.set_edit_text(str(default_projecfile_path))
         filename_editbox.type_keys("{ENTER}")
 
-    def _open_default_project(self, controlfinder: ControlFinder, output_folder: Path):
+    def _open_default_project(self, controlfinder: ControlFinder, output_folder: Path)-> None:
         """Open the default project in POSPac UAV."""
         self._open_project_window(controlfinder)
         # Get new control finder for open project window
@@ -77,7 +77,7 @@ class PosPacUavApplication:
         openproject_window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
         time.sleep(1)  # Small buffer to ensure window is fully closed
 
-    def _open_import_panel(self, controlfinder: ControlFinder):
+    def _open_import_panel(self, controlfinder: ControlFinder)-> None:
         """Open the Import Panel"""
         btn = controlfinder.find_by_auto_id(
             control_type="Button",
@@ -92,13 +92,13 @@ class PosPacUavApplication:
         )
         return openproject_window
 
-    def _set_import_folder(self, controlfinder: ControlFinder, import_folder: Path):
+    def _set_import_folder(self, controlfinder: ControlFinder, import_folder: Path)-> None:
         """Set the import folder path in the Import Panel."""
         filename_editbox = controlfinder.find_by_auto_id(
             control_type="Edit", auto_id="[Editor] Edit Area")
         filename_editbox.set_edit_text(str(import_folder))
 
-    def _select_all_in_importlist(self, controlfinder: ControlFinder):
+    def _select_all_in_importlist(self, controlfinder: ControlFinder)-> None:
         """Select all files in the import list """
         import_list = controlfinder.find_by_auto_id(
             control_type="Table",
@@ -112,7 +112,7 @@ class PosPacUavApplication:
             auto_id="closeAfterImportBox")
         ControlSimulator(checkbox).enable_checkbox()
 
-    def _start_importing(self, controlfinder: ControlFinder):
+    def _start_importing(self, controlfinder: ControlFinder)-> None:
         """Start the import process by clicking the Import button."""
         controlfinder.window.type_keys("{ENTER}")
 
@@ -129,7 +129,7 @@ class PosPacUavApplication:
             print("WARNING: Import completed with a warning dialog — check import logs!")
 
     def _import_trajectory_data(self, controlfinder: ControlFinder,
-                                input_folder: Path, output_folder: Path):
+                                input_folder: Path, output_folder: Path)-> None:
         """Import trajectory data from the APX subfolder into the POSPac project.
 
         Opens the import panel, sets the import folder, selects all files, and triggers the import.
@@ -162,7 +162,7 @@ class PosPacUavApplication:
         controlfinder.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
         controlfinder.window.type_keys("^s")
 
-    def run(self):
+    def run(self)-> None:
         """Run the POSPac UAV processing for each input/output folder pair (= job)."""
         with ApplicationManager(app_path=self.app_path,
                                 work_dir=self.work_dir,

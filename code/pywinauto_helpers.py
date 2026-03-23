@@ -4,6 +4,7 @@ Provides helper functions to manage windows and find controls more easily.
 """
 
 from pywinauto import Application, Desktop  # type: ignore[import-untyped]
+import pywinauto.keyboard as kb  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
 # Configure Module
@@ -85,7 +86,7 @@ class DesktopManager:
 class ApplicationManager:
     """Manages a Window application lifecycle using a context manager. This ensures that
     the application is properly started and closed.
-    
+
     Note on window identification:
         Different applications expose their main window differently via UI Automation.
         Some applications provide a stable automation ID for their main
@@ -95,10 +96,11 @@ class ApplicationManager:
         At least one of 'window_title' or 'window_auto_id' must therefore be provided!
     """
 
-    def __init__(self, app_path: str, window_title: str | None, window_auto_id: str | None , 
+    def __init__(self, app_path: str, window_title: str | None, window_auto_id: str | None,
                  is_idl_application: bool = False, work_dir: str | None = None):
         if not window_title and not window_auto_id:
-            raise ValueError("At least one of 'window_title' or 'window_auto_id' must be provided.")
+            raise ValueError(
+                "At least one of 'window_title' or 'window_auto_id' must be provided.")
         self.app_path = app_path
         self.window_title = window_title
         self.window_auto_id = window_auto_id
@@ -317,7 +319,7 @@ class ControlFinder:
             return child_window
         raise WindowNotFoundError(
             f"Could not find child window with title '{window_title}'")
-    
+
     def debug_print_controls(self) -> None:
         """Print all controls with their type, name and auto_id for debugging."""
         for ctrl in self.window.descendants():
@@ -351,17 +353,15 @@ class ControlSimulator:
         if self.control.get_toggle_state() != 0:
             self.control.click()
 
-    
     def select_all_rows(self) -> None:
         """Select all rows in a table control by shift-clicking first and last row."""
-        import pywinauto.keyboard as kb
-
         rows = [c for c in self.control.descendants()
                 if c.element_info.control_type == "Custom"
                 and c.element_info.name.startswith("Row ")]
 
         if not rows:
-            raise RuntimeError(f"No rows found in table control '{self.control.element_info.name}'")
+            raise RuntimeError(
+                f"No rows found in table control '{self.control.element_info.name}'")
 
         rows[0].click_input()
         kb.send_keys("{VK_SHIFT down}")
