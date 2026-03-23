@@ -10,12 +10,10 @@ All the data comes in RINEX format, which is a standard for GNSS data.
 
 """
 
-import os
+
 import time
 from pathlib import Path
 from code.scrapers.base_scraper import BaseScraper
-from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
-from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from datetime import datetime, timezone, tzinfo
 
@@ -128,6 +126,7 @@ class BasestationScraper(BaseScraper):
                 (By.ID, "m_RefStationListBox")
             )
         )
+        time.sleep(0.5)  # Small delay to ensure dropdown is fully loaded
         Select(select_element).select_by_value(station_value)
 
     def click_continue_to_time_selection(self) -> None:
@@ -273,7 +272,7 @@ class BasestationScraper(BaseScraper):
             )
         )
         btn.click()
-
+    
 
     def run(self) -> None:
         self.open()

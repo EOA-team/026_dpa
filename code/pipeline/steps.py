@@ -17,6 +17,7 @@ from code.apps.pospacuav import PosPacUavApplication
 from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher, BasestationScraper
 from code.filehandling_helper import move_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
+from code.file_utils import move_and_extract_downloaded_zip
 
 
 
@@ -40,7 +41,6 @@ class ScrapeBaseStationData(PipelineStep):
         load_dotenv()  # Load environment variables from .env file
         print(f"Starting Step: {self.name} ⏳")
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-            print(output_folder)
             obs = TrajectoryObservationTimeFetcher(apx_folder=input_folder)
 
             config_dict = {
@@ -53,9 +53,11 @@ class ScrapeBaseStationData(PipelineStep):
                 "password": BaseScraper.load_environment_variable("SWIPOS_PW"),
             }
 
-
+            print(f"Scraping base station data for {input_folder}...")
             scraper = BasestationScraper(config=config_dict, observation_time=obs)
             scraper.run()
+            move_and_extract_downloaded_zip(output_folder)
+
 
         print(f"Finished Step: {self.name} ✅")
         return True

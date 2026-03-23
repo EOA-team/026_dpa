@@ -3,6 +3,7 @@
 import logging
 from shutil import copy2
 import sys
+import zipfile
 from datetime import datetime
 import time 
 from pathlib import Path
@@ -82,6 +83,24 @@ def wait_for_folder_stable(folder:Path, timeout:int,
         time.sleep(1)
 
     print(f"Folder stable: {folder}")
+
+def move_and_extract_downloaded_zip( output_folder: Path) -> None:
+    """Find the newest zip file in downloads, extract it to output folder and delete the zip."""
+    download_folder = Path.home() / "Downloads"
+    
+    zip_files = list(download_folder.glob("*.zip"))
+    if not zip_files:
+        raise FileNotFoundError(f"No zip files found in {download_folder}")
+    
+    newest_zip = max(zip_files, key=lambda f: f.stat().st_mtime)
+    
+    output_folder.mkdir(parents=True, exist_ok=True)
+    
+    with zipfile.ZipFile(newest_zip, 'r') as zip_ref:
+        zip_ref.extractall(output_folder)
+    
+    newest_zip.unlink()
+    print(f"Extracted {newest_zip.name} to {output_folder} and deleted zip.")
 
 
 
