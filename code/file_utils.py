@@ -84,6 +84,25 @@ def wait_for_folder_stable(folder:Path, timeout:int,
 
     print(f"Folder stable: {folder}")
 
+def wait_for_file_creation(
+        file_path:    Path,
+        timeout_s: int 
+) -> None:
+    """Wait until a specific file is created.
+    
+    Args:
+        file:    Path to the file to wait for.
+        timeout: Maximum time to wait in seconds before raising TimeoutError.
+    """
+    start = time.time()
+
+    while not file_path.exists():
+        if time.time() - start > timeout_s:
+            raise TimeoutError(f"File was not created within {timeout_s}s: {file_path}")
+        time.sleep(2)
+
+    print(f"File created: {file_path}")
+
 def move_and_extract_downloaded_zip( output_folder: Path) -> None:
     """Find the newest zip file in downloads, extract it to output folder and delete the zip."""
     download_folder = Path.home() / "Downloads"

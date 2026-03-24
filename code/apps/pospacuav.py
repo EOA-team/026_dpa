@@ -5,7 +5,7 @@ from pathlib import Path
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
-from code.file_utils import wait_for_folder_stable
+from code.file_utils import wait_for_file_creation
 
 
 class PosPacUavApplication:
@@ -129,6 +129,19 @@ class PosPacUavApplication:
             import_dialog.type_keys("{ENTER}")
             print("WARNING: Import completed with a warning dialog — check import logs!")
 
+    def _wait_until_trajectory_import_complete(self, output_folder: Path) -> None:
+        """The last file that is created during trajectory 
+        import is gnss_nav_pri_interp_Mission 1.dat """
+        last_file_created_during_import = (
+            output_folder
+            / "pospac_tmp"
+            / "Mission 1"
+            / "Extract"
+            / "gnss_nav_pri_interp_Mission 1.dat"
+        )
+        #Expected import time ~180s --> 240s enough margin
+        wait_for_file_creation(file_path=last_file_created_during_import, timeout_s=240) 
+
     def _import_trajectory_data(self, controlfinder: ControlFinder,
                                 input_folder: Path, output_folder: Path)-> None:
         """Import trajectory data from the APX subfolder into the POSPac project.
@@ -152,23 +165,15 @@ class PosPacUavApplication:
         self._select_all_in_importlist(import_panel_cf)
         self._enable_close_panel_after_import(import_panel_cf)
         self._start_importing(import_panel_cf)
-        wait_for_folder_stable(folder=output_folder,
-                               timeout=240,  # expected import time ~180s
-                               stable_seconds=80,  # expected time between file modification ~60s
-                               debug=False)
+        
+        
+      
         print(f"Import of {input_folder / "apx"} completed.")
 
     def _save_project(self, controlfinder: ControlFinder) -> None:
         """Save current project state using Ctrl+S."""
         controlfinder.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
         controlfinder.window.type_keys("^s")
-    
-    def _close_pospac(self, controlfinder: ControlFinder) -> None:
-        """Close the POSPac UAV application."""
-        btn = controlfinder.find_by_auto_id(
-            control_type="Button",
-            auto_id="Close")
-        btn.invoke()
 
     def run(self)-> None:
         """Run the POSPac UAV processing for each input/output folder pair (= job)."""
@@ -189,10 +194,11 @@ class PosPacUavApplication:
                 self._import_trajectory_data(controlfinder=main_window_cf,
                                              input_folder=input_folder,
                                              output_folder=output_folder)
-
+                self._wait_until_trajectory_import_complete(output_folder=output_folder)
                 self._confirm_import_warning(main_window_cf)
                 self._save_project(main_window_cf)
-            self._close_pospac(main_window_cf)
+
+
 
 
 if __name__ == "__main__":
