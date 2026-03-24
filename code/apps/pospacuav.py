@@ -83,6 +83,7 @@ class PosPacUavApplication:
             control_type="Button",
             auto_id="[Group : Import Tools] Tool : Import - Index : 0 ")
         btn.invoke()
+        time.sleep(1)  # wait for panel to render
 
     def _get_import_panel(self, controlfinder: ControlFinder) -> UIAWrapper:
         """Get the Import Panel window."""
@@ -161,6 +162,13 @@ class PosPacUavApplication:
         """Save current project state using Ctrl+S."""
         controlfinder.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
         controlfinder.window.type_keys("^s")
+    
+    def _close_pospac(self, controlfinder: ControlFinder) -> None:
+        """Close the POSPac UAV application."""
+        btn = controlfinder.find_by_auto_id(
+            control_type="Button",
+            auto_id="Close")
+        btn.invoke()
 
     def run(self)-> None:
         """Run the POSPac UAV processing for each input/output folder pair (= job)."""
@@ -184,6 +192,7 @@ class PosPacUavApplication:
 
                 self._confirm_import_warning(main_window_cf)
                 self._save_project(main_window_cf)
+            self._close_pospac(main_window_cf)
 
 
 if __name__ == "__main__":
