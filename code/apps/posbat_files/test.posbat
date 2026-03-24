@@ -129,7 +129,7 @@
              ================================================================ -->
         <Export>
             <CustomSettings>
-                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\VNIR_all_records.txt</OutputFile>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\tmp\test\Mission 1\Export\VNIR_all_records.txt</OutputFile>
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -155,7 +155,7 @@
              ================================================================ -->
         <Export>
             <CustomSettings>
-                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\SWIR_all_records.txt</OutputFile>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\tmp\test\Mission 1\Export\SWIR_all_records.txt</OutputFile>
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -181,7 +181,7 @@
              ================================================================ -->
         <Export>
             <CustomSettings>
-                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\events.txt</OutputFile>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\tmp\test\Mission 1\Export\events.txt</OutputFile>
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>Event1Time</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -203,7 +203,7 @@
              ================================================================ -->
         <Export>
             <CustomSettings>
-                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\sbet_re112o_250610.out</OutputFile>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\tmp\test\Mission 1\Export\sbet_re112o_250610.out</OutputFile>
                 <OutputFormat>Custom Smoothed BET</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -242,8 +242,8 @@
             <CalibrateAndQC>true</CalibrateAndQC>
             <GeneratePointCloud>false</GeneratePointCloud>
             <CustomSettings>
-                <LiDARQCFolder>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\LiDARQC</LiDARQCFolder>
-                <LASCreatorFolder>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\LiDAR</LASCreatorFolder>
+                <LiDARQCFolder>E:\mjolnir_processing\re112o_250610\tmp\test\Mission 1\LiDARQC</LiDARQCFolder>
+                <LASCreatorFolder>E:\mjolnir_processing\re112o_250610\tmp\test\Mission 1\LiDAR</LASCreatorFolder>
                 <LeverX>-0.115</LeverX>
                 <LeverY>-0.008</LeverY>
                 <LeverZ>0.13</LeverZ>
