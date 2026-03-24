@@ -8,7 +8,7 @@ import pywinauto.keyboard as kb  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
 # Configure Module
-DEFAULT_WAIT_TIME = 8
+DEFAULT_WAIT_TIME = 10
 DEFAULT_BACKEND = "uia"
 IDL_VM_WINDOW_TITLE = "Runtime App"
 
@@ -367,3 +367,24 @@ class ControlSimulator:
         kb.send_keys("{VK_SHIFT down}")
         rows[-1].click_input()
         kb.send_keys("{VK_SHIFT up}")
+
+    def deselect_rows_by_extension(self, exclude_extensions: list[str] | None = None) -> None:
+        """Deselect rows whose filename matches any of the given extensions."""
+
+        rows = [c for c in self.control.descendants()
+                if c.element_info.control_type == "Custom"
+                and c.element_info.name.startswith("Row ")]
+
+        for row in rows:
+            filename_edit = next(
+                (c for c in row.children()
+                if c.element_info.control_type == "Edit"
+                and "File Name" in c.element_info.name),
+                None
+            )
+            if filename_edit:
+                filename = filename_edit.iface_value.CurrentValue or ""
+                if any(filename.endswith(f".{ext.lstrip('.')}") for ext in exclude_extensions):
+                    kb.send_keys("{VK_CONTROL down}")
+                    row.click_input()
+                    kb.send_keys("{VK_CONTROL up}")

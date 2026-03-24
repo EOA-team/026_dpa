@@ -93,18 +93,27 @@ class PosPacUavApplication:
         )
         return openproject_window
 
-    def _set_import_folder(self, controlfinder: ControlFinder, import_folder: Path)-> None:
-        """Set the import folder path in the Import Panel."""
-        filename_editbox = controlfinder.find_by_auto_id(
+    def _set_import_folder(self, controlfinder: ControlFinder, import_folder: Path) -> None:
+        """Set the import folder path in the Import Panel.
+        Scopes to the FilePathComboBox first to avoid ambiguity, since the import
+        panel contains multiple controls with auto_id='[Editor] Edit Area'.
+        """
+        combobox = controlfinder.find_by_auto_id(
+            control_type="ComboBox", auto_id="FilePathComboBox")
+        combobox_cf = ControlFinder(window=combobox)
+        filename_editbox = combobox_cf.find_by_auto_id(
             control_type="Edit", auto_id="[Editor] Edit Area")
         filename_editbox.set_edit_text(str(import_folder))
 
-    def _select_all_in_importlist(self, controlfinder: ControlFinder)-> None:
-        """Select all files in the import list """
+    def _select_all_in_importlist(self, controlfinder: ControlFinder, 
+                                  exclude_extensions: list[str] | None = None)-> None:
+        """Select all files in the import list except those with extensions specified  e.g. [txt]"""
         import_list = controlfinder.find_by_auto_id(
             control_type="Table",
             auto_id="importList")
         ControlSimulator(import_list).select_all_rows()
+        if exclude_extensions is not None:
+            ControlSimulator(import_list).deselect_rows_by_extension(exclude_extensions=exclude_extensions)
 
     def _enable_close_panel_after_import(self, controlfinder: ControlFinder) -> None:
         """Enable the checkbox to automatically close the import panel after importing."""
@@ -142,33 +151,53 @@ class PosPacUavApplication:
         #Expected import time ~180s --> 240s enough margin
         wait_for_file_creation(file_path=last_file_created_during_import, timeout_s=240) 
 
-    def _import_trajectory_data(self, controlfinder: ControlFinder,
-                                input_folder: Path, output_folder: Path)-> None:
-        """Import trajectory data from the APX subfolder into the POSPac project.
+    def _import_data(
+            self,
+            controlfinder:      ControlFinder,
+            import_folder:      Path,
+            output_folder:      Path,
+            exclude_extensions: list[str] | None = None
+    ) -> None:
+        """Import data from the specified folder into the current POSPac project.
 
-        Opens the import panel, sets the import folder, selects all files, and triggers the import.
-        Waits until the output folder stops changing to confirm the import is complete.
+        Opens the import panel, sets the import folder, selects all files (optionally
+        excluding specific file extensions), and triggers the import. Waits until
+        import is complete and confirms any warning dialogs.
 
-        Note:
-        A conservative  check is used to detect import completion (no file changes
-        for stable_seconds). This is a potential area for optimization in future.
+        Args:
+            controlfinder:      ControlFinder for the main POSPac window.
+            import_folder:      Path to the folder containing files to import.
+            output_folder:      Project output folder monitored for import completion.
+            exclude_extensions: Optional list of file extensions to exclude from import
+                                (e.g. ['txt'] to skip text files).
         """
-
         self._open_import_panel(controlfinder)
-        # Get new control finder for open project window
-        import_panel = self._get_import_panel(controlfinder)
-        import_panel_cf = ControlFinder(window=import_panel)
+        import_panel_cf = ControlFinder(window=self._get_import_panel(controlfinder))
 
-        self._set_import_folder(
-            controlfinder=import_panel_cf,
-            import_folder=input_folder / "apx")
-        self._select_all_in_importlist(import_panel_cf)
+        self._set_import_folder(controlfinder=import_panel_cf, import_folder=import_folder)
+        self._select_all_in_importlist(controlfinder=import_panel_cf,
+                                    exclude_extensions=exclude_extensions)
         self._enable_close_panel_after_import(import_panel_cf)
         self._start_importing(import_panel_cf)
-        
-        
-      
-        print(f"Import of {input_folder / "apx"} completed.")
+        self._wait_until_trajectory_import_complete(output_folder=output_folder)
+        self._confirm_import_warning(controlfinder=controlfinder)
+
+        print(f"Import of {import_folder} completed.")
+
+    def _import_trajectory_data(self, controlfinder: ControlFinder,
+                                input_folder: Path, output_folder: Path) -> None:
+        """Import trajectory data from the APX subfolder into the POSPac project."""
+        self._import_data(controlfinder=controlfinder,
+                        import_folder=input_folder / "apx",
+                        output_folder=output_folder)
+
+    def _import_basestation_data(self, controlfinder: ControlFinder,
+                                input_folder: Path, output_folder: Path) -> None:
+        """Import base station data from the RINEX subfolder into the POSPac project."""
+        self._import_data(controlfinder=controlfinder,
+                        import_folder=input_folder / "rinex",
+                        output_folder=output_folder,
+                        exclude_extensions=["txt"]) # Cannot import txt to posspac, only created for doc
 
     def _save_project(self, controlfinder: ControlFinder) -> None:
         """Save current project state using Ctrl+S."""
@@ -194,8 +223,10 @@ class PosPacUavApplication:
                 self._import_trajectory_data(controlfinder=main_window_cf,
                                              input_folder=input_folder,
                                              output_folder=output_folder)
-                self._wait_until_trajectory_import_complete(output_folder=output_folder)
-                self._confirm_import_warning(main_window_cf)
+                self._import_basestation_data(controlfinder=main_window_cf,
+                                             input_folder=input_folder,
+                                             output_folder=output_folder)
+                    
                 self._save_project(main_window_cf)
 
 
