@@ -21,7 +21,8 @@ if __name__ == "__main__":
                                         Path("D:/data/mjolnir"), "01_raw_data"),
                                     output_folder=PipelineFolder(
                                         Path("E:/mjolnir_processing"), "RAW"),
-                                    jobs=selected_jobs)
+                                    jobs=selected_jobs,
+                                    exclude_within_output_folder=["rinex"]) # Some folders already contain base station data (Make sure there is no duplicate or wrong format)
     download_base_station_data = ScrapeBaseStationData(name="Download Base Station Data",
                                     input_folder=PipelineFolder(
                                         Path("E:/mjolnir_processing"), "RAW/apx"), #Use data from APX folder to get flight time info for scraper
@@ -61,8 +62,8 @@ if __name__ == "__main__":
                                jobs=selected_jobs)  
 
     # Run Steps
-    #fetch_raw_data.run()
-    download_base_station_data.run()
+    fetch_raw_data.run()
+    #download_base_station_data.run()
     #binary_to_radiance.run()
     #get_vnir_files.run()
     #get_swir_files.run()

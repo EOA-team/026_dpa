@@ -10,6 +10,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 """
 from shutil import copytree
 from dotenv import load_dotenv
+from shutil import ignore_patterns
 
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
@@ -23,12 +24,27 @@ from code.file_utils import move_and_extract_downloaded_zip
 
 
 class CopyJobFolders(PipelineStep):
-    """Copies folder from input to output for each job."""
+    """Copies raw data folders from input to output for each job.
+
+    Excludes specified subfolders to avoid copying data that is either already
+    processed or should be freshly fetched by a dedicated pipeline step.
+
+    Args:
+        exclude_within_output_folder: List of subfolder names to skip during copy.
+            Some job folders contain pre-processed data from previous manual workflows
+            that should not be reused (e.g. 'rinex' folders should always be freshly
+            fetched by the ScrapeBaseStationData step to ensure consistent format).
+    """
+    def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
+                 output_folder: PipelineFolder, exclude_within_output_folder: list[str]|None = None):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.exclude_within_output_folder = exclude_within_output_folder
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-            copytree(input_folder, output_folder)
+            ignore_ptrn = ignore_patterns(*self.exclude_within_output_folder) if self.exclude_within_output_folder else None
+            copytree(input_folder, output_folder, ignore=ignore_ptrn)
             print(f"Copied {input_folder} to {output_folder}")
 
         print(f"Finished Step: {self.name} ✅")
