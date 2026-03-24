@@ -9,8 +9,8 @@ dependencies:
   - blosc=1.21.6
   - brotli-python=1.2.0
   - bzip2=1.0.8
-  - ca-certificates=2026.1.4
-  - certifi=2026.1.4
+  - ca-certificates=2026.2.25
+  - certifi=2026.2.25
   - cffi=2.0.0
   - colorama=0.4.6
   - comtypes=1.4.13
@@ -71,10 +71,11 @@ dependencies:
   - muparser=2.3.5
   - mypy=1.19.1
   - mypy_extensions=1.1.0
-  - numpy=2.3.5
+  - numpy=2.4.2
   - openssl=3.6.1
   - outcome=1.3.0.post0
   - packaging=25.0
+  - pandas=3.0.1
   - pathspec=0.12.1
   - pcre2=10.47
   - pip=25.3
@@ -92,8 +93,10 @@ dependencies:
   - pytest=9.0.2
   - pytest-cov=7.0.0
   - python=3.12.12
+  - python-dateutil=2.9.0.post0
   - python-dotenv=1.2.1
   - python-librt=0.7.4
+  - python-tzdata=2025.3
   - python_abi=3.12
   - pywin32=311
   - pywinauto=0.6.9
@@ -131,9 +134,13 @@ dependencies:
   - zlib=1.3.1
   - zstd=1.5.7
   - pip:
+      - altgraph==0.17.5
       - charset-normalizer==3.4.4
+      - pefile==2023.2.7
+      - pyinstaller==6.12.0
+      - pyinstaller-hooks-contrib==2026.1
+      - pywin32-ctypes==0.2.3
       - requests==2.32.5
       - types-pyyaml==6.0.12.20250915
       - webdriver-manager==4.0.2
-      - pyinstaller==6.12.0
 prefix: C:\Users\F80877978\AppData\Local\miniforge3\envs\026_dpa_py312
