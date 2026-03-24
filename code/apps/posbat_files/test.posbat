@@ -1,0 +1,217 @@
+<?xml version="1.0"?>
+<!--
+    POSPac Batch File for re112o_250610
+    Generated from SOP documentation and confirmed Project Settings screenshots.
+
+    Timing: entire time interval is processed (no start/stop trimming).
+    If trimming is needed, add <StartTimeTotalSec> and <StopTimeTotalSec>
+    to the Process and Export blocks manually.
+
+    IMU CONFIG: Set <ImuType> to either "Remote" or "Onboard" depending on flight.
+
+    Remote IMU lever arms:
+        IMU:  X=0.052, Y=-0.043, Z=0.018 | Mounting: X=180, Y=0, Z=0
+        GNSS: X=-0.020, Y=0.000, Z=-0.638 | Aircraft: X=0, Y=0, Z=0
+
+    Onboard IMU lever arms:
+        IMU:  X=-0.011, Y=0.088, Z=-0.281 | Mounting: X=0, Y=0, Z=-90
+        GNSS: X=-0.020, Y=0.000, Z=-0.638 | Aircraft: X=0, Y=0, Z=0
+
+    NOTE: Lever arm tags in <Process> are not officially documented for
+    batch mode — if processing uses wrong lever arms, pre-configure them
+    in the .pospac template instead.
+
+    Run with:
+    PospacBatch.exe -b re112o_250610.posbat -m UAV -d
+-->
+<Batch xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <Project>
+        <n>re112o_250610</n>
+
+        <!-- ================================================================
+             EXTRACT: APX rover data (T04 format, APX-20)
+             ================================================================ -->
+        <Extract>
+            <FirstPosFile>E:\mjolnir_processing\re112o_250610\RAW\apx\6234C84164202506100820.T04</FirstPosFile>
+            <LastPosFile>E:\mjolnir_processing\re112o_250610\RAW\apx\6234C84164202506100858.T04</LastPosFile>
+        </Extract>
+
+        <!-- ================================================================
+             PROCESS: INFusion Single Base
+             Base station: ETH2 from local RINEX files
+
+             *** IMU SELECTION: currently set to REMOTE ***
+             To switch to Onboard, replace the lever arm block below
+             with the Onboard values from the comment header above.
+             ================================================================ -->
+        <Process>
+            <GnssMode>INFusion_SingleBase</GnssMode>
+            <SingleBaseList>
+                <BatchBaseStationCoordinateInfo>
+                    <StationID>ETH2</StationID>
+                    <DataFile>E:\mjolnir_processing\re112o_250610\RAW\rinex\ETH2161I00.25c</DataFile>
+                    <DataFile>E:\mjolnir_processing\re112o_250610\RAW\rinex\ETH2161I00.25g</DataFile>
+                    <DataFile>E:\mjolnir_processing\re112o_250610\RAW\rinex\ETH2161I00.25l</DataFile>
+                    <DataFile>E:\mjolnir_processing\re112o_250610\RAW\rinex\ETH2161I00.25n</DataFile>
+                    <DataFile>E:\mjolnir_processing\re112o_250610\RAW\rinex\ETH2161I00.25o</DataFile>
+                    <UseRtxPos>true</UseRtxPos>
+                </BatchBaseStationCoordinateInfo>
+            </SingleBaseList>
+
+            <!-- REMOTE IMU lever arms (switch to Onboard block below if needed) -->
+            <LeverX>0.052</LeverX>
+            <LeverY>-0.043</LeverY>
+            <LeverZ>0.018</LeverZ>
+            <MountingAngleX>180</MountingAngleX>
+            <MountingAngleY>0</MountingAngleY>
+            <MountingAngleZ>0</MountingAngleZ>
+
+            <!-- ONBOARD IMU lever arms (uncomment and remove Remote block above if needed)
+            <LeverX>-0.011</LeverX>
+            <LeverY>0.088</LeverY>
+            <LeverZ>-0.281</LeverZ>
+            <MountingAngleX>0</MountingAngleX>
+            <MountingAngleY>0</MountingAngleY>
+            <MountingAngleZ>-90</MountingAngleZ>
+            -->
+
+            <!-- Reference to Primary GNSS Lever Arm (same for both IMU configs) -->
+            <GnssLeverX>-0.020</GnssLeverX>
+            <GnssLeverY>0.000</GnssLeverY>
+            <GnssLeverZ>-0.638</GnssLeverZ>
+            <!-- Aircraft to Reference Mounting Angles (same for both IMU configs) -->
+            <AircraftMountingAngleX>0</AircraftMountingAngleX>
+            <AircraftMountingAngleY>0</AircraftMountingAngleY>
+            <AircraftMountingAngleZ>0</AircraftMountingAngleZ>
+        </Process>
+
+        <!-- ================================================================
+             EXPORT 1: VNIR - All Records (HySpex geographic)
+             VNIR lever arm: X=-0.024, Y=-0.045, Z=-0.055
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\VNIR_all_records.txt</OutputFile>
+                <OutputFormat>HySpex_geographic</OutputFormat>
+                <EventNum>AllRecords</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <LeverX>-0.024</LeverX>
+                <LeverY>-0.045</LeverY>
+                <LeverZ>-0.055</LeverZ>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <Datum>WGS84</Datum>
+                <TargetEpoch>0</TargetEpoch>
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             EXPORT 2: SWIR - All Records (HySpex geographic)
+             SWIR lever arm: X=-0.024, Y=0.030, Z=-0.055
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\SWIR_all_records.txt</OutputFile>
+                <OutputFormat>HySpex_geographic</OutputFormat>
+                <EventNum>AllRecords</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <LeverX>-0.024</LeverX>
+                <LeverY>0.030</LeverY>
+                <LeverZ>-0.055</LeverZ>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <Datum>WGS84</Datum>
+                <TargetEpoch>0</TargetEpoch>
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             EXPORT 3: Events (Event 1 Time triggers)
+             Same for VNIR and SWIR — only exported once (no lever arm needed)
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\events.txt</OutputFile>
+                <OutputFormat>HySpex_geographic</OutputFormat>
+                <EventNum>Event1Time</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <Datum>WGS84</Datum>
+                <TargetEpoch>0</TargetEpoch>
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             EXPORT 4: Custom SBET binary output
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\Export\sbet_re112o_250610.out</OutputFile>
+                <OutputFormat>Custom Smoothed BET</OutputFormat>
+                <EventNum>AllRecords</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <Datum>WGS84</Datum>
+                <TargetEpoch>0</TargetEpoch>
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             LIDAR Run 1: Boresight calibration only
+             Sensor: Velodyne VLP-32C (.pcap format)
+             LiDAR lever arms: X=-0.115, Y=-0.008, Z=0.13
+             Approximate boresight angles: TX=90, TY=-62, TZ=90 deg
+
+             Run 1: LiDARQCAdjustTrajectory=false, LiDARQCCalibrateBoresights=true
+             Run 2: swap to LiDARQCAdjustTrajectory=true, LiDARQCCalibrateBoresights=false
+                    and replace Tx/Ty/Tz with calibrated values from Run 1
+             Run 3: GeneratePointCloud=true, CalibrateAndQC=false
+                    boresight angles auto-inserted from Run 1/2
+             ================================================================ -->
+        <Lidar>
+            <Type>VelodynePCAP</Type>
+            <VelodynePCAPOptions>
+                <Model>1</Model>
+                <DataPort>2368</DataPort>
+                <PositionPort>8308</PositionPort>
+            </VelodynePCAPOptions>
+            <LidarFile>E:\mjolnir_processing\re112o_250610\RAW\lidardump-2025.06.10-10.43.56.pcap</LidarFile>
+            <CalibrateAndQC>true</CalibrateAndQC>
+            <GeneratePointCloud>false</GeneratePointCloud>
+            <CustomSettings>
+                <LiDARQCFolder>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\LiDARQC</LiDARQCFolder>
+                <LASCreatorFolder>E:\mjolnir_processing\re112o_250610\re112o_sbet\test\Mission 1\LiDAR</LASCreatorFolder>
+                <LeverX>-0.115</LeverX>
+                <LeverY>-0.008</LeverY>
+                <LeverZ>0.13</LeverZ>
+                <Tx>90.0</Tx>
+                <Ty>-62.0</Ty>
+                <Tz>90.0</Tz>
+                <LiDARQCAdjustTrajectory>false</LiDARQCAdjustTrajectory>
+                <LiDARQCCalibrateBoresights>true</LiDARQCCalibrateBoresights>
+                <LiDARQCRangeMin>30</LiDARQCRangeMin>
+                <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
+                <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
+                <Ellipsoid>WGS84</Ellipsoid>
+                <Datum>WGS84</Datum>
+                <TargetEpoch>0</TargetEpoch>
+            </CustomSettings>
+        </Lidar>
+
+    </Project>
+
+    <Version>4.0</Version>
+
+</Batch>
