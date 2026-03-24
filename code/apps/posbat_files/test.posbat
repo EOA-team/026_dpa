@@ -20,7 +20,7 @@
     DATA FLOW:
       1. Extract: Trim to 203620-205079 (cuts gap at source)
       2. Process: Works only on trimmed data (no gap to encounter)
-      3. Export: Exports trimmed data with sensor lever arms
+      3. Export: Exports trimmed data with sensor lever arms to UTM Zone 32N
     
     POSPac settings:
       - <ScanImuForDataGaps>true</ScanImuForDataGaps> ✅ Detect gaps during extract
@@ -37,6 +37,13 @@
     Onboard IMU lever arms (if needed):
         IMU:  X=-0.011, Y=0.088, Z=-0.281 | Mounting: X=0, Y=0, Z=-90
         GNSS: X=-0.020, Y=0.000, Z=-0.638 | Aircraft: X=0, Y=0, Z=0
+
+    MAPPING FRAME (Coordinate System):
+      - Grid: Universal Transverse Mercator
+      - Zone: UTM North 32 (6E to 12E) - Switzerland
+      - Datum: WGS84
+      - Local Transformation: NONE
+      - Height: Ellipsoidal (WGS84)
 
     NOTE: Lever arm tags in <Process> are not officially documented for
     batch mode — if processing uses wrong lever arms, pre-configure them
@@ -118,6 +125,7 @@
         <!-- ================================================================
              EXPORT 1: VNIR - All Records (HySpex geographic)
              VNIR lever arm: X=-0.024, Y=-0.045, Z=-0.055
+             Mapping Frame: UTM Zone 32N, WGS84
              ================================================================ -->
         <Export>
             <CustomSettings>
@@ -125,6 +133,10 @@
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
                 <LeverX>-0.024</LeverX>
                 <LeverY>-0.045</LeverY>
                 <LeverZ>-0.055</LeverZ>
@@ -132,7 +144,6 @@
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <Datum>WGS84</Datum>
                 <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Export>
@@ -140,6 +151,7 @@
         <!-- ================================================================
              EXPORT 2: SWIR - All Records (HySpex geographic)
              SWIR lever arm: X=-0.024, Y=0.030, Z=-0.055
+             Mapping Frame: UTM Zone 32N, WGS84
              ================================================================ -->
         <Export>
             <CustomSettings>
@@ -147,6 +159,10 @@
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
                 <LeverX>-0.024</LeverX>
                 <LeverY>0.030</LeverY>
                 <LeverZ>-0.055</LeverZ>
@@ -154,7 +170,6 @@
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <Datum>WGS84</Datum>
                 <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Export>
@@ -162,6 +177,7 @@
         <!-- ================================================================
              EXPORT 3: Events (Event 1 Time triggers)
              Same for VNIR and SWIR — only exported once (no lever arm needed)
+             Mapping Frame: UTM Zone 32N, WGS84
              ================================================================ -->
         <Export>
             <CustomSettings>
@@ -169,17 +185,21 @@
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>Event1Time</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
                 <HeightOptions>Ellipsoid</HeightOptions>
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <Datum>WGS84</Datum>
                 <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Export>
 
         <!-- ================================================================
              EXPORT 4: Custom SBET binary output
+             Mapping Frame: UTM Zone 32N, WGS84
              ================================================================ -->
         <Export>
             <CustomSettings>
@@ -187,11 +207,14 @@
                 <OutputFormat>Custom Smoothed BET</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
                 <HeightOptions>Ellipsoid</HeightOptions>
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <Datum>WGS84</Datum>
                 <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Export>
