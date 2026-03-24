@@ -3,32 +3,38 @@
     POSPac Batch File for re112o_250610
     Generated from SOP documentation and confirmed Project Settings screenshots.
 
-    ⚠️  CRITICAL TIMING NOTE - UPDATED:
+    ⚠️  CRITICAL TIMING NOTE - FINAL VERSION:
     
     IMU DATA GAP DETECTED:
       - Gap starts:    203415.974 GPS seconds
       - Gap duration:  204.022491 seconds
       - Gap ends:      203619.996 GPS seconds (~203620)
     
-    PROCESSING WINDOW (CORRECTED):
+    EXTRACTION & PROCESSING WINDOW (OPTIMIZED):
       - Start: 203620 GPS seconds ✅ (RIGHT AFTER gap, captures all good data)
       - Stop:  205079 GPS seconds ✅ (END of available data, full coverage)
       - Duration: 1459 seconds (~24.3 minutes) - complete flight segment
     
     Available data range: 202862 to 205079 GPS seconds
     
+    DATA FLOW:
+      1. Extract: Trim to 203620-205079 (cuts gap at source)
+      2. Process: Works only on trimmed data (no gap to encounter)
+      3. Export: Exports trimmed data with sensor lever arms
+    
     POSPac settings:
-      - <ScanImuForDataGaps>true</ScanImuForDataGaps> ✅ Skip the gap during extract
-      - <SkipDataGaps>true</SkipDataGaps> ✅ Skip the gap during processing
-      - <InitializationMethod>TimeTagged</InitializationMethod> ✅ Align to start time
+      - <ScanImuForDataGaps>true</ScanImuForDataGaps> ✅ Detect gaps during extract
+      - <StartTimeTotalSec>203620</StartTimeTotalSec> ✅ Trim at Extract phase
+      - <InitializationMethod>TimeTagged</InitializationMethod> ✅ Start at safe time
+      - <SkipDataGaps>true</SkipDataGaps> ✅ Handle any remaining gaps (backup)
 
-    IMU CONFIG: Set <ImuType> to either "Remote" or "Onboard" depending on flight.
+    IMU CONFIG: Currently set to REMOTE
 
     Remote IMU lever arms:
         IMU:  X=0.052, Y=-0.043, Z=0.018 | Mounting: X=180, Y=0, Z=0
         GNSS: X=-0.020, Y=0.000, Z=-0.638 | Aircraft: X=0, Y=0, Z=0
 
-    Onboard IMU lever arms:
+    Onboard IMU lever arms (if needed):
         IMU:  X=-0.011, Y=0.088, Z=-0.281 | Mounting: X=0, Y=0, Z=-90
         GNSS: X=-0.020, Y=0.000, Z=-0.638 | Aircraft: X=0, Y=0, Z=0
 
@@ -47,17 +53,20 @@
 
         <!-- ================================================================
              EXTRACT: APX rover data (T04 format, APX-20)
+             TIMING TRIMMED TO FLIGHT SEGMENT AFTER IMU GAP
              ================================================================ -->
         <Extract>
             <FirstPosFile>E:\mjolnir_processing\re112o_250610\RAW\apx\6234C84164202506100820.T04</FirstPosFile>
             <LastPosFile>E:\mjolnir_processing\re112o_250610\RAW\apx\6234C84164202506100858.T04</LastPosFile>
             <ScanImuForDataGaps>true</ScanImuForDataGaps>
+            <StartTimeTotalSec>203620</StartTimeTotalSec>
+            <StopTimeTotalSec>205079</StopTimeTotalSec>
         </Extract>
 
         <!-- ================================================================
              PROCESS: INFusion Single Base
              Base station: ETH2 from local RINEX files
-             Timing trimmed to flight segment after IMU data gap.
+             Works only on trimmed extracted data (no gap to encounter)
 
              *** IMU SELECTION: currently set to REMOTE ***
              To switch to Onboard, replace the lever arm block below
@@ -65,8 +74,6 @@
              ================================================================ -->
         <Process>
             <GnssMode>INFusion_SingleBase</GnssMode>
-            <StartTimeTotalSec>203620</StartTimeTotalSec>
-            <StopTimeTotalSec>205079</StopTimeTotalSec>
             <InitializationMethod>TimeTagged</InitializationMethod>
             <SkipDataGaps>true</SkipDataGaps>
             <SingleBaseList>
@@ -118,8 +125,6 @@
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
-                <StartTimeTotalSec>203620</StartTimeTotalSec>
-                <StopTimeTotalSec>205079</StopTimeTotalSec>
                 <LeverX>-0.024</LeverX>
                 <LeverY>-0.045</LeverY>
                 <LeverZ>-0.055</LeverZ>
@@ -142,8 +147,6 @@
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
-                <StartTimeTotalSec>203620</StartTimeTotalSec>
-                <StopTimeTotalSec>205079</StopTimeTotalSec>
                 <LeverX>-0.024</LeverX>
                 <LeverY>0.030</LeverY>
                 <LeverZ>-0.055</LeverZ>
@@ -166,8 +169,6 @@
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>Event1Time</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
-                <StartTimeTotalSec>203620</StartTimeTotalSec>
-                <StopTimeTotalSec>205079</StopTimeTotalSec>
                 <HeightOptions>Ellipsoid</HeightOptions>
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
@@ -186,8 +187,6 @@
                 <OutputFormat>Custom Smoothed BET</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
-                <StartTimeTotalSec>203620</StartTimeTotalSec>
-                <StopTimeTotalSec>205079</StopTimeTotalSec>
                 <HeightOptions>Ellipsoid</HeightOptions>
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
