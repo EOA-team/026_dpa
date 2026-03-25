@@ -155,6 +155,68 @@ class PosPacUavApplication:
         output_file.write_text(xml_content, encoding="utf-8")
         print(f"Created batch file: {output_file}")
 
+    @staticmethod
+    def create_full_processing_batchfile(
+            output_file:          Path,
+            job_name:             str,
+            input_folder:         Path,
+            output_folder:        Path,
+            start_time_total_sec: float,
+            stop_time_total_sec:  float,
+    ) -> None:
+        """Create a POSPac full processing batch file from template.
+
+        Args:
+            output_file:          Path where the .posbat file will be saved.
+            job_name:             Name of the job (e.g. 're112o_250610').
+            input_folder:         Path to the RAW data folder.
+            output_folder:        Path to the tmp/output folder.
+            start_time_total_sec: GPS seconds for start of flight window.
+            stop_time_total_sec:  GPS seconds for end of flight window.
+        """
+        apx_folder   = input_folder / "apx"
+        rinex_folder = input_folder / "rinex"
+        rinex_station_id = "ETH2"
+
+        t04_files = sorted(apx_folder.glob("*.T04"))
+        if not t04_files:
+            raise ValueError(f"No .T04 files found in {apx_folder}")
+
+        rinex_extensions = {".25o", ".25n", ".25g", ".25l", ".25c"}
+        rinex_files = sorted(
+            f for f in rinex_folder.glob(f"{rinex_station_id}*")
+            if f.suffix in rinex_extensions
+        )
+        if not rinex_files:
+            raise ValueError(f"No RINEX files found for {rinex_station_id} in {rinex_folder}")
+
+        pcap_files = list(input_folder.glob("*.pcap"))
+        if not pcap_files:
+            raise ValueError(f"No .pcap file found in {input_folder}")
+
+        rinex_datafiles = "\n                    ".join(
+            f"<DataFile>{f}</DataFile>" for f in rinex_files
+        )
+
+        template_file = Path(__file__).parent / "templates" / "full_processing_template.posbat"
+        template      = Template(template_file.read_text(encoding="utf-8"))
+
+        xml_content = template.substitute(
+            job_name             = job_name,
+            input_folder         = str(input_folder),
+            output_folder        = str(output_folder),
+            first_pos_file       = t04_files[0].name,
+            last_pos_file        = t04_files[-1].name,
+            start_time_total_sec = start_time_total_sec,
+            stop_time_total_sec  = stop_time_total_sec,
+            rinex_files          = rinex_datafiles,
+            pcap_file            = pcap_files[0].name,
+        )
+
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(xml_content, encoding="utf-8")
+        print(f"Created batch file: {output_file}")
+
 
     def run(self)-> None:
         """Run the POSPac UAV processing for each input/output folder pair (= job)."""
@@ -163,6 +225,15 @@ class PosPacUavApplication:
             job_name = input_folder.parent.name
             posbat_file = output_folder / f"{job_name}_extract_only.posbat"
             self.create_extract_only_batchfile(output_file=posbat_file, job_name=job_name, input_folder=input_folder)
+            posbat_file = output_folder / f"{job_name}_full_processing.posbat"
+            self.create_full_processing_batchfile(
+                output_file=posbat_file,
+                job_name=job_name,
+                input_folder=input_folder,
+                output_folder=output_folder,
+                start_time_total_sec=0, #TODO: Placeholder
+                stop_time_total_sec=100 #TODO: Placeholder
+            )
 
         # with ApplicationManager(app_path=self.app_path,
         #                         work_dir=self.work_dir,
