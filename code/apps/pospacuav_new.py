@@ -270,7 +270,8 @@ class PosPacUavApplication:
                     output_file=tmp_posbat_file_path,
                     job_name=job_name,
                     input_folder=input_folder,
-                    output_folder=output_folder,
+                    # output_foler :e.g. E:/mjolnir_processing/re112o_250610/tmp/re112o_250610_full_processing
+                    output_folder=output_folder / tmp_posbat_file_path.stem, 
                     start_time_total_sec=start_time, 
                     stop_time_total_sec=stop_time 
                 )
@@ -283,26 +284,10 @@ class PosPacUavApplication:
                  
                 last_file_created_during_processing = (tmp_posbat_file_path.parent 
                                                    / tmp_posbat_file_path.stem # e.g re112o_250610_full_processing
-                                                   / "Mission 1" / "Extract" 
-                                                   / "{tmp_posbat_file_path.stem}.log") # e.g. re112o_250610_full_processing.log
-                wait_for_file_creation(file_path=last_file_created_during_processing, timeout_s=600) 
-
-
-
-        # with ApplicationManager(app_path=self.app_path,
-        #                         work_dir=self.work_dir,
-        #                         window_title=None,  # Not needed when using auto_id
-        #                         window_auto_id=self.window_auto_id,
-        #                         is_idl_application=self.is_idl_application) as pospac_manager:
-        #     main_window_cf = ControlFinder(window=pospac_manager.window)
-        #     for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-
-
-
-
-                
-  
-            
+                                                   / f"{tmp_posbat_file_path.stem}.log") # e.g. re112o_250610_full_processing.log
+                wait_for_file_creation(file_path=last_file_created_during_processing, 
+                                       timeout_s=840 # Expected 10min --> Set timeout to 14min to be safe
+                                       )   
         
 
 if __name__ == "__main__":
