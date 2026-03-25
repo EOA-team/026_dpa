@@ -83,6 +83,11 @@ class PosPacUavApplication:
             control_name="Run Batch")
         load_btn.click_input()
 
+    def _reset_batchmanager(self, controlfinder: ControlFinder) -> None:
+        """Clicking twice on run batch resets to initial state where no batch file is loaded"""
+        self._click_batchmanager_button(controlfinder)
+        self._click_batchmanager_button(controlfinder)
+
     def _run_all_projects(self, controlfinder: ControlFinder) -> None:
         """Select 'Run All Projects' in the Batch Manager."""
         self._click_runbatch_button(controlfinder)
@@ -99,20 +104,12 @@ class PosPacUavApplication:
                                    posbat_file=posbat_file)
         self._run_all_projects(controlfinder=batch_cf)
 
-    def _wait_until_trajectory_import_complete(self, output_folder: Path) -> None:
-        """The last file that is created during trajectory 
-        import is gnss_nav_pri_interp_Mission 1.dat """
-        last_file_created_during_import = (
-            output_folder
-            / "pospac_tmp"
-            / "Mission 1"
-            / "Extract"
-            / "gnss_nav_pri_interp_Mission 1.dat"
-        )
-        #Expected import time ~180s --> 240s enough margin
-        wait_for_file_creation(file_path=last_file_created_during_import, timeout_s=240) 
-
-    def parse_flight_window_from_extract_log(log_path: Path, margin_s: float ) -> tuple[float, float]:
+    @staticmethod
+    def parse_flight_window_from_extract_log(
+            log_path: Path,
+            margin_s: float,
+            debug:    bool = False
+    ) -> tuple[float, float]:
         """Parse Event 1 start/stop times from extract_Mission 1.log.
         Returns (start_time, stop_time) with margin added for IMU initialization.
         """
@@ -121,7 +118,14 @@ class PosPacUavApplication:
         match = pattern.search(text)
         if not match:
             raise ValueError(f"No Event 1 found in {log_path}")
-        return float(match.group(1)) - margin_s, float(match.group(2)) + margin_s
+
+        start_time = float(match.group(1)) - margin_s
+        stop_time  = float(match.group(2)) + margin_s
+
+        if debug:
+            print(f"Flight window: {start_time:.3f}s - {stop_time:.3f}s (margin: ±{margin_s}s)")
+
+        return start_time, stop_time
     
     @staticmethod
     def create_extract_only_batchfile(
@@ -221,19 +225,69 @@ class PosPacUavApplication:
     def run(self)-> None:
         """Run the POSPac UAV processing for each input/output folder pair (= job)."""
 
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-            job_name = input_folder.parent.name
-            posbat_file = output_folder / f"{job_name}_extract_only.posbat"
-            self.create_extract_only_batchfile(output_file=posbat_file, job_name=job_name, input_folder=input_folder)
-            posbat_file = output_folder / f"{job_name}_full_processing.posbat"
-            self.create_full_processing_batchfile(
-                output_file=posbat_file,
-                job_name=job_name,
-                input_folder=input_folder,
-                output_folder=output_folder,
-                start_time_total_sec=0, #TODO: Placeholder
-                stop_time_total_sec=100 #TODO: Placeholder
-            )
+        with ApplicationManager(app_path=self.app_path,
+                                work_dir=self.work_dir,
+                                window_title=None,  # Not needed when using auto_id
+                                window_auto_id=self.window_auto_id,
+                                is_idl_application=self.is_idl_application) as pospac_manager:
+           
+            main_window_cf = ControlFinder(window=pospac_manager.window)
+            for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+                # Make sure Window is ready before starting next iteration
+                main_window_cf.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
+                main_window_cf.window.set_focus()
+                # Next iteration
+                job_name = input_folder.parent.name
+                # Prepare Batch file "Extract only"
+                tmp_posbat_file_path = output_folder / f"{job_name}_extract_only.posbat"
+                self.create_extract_only_batchfile(output_file=tmp_posbat_file_path, 
+                                                   job_name=job_name, 
+                                                   input_folder=input_folder)
+                # Run Batch file "Extract only"
+                self._reset_batchmanager(controlfinder=main_window_cf) 
+                batchmanager_cf = self._open_batch_manager(main_window_cf)
+                self._run_batch(main_cf=main_window_cf, 
+                                batch_cf=batchmanager_cf,
+                                posbat_file=tmp_posbat_file_path)
+                last_file_created_during_import = (tmp_posbat_file_path.parent 
+                                                   / tmp_posbat_file_path.stem # e.g re112o_250610_extract_only
+                                                   / "Mission 1" / "Extract" 
+                                                   / "gnss_nav_pri_interp_Mission 1.dat")
+                wait_for_file_creation(file_path=last_file_created_during_import, timeout_s=240) 
+                # Get Start and Stop Time for full processing batch file from extract log
+                tmp_log_path = (tmp_posbat_file_path.parent
+                                /tmp_posbat_file_path.stem # e.g re112o_250610_extract_only
+                                / "Mission 1" / "Extract" 
+                                / "extract_Mission 1.log")
+                (start_time, stop_time) = self.parse_flight_window_from_extract_log(
+                    margin_s=200.0,
+                    log_path=tmp_log_path,
+                    debug=True)
+                
+                # Prepare Batch file "Full processing"
+                tmp_posbat_file_path = output_folder / f"{job_name}_full_processing.posbat"
+                self.create_full_processing_batchfile(
+                    output_file=tmp_posbat_file_path,
+                    job_name=job_name,
+                    input_folder=input_folder,
+                    output_folder=output_folder,
+                    start_time_total_sec=start_time, 
+                    stop_time_total_sec=stop_time 
+                )
+                # Run Batch file "Full processing"
+                self._reset_batchmanager(controlfinder=main_window_cf) 
+                batchmanager_cf = self._open_batch_manager(main_window_cf)
+                self._run_batch(main_cf=main_window_cf, 
+                                batch_cf=batchmanager_cf,
+                                posbat_file=tmp_posbat_file_path)
+                 
+                last_file_created_during_processing = (tmp_posbat_file_path.parent 
+                                                   / tmp_posbat_file_path.stem # e.g re112o_250610_full_processing
+                                                   / "Mission 1" / "Extract" 
+                                                   / "{tmp_posbat_file_path.stem}.log") # e.g. re112o_250610_full_processing.log
+                wait_for_file_creation(file_path=last_file_created_during_processing, timeout_s=600) 
+
+
 
         # with ApplicationManager(app_path=self.app_path,
         #                         work_dir=self.work_dir,
@@ -247,26 +301,9 @@ class PosPacUavApplication:
 
 
                 
-        #         # Make sure Window is ready before starting next iteration
-        #         main_window_cf.window.wait(
-        #             'enabled', timeout=DEFAULT_WAIT_TIME)
-        #         main_window_cf.window.set_focus()
-        #         # Next iteration
+  
             
-        #         batchmanager_cf = self._open_batch_manager(main_window_cf)
-        #         self._run_batch(main_cf=main_window_cf, 
-        #                         batch_cf=batchmanager_cf,
-        #                         posbat_file= output_folder / "importapx.posbat")
-        #         self._wait_until_trajectory_import_complete(output_folder)
-        #         self.parse_flight_window_from_extract_log(
-        #             margin_s=200.0,
-        #             log_path=output_folder 
-        #             / "pospac_tmp"
-        #             / "Mission 1"
-        #             / "Extract"
-        #             / "extract_Mission 1.log")
-
-        #     time.sleep(20)
+        
 
 if __name__ == "__main__":
     test_output_folders = [Path("E:/mjolnir_processing/re112o_250610/tmp"),
