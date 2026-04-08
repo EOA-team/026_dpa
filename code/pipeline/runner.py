@@ -12,7 +12,7 @@ from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, Est
 from code.pipeline.base import PipelineFolder, Path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
+    selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250717_2","re112o_250723_4",
                      "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
