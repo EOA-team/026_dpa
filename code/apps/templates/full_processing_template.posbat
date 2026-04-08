@@ -6,21 +6,14 @@
 
 Purpose:
     Full POSPac UAV processing pipeline:
-    Extract → Process (INFusion Single Base) → Export → LiDAR (3 runs)
+    Extract → Process (INFusion Single Base) → Export → LiDAR QC → Point Cloud Generation
 
 Description:
     This batch file performs the complete processing workflow for a
     single job. It requires the extract-only batch to have been run
     first to determine the correct start/stop times.
 
-    LiDAR processing runs in 3 sequential steps:
-      Run 1: Boresight calibration only (find precise boresight angles)
-      Run 2: Trajectory adjustment (using calibrated boresight from Run 1)
-      Run 3: Point Cloud Generator (boresight angles auto-inserted from Run 1/2)
-
 Note:
-    IMU lever arms are configured for the REMOTE IMU by default.
-    See onboard IMU values in the commented block below if needed.
     Base station is hardcoded to ETH2 (Agroscope standard).
 
 Template Parameters:
@@ -68,12 +61,10 @@ Template Parameters:
         <!-- ================================================================
              PROCESS: INFusion Single Base
              Base station: ETH2 (hardcoded - Agroscope standard)
-             IMU CONFIG: REMOTE (see comment header for Onboard values)
              ================================================================ -->
         <Process>
             <GnssMode>INFusion_SingleBase</GnssMode>
-            <InitializationMethod>TimeTagged</InitializationMethod>
-            <SkipDataGaps>true</SkipDataGaps>
+            <GnssNavType>None</GnssNavType>
             <SingleBaseList>
                 <BatchBaseStationCoordinateInfo>
                     <StationID>ETH2</StationID>
@@ -82,29 +73,45 @@ Template Parameters:
                 </BatchBaseStationCoordinateInfo>
             </SingleBaseList>
 
-            <!-- REMOTE IMU lever arms -->
-            <LeverX>0.052</LeverX>
-            <LeverY>-0.043</LeverY>
-            <LeverZ>0.018</LeverZ>
-            <MountingAngleX>180</MountingAngleX>
-            <MountingAngleY>0</MountingAngleY>
-            <MountingAngleZ>0</MountingAngleZ>
+            <CustomSettings>
+                <ImuContext>Remote</ImuContext>
+                <PriGNSSLeverX>-0.020</PriGNSSLeverX>
+                <PriGNSSLeverY>0.000</PriGNSSLeverY>
+                <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
+                <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD>
 
-            <!-- ONBOARD IMU lever arms (uncomment if needed)
-            <LeverX>-0.011</LeverX>
-            <LeverY>0.088</LeverY>
-            <LeverZ>-0.281</LeverZ>
-            <MountingAngleX>0</MountingAngleX>
-            <MountingAngleY>0</MountingAngleY>
-            <MountingAngleZ>-90</MountingAngleZ>
+                <RefToIMULeverX>0.052</RefToIMULeverX>
+                <RefToIMULeverY>-0.043</RefToIMULeverY>
+                <RefToIMULeverZ>0.018</RefToIMULeverZ>
+                <RefToIMUMountingAnglX>180</RefToIMUMountingAnglX>
+                <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
+                <RefToIMUMountingAnglZ>0</RefToIMUMountingAnglZ>
+
+                <VehRefMntAngX>0</VehRefMntAngX>
+                <VehRefMntAngY>0</VehRefMntAngY>
+                <VehRefMntAngZ>0</VehRefMntAngZ>
+            </CustomSettings>
+
+            <!-- For ONBOARD IMU, use the following lever arms and mounting angles instead 
+            <CustomSettings>
+                <ImuContext>Onboard</ImuContext>
+                <PriGNSSLeverX>-0.020</PriGNSSLeverX>
+                <PriGNSSLeverY>0.000</PriGNSSLeverY>
+                <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
+                <PriGNSSLeverSD>SDLessthan1cm</PriGNSSLeverSD>
+
+                <RefToIMULeverX>-0.011</RefToIMULeverX>
+                <RefToIMULeverY>-0.088</RefToIMULeverY>
+                <RefToIMULeverZ>-0.281</RefToIMULeverZ>
+                <RefToIMUMountingAnglX>0</RefToIMUMountingAnglX>
+                <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
+                <RefToIMUMountingAnglZ>-90</RefToIMUMountingAnglZ>
+
+                <VehRefMntAngX>0</VehRefMntAngX>
+                <VehRefMntAngY>0</VehRefMntAngY>
+                <VehRefMntAngZ>0</VehRefMntAngZ>
+            </CustomSettings>
             -->
-
-            <GnssLeverX>-0.020</GnssLeverX>
-            <GnssLeverY>0.000</GnssLeverY>
-            <GnssLeverZ>-0.638</GnssLeverZ>
-            <AircraftMountingAngleX>0</AircraftMountingAngleX>
-            <AircraftMountingAngleY>0</AircraftMountingAngleY>
-            <AircraftMountingAngleZ>0</AircraftMountingAngleZ>
         </Process>
 
         <!-- ================================================================
@@ -124,6 +131,9 @@ Template Parameters:
                 <LeverX>-0.024</LeverX>
                 <LeverY>-0.045</LeverY>
                 <LeverZ>-0.055</LeverZ>
+                <Tx>0</Tx>
+                <Ty>0</Ty>
+                <Tz>0</Tz>
                 <HeightOptions>Ellipsoid</HeightOptions>
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
@@ -149,6 +159,9 @@ Template Parameters:
                 <LeverX>-0.024</LeverX>
                 <LeverY>0.030</LeverY>
                 <LeverZ>-0.055</LeverZ>
+                <Tx>0</Tx>
+                <Ty>0</Ty>
+                <Tz>0</Tz>
                 <HeightOptions>Ellipsoid</HeightOptions>
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
@@ -204,7 +217,7 @@ Template Parameters:
              LIDAR Run 1: Boresight calibration only
              Sensor: Velodyne VLP-32C (.pcap format)
              LiDAR lever arms: X=-0.115, Y=-0.008, Z=0.13
-             Approximate boresight angles: TX=90, TY=-62, TZ=90 deg
+             Approximate boresight angles: TX=90 deg (5400 arcmin), TY=-62 deg (3720 arcmin), TZ=90 deg (5400 arcmin)
              Goal: Find the precise boresight angles for Run 2
              ================================================================ -->
         <Lidar>
@@ -219,61 +232,25 @@ Template Parameters:
             <GeneratePointCloud>false</GeneratePointCloud>
             <CustomSettings>
                 <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
-                <LASCreatorFolder>${output_folder}\Mission 1\LiDAR</LASCreatorFolder>
                 <LeverX>-0.115</LeverX>
                 <LeverY>-0.008</LeverY>
                 <LeverZ>0.13</LeverZ>
-                <Tx>90.0</Tx>
-                <Ty>-62.0</Ty>
-                <Tz>90.0</Tz>
-                <LiDARQCAdjustTrajectory>false</LiDARQCAdjustTrajectory>
+                <Tx>5400</Tx>
+                <Ty>-3720</Ty>
+                <Tz>5400</Tz>
+                <LiDARQCAdjustTrajectory>true</LiDARQCAdjustTrajectory>
                 <LiDARQCCalibrateBoresights>true</LiDARQCCalibrateBoresights>
                 <LiDARQCRangeMin>30</LiDARQCRangeMin>
                 <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
-                <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
                 <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Lidar>
 
-        <!-- ================================================================
-             LIDAR Run 2: Trajectory adjustment
-             Replace Tx/Ty/Tz with calibrated boresight values from Run 1
-             ================================================================ -->
-        <Lidar>
-            <Type>VelodynePCAP</Type>
-            <VelodynePCAPOptions>
-                <Model>1</Model>
-                <DataPort>2368</DataPort>
-                <PositionPort>8308</PositionPort>
-            </VelodynePCAPOptions>
-            <LidarFile>${input_folder}\${pcap_file}</LidarFile>
-            <CalibrateAndQC>true</CalibrateAndQC>
-            <GeneratePointCloud>false</GeneratePointCloud>
-            <CustomSettings>
-                <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
-                <LASCreatorFolder>${output_folder}\Mission 1\LiDAR</LASCreatorFolder>
-                <LeverX>-0.115</LeverX>
-                <LeverY>-0.008</LeverY>
-                <LeverZ>0.13</LeverZ>
-                <Tx>90.0</Tx>
-                <Ty>-62.0</Ty>
-                <Tz>90.0</Tz>
-                <LiDARQCAdjustTrajectory>true</LiDARQCAdjustTrajectory>
-                <LiDARQCCalibrateBoresights>false</LiDARQCCalibrateBoresights>
-                <LiDARQCRangeMin>30</LiDARQCRangeMin>
-                <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
-                <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
-                <Ellipsoid>WGS84</Ellipsoid>
-                <Datum>WGS84</Datum>
-                <TargetEpoch>0</TargetEpoch>
-            </CustomSettings>
-        </Lidar>
 
         <!-- ================================================================
-             LIDAR Run 3: Point Cloud Generator
-             Boresight angles are auto-inserted from Run 1/2 calibration
+             LIDAR Run 2: Point Cloud Generator
              ================================================================ -->
         <Lidar>
             <Type>VelodynePCAP</Type>
@@ -286,15 +263,7 @@ Template Parameters:
             <CalibrateAndQC>false</CalibrateAndQC>
             <GeneratePointCloud>true</GeneratePointCloud>
             <CustomSettings>
-                <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
                 <LASCreatorFolder>${output_folder}\Mission 1\LiDAR</LASCreatorFolder>
-                <LeverX>-0.115</LeverX>
-                <LeverY>-0.008</LeverY>
-                <LeverZ>0.13</LeverZ>
-                <LiDARQCAdjustTrajectory>false</LiDARQCAdjustTrajectory>
-                <LiDARQCCalibrateBoresights>false</LiDARQCCalibrateBoresights>
-                <LiDARQCRangeMin>30</LiDARQCRangeMin>
-                <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
                 <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
