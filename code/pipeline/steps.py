@@ -14,7 +14,7 @@ from shutil import ignore_patterns
 
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
-from code.apps.pospacuav_batch import PosPacUavApplication
+from code.apps.pospacuav import PosPacUavApplication
 from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher, BasestationScraper
 from code.filehandling_helper import move_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
