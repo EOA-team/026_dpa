@@ -1,4 +1,4 @@
-"""Contains class to simulate PosPac Windows Application """
+"""Contains class to simulate PosPacUAV Application completely with GUI Automation"""
 import time
 from shutil import copytree
 from pathlib import Path
@@ -105,7 +105,7 @@ class PosPacUavApplication:
             control_type="Edit", auto_id="[Editor] Edit Area")
         filename_editbox.set_edit_text(str(import_folder))
 
-    def _select_all_in_importlist(self, controlfinder: ControlFinder, 
+    def _select_all_in_importlist(self, controlfinder: ControlFinder,
                                   exclude_extensions: list[str] | None = None)-> None:
         """Select all files in the import list except those with extensions specified  e.g. [txt]"""
         import_list = controlfinder.find_by_auto_id(
@@ -113,7 +113,8 @@ class PosPacUavApplication:
             auto_id="importList")
         ControlSimulator(import_list).select_all_rows()
         if exclude_extensions is not None:
-            ControlSimulator(import_list).deselect_rows_by_extension(exclude_extensions=exclude_extensions)
+            ControlSimulator(import_list).deselect_rows_by_extension(
+                exclude_extensions=exclude_extensions)
 
     def _enable_close_panel_after_import(self, controlfinder: ControlFinder) -> None:
         """Enable the checkbox to automatically close the import panel after importing."""
@@ -149,7 +150,8 @@ class PosPacUavApplication:
             / "gnss_nav_pri_interp_Mission 1.dat"
         )
         #Expected import time ~180s --> 240s enough margin
-        wait_for_file_creation(file_path=last_file_created_during_import, timeout_s=240) 
+        wait_for_file_creation(file_path=last_file_created_during_import,
+                               timeout_s=240)
 
     def _import_data(
             self,
@@ -197,7 +199,7 @@ class PosPacUavApplication:
         self._import_data(controlfinder=controlfinder,
                         import_folder=input_folder / "rinex",
                         output_folder=output_folder,
-                        exclude_extensions=["txt"]) # Cannot import txt to posspac, only created for doc
+                        exclude_extensions=["txt"]) # txt is just for doc
 
     def _save_project(self, controlfinder: ControlFinder) -> None:
         """Save current project state using Ctrl+S."""
@@ -226,7 +228,6 @@ class PosPacUavApplication:
                 self._import_basestation_data(controlfinder=main_window_cf,
                                              input_folder=input_folder,
                                              output_folder=output_folder)
-                    
                 self._save_project(main_window_cf)
 
 

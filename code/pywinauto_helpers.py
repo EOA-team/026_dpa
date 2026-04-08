@@ -370,6 +370,8 @@ class ControlSimulator:
 
     def deselect_rows_by_extension(self, exclude_extensions: list[str] | None = None) -> None:
         """Deselect rows whose filename matches any of the given extensions."""
+        if not exclude_extensions:
+            return
 
         rows = [c for c in self.control.descendants()
                 if c.element_info.control_type == "Custom"
