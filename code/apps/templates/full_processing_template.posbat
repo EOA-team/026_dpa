@@ -214,11 +214,10 @@ Template Parameters:
         </Export>
 
         <!-- ================================================================
-             LIDAR Run 1: Boresight calibration only
+             LIDAR Run 1: Calibrate and QC
              Sensor: Velodyne VLP-32C (.pcap format)
              LiDAR lever arms: X=-0.115, Y=-0.008, Z=0.13
              Approximate boresight angles: TX=90 deg (5400 arcmin), TY=-62 deg (3720 arcmin), TZ=90 deg (5400 arcmin)
-             Goal: Find the precise boresight angles for Run 2
              ================================================================ -->
         <Lidar>
             <Type>VelodynePCAP</Type>
