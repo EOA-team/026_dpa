@@ -12,7 +12,8 @@ from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, Est
 from code.pipeline.base import PipelineFolder, Path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250610", "re112o_250918"]
+    selected_jobs = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
+                     "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -62,11 +63,11 @@ if __name__ == "__main__":
                                jobs=selected_jobs)  
 
     # Run Steps
-    #fetch_raw_data.run()
-    #download_base_station_data.run()
-    #binary_to_radiance.run()
-    #get_vnir_files.run()
-    #get_swir_files.run()
+    fetch_raw_data.run()
+    download_base_station_data.run()
+    binary_to_radiance.run()
+    get_vnir_files.run()
+    get_swir_files.run()
     estimate_trajectory.run()
 
     print("All Pipeline steps completed.")
