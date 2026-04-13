@@ -24,7 +24,7 @@ from code.file_utils import move_and_extract_downloaded_zip
 
 
 class CopyJobFolders(PipelineStep):
-    """Copies raw data folders from input to output for each job.
+    """Copies data folders from input to output for each job.
 
     Excludes specified subfolders to avoid copying data that is either already
     processed or should be freshly fetched by a dedicated pipeline step.
