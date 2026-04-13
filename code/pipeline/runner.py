@@ -8,11 +8,12 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, EstimateTrajectory
+from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, EstimateTrajectory, ScrapeBaseStationData
 from code.pipeline.base import PipelineFolder, Path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250610", "re112o_250918"]
+    selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250717_2","re112o_250723_4",
+                     "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -21,7 +22,15 @@ if __name__ == "__main__":
                                         Path("D:/data/mjolnir"), "01_raw_data"),
                                     output_folder=PipelineFolder(
                                         Path("E:/mjolnir_processing"), "RAW"),
-                                    jobs=selected_jobs)
+                                    jobs=selected_jobs,
+                                    exclude_within_output_folder=["rinex"]) # Some folders already contain base station data (Make sure there is no duplicate or wrong format)
+    download_base_station_data = ScrapeBaseStationData(name="Download Base Station Data",
+                                    input_folder=PipelineFolder(
+                                        Path("E:/mjolnir_processing"), "RAW/apx"), #Use data from APX folder to get flight time info for scraper
+                                    output_folder=PipelineFolder(
+                                        Path("E:/mjolnir_processing"), "RAW/rinex"),
+                                    jobs = selected_jobs)
+    
 
     binary_to_radiance = BinaryToRadiance(name="Binary to Radiance",
                                           input_folder=PipelineFolder(
@@ -55,6 +64,7 @@ if __name__ == "__main__":
 
     # Run Steps
     fetch_raw_data.run()
+    download_base_station_data.run()
     binary_to_radiance.run()
     get_vnir_files.run()
     get_swir_files.run()

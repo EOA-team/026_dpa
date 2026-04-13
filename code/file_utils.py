@@ -3,6 +3,9 @@
 import logging
 from shutil import copy2
 import sys
+import zipfile
+from datetime import datetime
+import time 
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -52,3 +55,73 @@ def copy_with_logging(src, dst):
     size = Path(src).stat().st_size / (1024 * 1024)  # MB
     logger.info("Copying %s (%.2f MB)", Path(src).name, size)
     return copy2(src, dst,)
+
+def wait_for_folder_stable(folder:Path, timeout:int, 
+                            stable_seconds:int, debug:bool) -> None:
+    
+    """Wait until no files in folder are modified for stable_seconds consecutive seconds."""
+    start = time.time()
+    last_mtime = 0.0
+    stable_count = 0
+    last_printed_file: Path | None = None
+
+    while stable_count < stable_seconds:
+        if time.time() - start > timeout:
+            raise TimeoutError(f"Folder did not stabilize within {timeout}s: {folder}")
+
+        files = [f for f in folder.rglob("*") if f.is_file()]
+        current_mtime = max((f.stat().st_mtime for f in files), default=0.0)
+        newest_file = max(files, key=lambda f: f.stat().st_mtime, default=None)
+
+        if debug and newest_file and newest_file != last_printed_file:
+            timestamp = datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S.%f')[:-3]
+            print(f"Newest: {newest_file.name} - {timestamp}")
+            last_printed_file = newest_file
+
+        stable_count = stable_count + 1 if current_mtime == last_mtime else 0
+        last_mtime = current_mtime
+        time.sleep(1)
+
+    print(f"Folder stable: {folder}")
+
+def wait_for_file_creation(
+        file_path:    Path,
+        timeout_s: int 
+) -> None:
+    """Wait until a specific file is created.
+    
+    Args:
+        file:    Path to the file to wait for.
+        timeout: Maximum time to wait in seconds before raising TimeoutError.
+    """
+    start = time.time()
+
+    while not file_path.exists():
+        if time.time() - start > timeout_s:
+            raise TimeoutError(f"File was not created within {timeout_s}s: {file_path}")
+        time.sleep(2)
+
+    print(f"File created: {file_path}")
+
+def move_and_extract_downloaded_zip( output_folder: Path) -> None:
+    """Find the newest zip file in downloads, extract it to output folder and delete the zip."""
+    download_folder = Path.home() / "Downloads"
+    
+    zip_files = list(download_folder.glob("*.zip"))
+    if not zip_files:
+        raise FileNotFoundError(f"No zip files found in {download_folder}")
+    
+    newest_zip = max(zip_files, key=lambda f: f.stat().st_mtime)
+    
+    output_folder.mkdir(parents=True, exist_ok=True)
+    
+    with zipfile.ZipFile(newest_zip, 'r') as zip_ref:
+        zip_ref.extractall(output_folder)
+    
+    newest_zip.unlink()
+    print(f"Extracted {newest_zip.name} to {output_folder} and deleted zip.")
+
+
+
+
+
