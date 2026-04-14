@@ -82,13 +82,15 @@ if __name__ == "__main__":
                                jobs=selected_jobs)  
 
     # Run Steps
-    #fetch_raw_data.run()
-    #download_base_station_data.run()
-    #binary_to_radiance.run()
-    #get_vnir_files.run()
-    get_vnir_calibration_files.run()
-    #get_swir_files.run()
+    fetch_raw_data.run()
+    download_base_station_data.run()
+    binary_to_radiance.run()
+    get_vnir_files.run()
+    get_swir_files.run()
+    estimate_trajectory.run()
+
+    # Required for Parge (Georectification)
     get_swir_calibration_files.run()
-    #estimate_trajectory.run()
+    get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")
