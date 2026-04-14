@@ -16,7 +16,7 @@ from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
 from code.apps.pospacuav import PosPacUavApplication
 from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher, BasestationScraper
-from code.filehandling_helper import move_files_by_regex
+from code.filehandling_helper import move_files_by_regex, copy_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
 from code.file_utils import move_and_extract_downloaded_zip
 
@@ -91,6 +91,22 @@ class MoveFiles(PipelineStep):
         print(f"Starting Step: {self.name} ⏳")
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
             move_files_by_regex(
+                input_folder, output_folder, self.regex_pattern)
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+class CopyFiles(PipelineStep):
+    """Copies specified files from input to output for each job."""
+
+    def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
+                 output_folder: PipelineFolder, regex_pattern: str):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.regex_pattern = regex_pattern
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            copy_files_by_regex(
                 input_folder, output_folder, self.regex_pattern)
         print(f"Finished Step: {self.name} ✅")
         return True
