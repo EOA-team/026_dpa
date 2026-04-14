@@ -10,7 +10,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 """
 from shutil import copytree
 from dotenv import load_dotenv
-from shutil import ignore_patterns
+from shutil import ignore_patterns, copy2
 
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
@@ -141,5 +141,50 @@ class EstimateTrajectory(PipelineStep):
         pospacuav = PosPacUavApplication(
             input_folders=self.input_folders, output_folders=self.output_folders)
         pospacuav.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+    
+class FetchNavigationFiles(PipelineStep):
+    """Fetches all input files required by HySpex NAV into the navigation files folder.
+
+    Copies the following files for each job:
+        - events.txt              trigger timestamps per scan line
+        - VNIR_all_records.txt    continuous IMU data for VNIR sensor
+        - SWIR_all_records.txt    continuous IMU data for SWIR sensor
+        - {job_name}.log          flight line start/stop times and bands
+
+    The first three files are copied from a known path, e.g.:
+        tmp/re112o_250717_full_processing/Mission 1/Export/events.txt
+        tmp/re112o_250717_full_processing/Mission 1/Export/VNIR_all_records.txt
+        tmp/re112o_250717_full_processing/Mission 1/Export/SWIR_all_records.txt
+
+    The log file is matched by regex (*.log) since its name varies per job —
+    it may include a flight height suffix or not, e.g.:
+        re112o_250717.log
+        re112o_250717_80m2.log
+    """
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            #Known File Paths 
+            events_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "events.txt"
+            swir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "SWIR_all_records.txt"
+            vnir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "VNIR_all_records.txt"
+            input_files = [events_file, swir_records_file, vnir_records_file]
+
+            output_folder.mkdir(parents=True, exist_ok=True) 
+
+            for input_file in input_files:
+                output_file = output_folder / input_file.name
+                copy2(input_file,  output_file)
+
+            #For the log file the name can vary--> use regex to find it
+            copy_files_by_regex(
+                source=input_folder / "RAW",  
+                destination=output_folder,
+                regex_pattern=r".*\.log"
+            )
+         
         print(f"Finished Step: {self.name} ✅")
         return True

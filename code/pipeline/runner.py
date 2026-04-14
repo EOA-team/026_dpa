@@ -8,13 +8,13 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, EstimateTrajectory, ScrapeBaseStationData
+from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, EstimateTrajectory, ScrapeBaseStationData , FetchNavigationFiles
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250717_2","re112o_250723_4",
-                     "re112o_250807", "re112o_250813", "re112o_250903", "re112o_250918"]
+    selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250813",
+                     "re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -80,17 +80,24 @@ if __name__ == "__main__":
                                output_folder=PipelineFolder(
                                    Path("E:/mjolnir_processing"), "tmp"),
                                jobs=selected_jobs)  
+    
+    fetch_navigation_files = FetchNavigationFiles(
+        name="Fetch Navigation Files",
+        input_folder=PipelineFolder(Path("E:/mjolnir_processing"), ""),
+        output_folder=PipelineFolder(Path("E:/mjolnir_processing"), "tmp/navigation"),
+        jobs=selected_jobs)
 
     # Run Steps
-    fetch_raw_data.run()
-    download_base_station_data.run()
-    binary_to_radiance.run()
-    get_vnir_files.run()
-    get_swir_files.run()
-    estimate_trajectory.run()
+    #fetch_raw_data.run()
+    #download_base_station_data.run()
+    #binary_to_radiance.run()
+    #get_vnir_files.run()
+    #get_swir_files.run()
+    #estimate_trajectory.run()
+    fetch_navigation_files.run()
 
     # Required for Parge (Georectification)
-    get_swir_calibration_files.run()
-    get_vnir_calibration_files.run()
+    #get_swir_calibration_files.run()
+    #get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")
