@@ -8,8 +8,9 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, EstimateTrajectory, ScrapeBaseStationData
+from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, EstimateTrajectory, ScrapeBaseStationData
 from code.pipeline.base import PipelineFolder, Path
+from code.file_utils import get_base_path
 
 if __name__ == "__main__":
     selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250717_2","re112o_250723_4",
@@ -46,6 +47,15 @@ if __name__ == "__main__":
                                    Path("E:/mjolnir_processing"), "VNIR"),
                                jobs=selected_jobs,
                                regex_pattern=r"v1240")  # v1240 for VNIR
+    get_vnir_calibration_files = CopyFiles(name="Get VNIR Calibration Files",
+                                           input_folder=PipelineFolder(
+                                               get_base_path(__file__).parent / "apps", "calibration",
+                                               static=True), # Calibration files same for all jobs
+                                            output_folder=PipelineFolder(
+                                                Path("E:/mjolnir_processing"), "VNIR"),
+                                            jobs=selected_jobs,
+                                            regex_pattern=r"boresight_vnir|sensormodel")
+                               
 
     get_swir_files = MoveFiles(name="Get SWIR Files",
                                input_folder=PipelineFolder(
@@ -54,6 +64,15 @@ if __name__ == "__main__":
                                    Path("E:/mjolnir_processing"), "SWIR"),
                                jobs=selected_jobs,
                                regex_pattern=r"s620")  # s620 for VNIR
+    
+    get_swir_calibration_files = CopyFiles(name="Get SWIR Calibration Files",
+                                           input_folder=PipelineFolder(
+                                               get_base_path(__file__).parent / "apps", "calibration",
+                                               static=True), # Calibration files same for all jobs
+                                            output_folder=PipelineFolder(
+                                                Path("E:/mjolnir_processing"), "SWIR"),
+                                            jobs=selected_jobs,
+                                            regex_pattern=r"boresight_swir|sensormodel")
     
     estimate_trajectory = EstimateTrajectory(name="Estimate Trajectory",
                                input_folder=PipelineFolder(
@@ -69,5 +88,9 @@ if __name__ == "__main__":
     get_vnir_files.run()
     get_swir_files.run()
     estimate_trajectory.run()
+
+    # Required for Parge (Georectification)
+    get_swir_calibration_files.run()
+    get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")
