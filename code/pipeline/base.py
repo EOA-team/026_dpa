@@ -26,11 +26,11 @@ class PipelineFolder:
         Useful for shared resources such as calibration files.
 
         Example:
-        basefolder : get_base_path(__file__).parent
+        basefolder : get_base_path(__file__).parent / "apps"
         target     : calibration
         jobs       : ["re112o_250610", "re112o_250918"]
-        result     : [get_base_path(__file__).parent / calibration,
-                      get_base_path(__file__).parent / calibration]
+        result     : [get_base_path(__file__).parent / "apps" / calibration,
+                      get_base_path(__file__).parent / "apps" / calibration]
  
     """
 
