@@ -80,7 +80,7 @@ class ScrapeBaseStationData(PipelineStep):
 
 
 class MoveFiles(PipelineStep):
-    """Copies specified files from input to output for each job."""
+    """Moves specified files from input to output for each job."""
 
     def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
                  output_folder: PipelineFolder, regex_pattern: str):

@@ -9,23 +9,42 @@ from pathlib import Path
 
 
 class PipelineFolder:
-    """A pipeline folder represents a base folder and a target subfolder.
-    Combinded with a specific job this results  in e.g. basefolder/job_name/target
+    """Represents a folder location in the processing pipeline.
 
-    The target is a subfolder name under each job folder and hold specific data for that step.
+    Dynamic (default):
+        Combined with a job name, resolves to basefolder / job_name / target.
+        Each job gets its own subfolder.
 
-    Example: 
-        basefolder: D:/data/mjolnir
-        target: 01_raw_data
-        job_name: ["re112o_250610", "re112o_250918"]
-        -->[D:/data/mjolnir/re112o_250610/01_raw_data, D:/data/mjolnir/re112o_250918/01_raw_data]"""
+        Example:
+        basefolder : D:/data/mjolnir
+        target     : 01_raw_data
+        jobs       : ["re112o_250610", "re112o_250918"]
+        result     : [D:/data/mjolnir/re112o_250610/01_raw_data,
+                      D:/data/mjolnir/re112o_250918/01_raw_data]
+    Static:
+        The same path is returned for all jobs, regardless of job name.
+        Useful for shared resources such as calibration files.
 
-    def __init__(self, basefolder: Path, target: str):
+        Example:
+        basefolder : get_base_path(__file__).parent
+        target     : calibration
+        jobs       : ["re112o_250610", "re112o_250918"]
+        result     : [get_base_path(__file__).parent / calibration,
+                      get_base_path(__file__).parent / calibration]
+ 
+    """
+
+    def __init__(self, basefolder: Path, target: str, static: bool = False):
         self.basefolder = basefolder
         self.target = target
-
+        self.static = static # If static is true, the folder is not job specific and the same for all jobs (e.g. calibration files)
     def get_job_paths(self, job_names: list[str]) -> list[Path]:
-        """Get the full path for a specific job."""
+        """Resolve folder paths for the given jobs.
+        Dynamic: one path per job as basefolder / job_name / target.
+        Static:  one shared path as basefolder / target, repeated for all jobs.
+        """
+        if self.static:
+             return [self.basefolder / self.target] * len(job_names)
         return [self.basefolder / name / self.target for name in job_names]
 
 
