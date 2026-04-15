@@ -16,6 +16,7 @@ from pathlib import Path
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
 from code.apps.pospacuav import PosPacUavApplication
+from code.apps.hyspexnav import HyspexNavApplication
 from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher, BasestationScraper
 from code.filehandling_helper import move_files_by_regex, copy_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
@@ -195,5 +196,16 @@ class FetchNavigationFiles(PipelineStep):
                 regex_pattern=r".*\.log"
             )
          
+        print(f"Finished Step: {self.name} ✅")
+        return True
+    
+class NavigationDiscretization(PipelineStep):
+    """Runs the HySpex NAV application to discretize navigation files for each job."""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        hyspexnav = HyspexNavApplication(
+            input_folders=self.input_folders, output_folders=self.output_folders)
+        hyspexnav.run()
         print(f"Finished Step: {self.name} ✅")
         return True

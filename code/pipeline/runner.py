@@ -10,7 +10,8 @@ Example:
 
 from code.pipeline.steps import (
     CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, 
-    GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles
+    GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles,
+    NavigationDiscretization
 )
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
@@ -53,38 +54,35 @@ if __name__ == "__main__":
         input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target=""),
         output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"),
         jobs=selected_jobs)
+    
+    """Step 5: NavigationDiscretization"""
+    navigation_discretization = NavigationDiscretization(
+        name="Navigation Discretization",
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"),
+        jobs=selected_jobs
+    )
 
-    """Step 5: Convert Binary to Radiance
-        Note: Better to move this step after Pospac and Hyspex Nav --> Can move SWIR and VNIR files combined"""
+    """Step 6: Convert Binary to Radiance"""
     binary_to_radiance = BinaryToRadiance(
         name="Binary to Radiance",
         input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "RAW"),
-        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "tmp"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "tmp/swirvnir_data"),
         jobs=selected_jobs
     )
-    """Step 6: Get VNIR Files
-         Note: Better to move this step after Pospac and Hyspex Nav --> Can move SWIR and VNIR files combined"""
+    """Step 7: Get VNIR Files"""
     get_vnir_files = MoveFiles(
         name="Get VNIR Files",
-        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "tmp"),
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "tmp/swirvnir_data"),
         output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "VNIR"),
         jobs=selected_jobs,
         regex_pattern=r"v1240" # v1240 for VNIR
     ) 
-    """Step 7: Get VNIR Calibration Files
-         Note: Required as Parge Preparation"""
-    get_vnir_calibration_files = CopyFiles(
-        name="Get VNIR Calibration Files",
-        input_folder=PipelineFolder(basefolder=get_base_path(__file__).parent / "apps", target="calibration", static=True),
-        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="VNIR"),
-        jobs=selected_jobs,
-        regex_pattern=r"boresight_vnir|sensormodel"
-    )
-    """Step 8: Get SWIR Files
-         Note: Better to move this step after Pospac and Hyspex Nav --> Can move SWIR and VNIR files combined"""
+    
+    """Step 8: Get SWIR Files"""
     get_swir_files = MoveFiles(
         name="Get SWIR Files",
-        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp"),
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"),
         output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="SWIR"),
         jobs=selected_jobs,
         regex_pattern=r"s620"# s620 for VNIR
@@ -98,6 +96,16 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"boresight_swir|sensormodel")
     
+    """Step 10: Get VNIR Calibration Files
+         Note: Required as Parge Preparation"""
+    get_vnir_calibration_files = CopyFiles(
+        name="Get VNIR Calibration Files",
+        input_folder=PipelineFolder(basefolder=get_base_path(__file__).parent / "apps", target="calibration", static=True),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="VNIR"),
+        jobs=selected_jobs,
+        regex_pattern=r"boresight_vnir|sensormodel"
+    )
+    
     
 
     # Run Steps
@@ -105,18 +113,15 @@ if __name__ == "__main__":
     #download_base_station_data.run()
     #georeference_sensors.run()
 
-    fetch_navigation_files.run()
-    # Here implement HyspexNav 
-
-
-    # binary_to_radiance.run()
-    # Add here: 
-    # get_vnir_files.run()
-    # get_swir_files.run()
+    #fetch_navigation_files.run()
+    navigation_discretization.run()
+    binary_to_radiance.run()
+    get_vnir_files.run()
+    get_swir_files.run()
     
 
     # Required for Parge (Georectification)
-    # get_swir_calibration_files.run()
-    # get_vnir_calibration_files.run()
+    get_swir_calibration_files.run()
+    get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")
