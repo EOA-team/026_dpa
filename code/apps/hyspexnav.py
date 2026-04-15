@@ -151,12 +151,9 @@ class HyspexNavApplication:
                 # Reset Settings before next iteration
                 settings_path = get_base_path(__file__).parent /"configs" / "conf_hyspex_nav.ini" 
                 self._load_settings(main_window_cf, settings_path)
-                # Set Input Files
-                events_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "events.txt"
-                swir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "SWIR_all_records.txt"
-                vnir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "VNIR_all_records.txt"
-                log_file = input_folder / "RAW" / f"{input_folder.name}.log"
-                input_files = [events_file, swir_records_file, vnir_records_file, log_file]
+                # Get Input Files
+                
+                input_files = list(input_folder.glob("*.*"))
                 
 
                 #Next Iteration
@@ -180,10 +177,10 @@ class HyspexNavApplication:
 
 
 if __name__ == "__main__":
-    test_output_folders = [Path("E:/mjolnir_processing/re112o_250610/tmp"),
-                           Path("E:/mjolnir_processing/re112o_250918/tmp")]
-    test_input_folders = [Path("E:/mjolnir_processing//re112o_250610"),
-                          Path("E:/mjolnir_processing/re112o_250918")]
+    test_output_folders = [Path("E:/mjolnir_processing/re112o_250903/tmp/swirvnir"),
+                           Path("E:/mjolnir_processing/re112o_250918/tmp/swirvnir")]
+    test_input_folders = [Path("E:/mjolnir_processing/re112o_250903/tmp/input_hyspexnav"),
+                          Path("E:/mjolnir_processing/re112o_250918/tmp/input_hyspexnav")]
     hyspexnav = HyspexNavApplication(input_folders=test_input_folders,
                                      output_folders=test_output_folders)
 
