@@ -11,6 +11,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 from shutil import copytree
 from dotenv import load_dotenv
 from shutil import ignore_patterns, copy2
+from pathlib import Path
 
 from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
@@ -128,8 +129,15 @@ class BinaryToRadiance(PipelineStep):
         print(f"Finished Step: {self.name} ✅")
         return True
 
-class EstimateTrajectory(PipelineStep):
-    """Estimates flight trajectory from raw GNSS/IMU data for each job."""
+class GeoreferenceSensors(PipelineStep):
+    """
+    Runs the full POSPac UAV processing pipeline for each job.
+
+    Fuses GNSS/IMU data against the ETH2 base station (INFusion Single
+    Base) to estimate a post-processed trajectory (SBET), exports continuous
+    navigation files for the VNIR and SWIR sensors, and generates a
+    georeferenced LAS point cloud from raw LiDAR data.
+    """
 
     def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
                  output_folder: PipelineFolder, app_instance="PosPacUavApplication"):
@@ -164,21 +172,22 @@ class FetchNavigationFiles(PipelineStep):
         re112o_250717_80m2.log
     """
 
+    def copy_known_file_paths(self, input_folder: Path, output_folder: Path) -> None:
+        """Copy files from known paths to the output folder."""
+        events_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "events.txt"
+        swir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "SWIR_all_records.txt"
+        vnir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "VNIR_all_records.txt"
+        for file in [events_file, swir_records_file, vnir_records_file]:
+            if file.exists():
+                copy2(file, output_folder / file.name)
+            else:
+                print(f"⚠️ Warning: Expected file not found: {file}")
+
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-            #Known File Paths 
-            events_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "events.txt"
-            swir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "SWIR_all_records.txt"
-            vnir_records_file = input_folder / "tmp" / f"{input_folder.name}_full_processing"/ "Mission 1"/ "Export"/ "VNIR_all_records.txt"
-            input_files = [events_file, swir_records_file, vnir_records_file]
-
-            output_folder.mkdir(parents=True, exist_ok=True) 
-
-            for input_file in input_files:
-                output_file = output_folder / input_file.name
-                copy2(input_file,  output_file)
-
+            output_folder.mkdir(parents=True, exist_ok=True)  # ensure output folder exists
+            self.copy_known_file_paths(input_folder, output_folder)
             #For the log file the name can vary--> use regex to find it
             copy_files_by_regex(
                 source=input_folder / "RAW",  

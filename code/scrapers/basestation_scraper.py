@@ -126,7 +126,12 @@ class BasestationScraper(BaseScraper):
                 (By.ID, "m_RefStationListBox")
             )
         )
-        time.sleep(0.5)  # Small delay to ensure dropdown is fully loaded
+        # Wait until the specific option is present in the dropdown
+        self.wait.until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, f"#m_RefStationListBox option[value='{station_value}']")
+            )
+        )
         Select(select_element).select_by_value(station_value)
 
     def click_continue_to_time_selection(self) -> None:

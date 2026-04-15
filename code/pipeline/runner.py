@@ -8,96 +8,115 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, EstimateTrajectory, ScrapeBaseStationData , FetchNavigationFiles
+from code.pipeline.steps import (
+    CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, 
+    GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles
+)
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250813",
-                     "re112o_250903", "re112o_250918"]
+    selected_jobs = ["re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
-    fetch_raw_data = CopyJobFolders(name="Fetch Raw Data",
-                                    input_folder=PipelineFolder(
-                                        Path("D:/data/mjolnir"), "01_raw_data"),
-                                    output_folder=PipelineFolder(
-                                        Path("E:/mjolnir_processing"), "RAW"),
-                                    jobs=selected_jobs,
-                                    exclude_within_output_folder=["rinex"]) # Some folders already contain base station data (Make sure there is no duplicate or wrong format)
-    download_base_station_data = ScrapeBaseStationData(name="Download Base Station Data",
-                                    input_folder=PipelineFolder(
-                                        Path("E:/mjolnir_processing"), "RAW/apx"), #Use data from APX folder to get flight time info for scraper
-                                    output_folder=PipelineFolder(
-                                        Path("E:/mjolnir_processing"), "RAW/rinex"),
-                                    jobs = selected_jobs)
+    """Step 1: Fetch Raw Data
+        Some old data folders from 2025 contain already base station data ["rinex"] 
+        --> Exclude to make sure all base station data is freshly fetched by BasestationScraper and in the same format."""
+    fetch_raw_data = CopyJobFolders(
+        name="Fetch Raw Data",
+        input_folder=PipelineFolder(basefolder=Path("D:/data/mjolnir"), target= "01_raw_data"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "RAW"),
+        jobs=selected_jobs,
+        exclude_within_output_folder=["rinex"] 
+    )
+    """Step 2: Download Base Station Data from Swipos
+        Use the APX files in the raw data to get the flight time info for the scraper 
+        to know which base station data to download."""
+    download_base_station_data = ScrapeBaseStationData(
+        name="Download Base Station Data",
+        # Use data from APX folder to get flight time info for scraper
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "RAW/apx"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "RAW/rinex"),
+        jobs=selected_jobs
+    )
+    """Step 3: Georeference Sensors"""
+    georeference_sensors = GeoreferenceSensors(
+        name="Georeference Sensors (SWIR, VNIR, LiDAR)",
+        input_folder=PipelineFolder(basefolder= Path("E:/mjolnir_processing"), target="RAW"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp"),
+        jobs=selected_jobs)
     
-
-    binary_to_radiance = BinaryToRadiance(name="Binary to Radiance",
-                                          input_folder=PipelineFolder(
-                                              Path("E:/mjolnir_processing"), "RAW"),
-                                          output_folder=PipelineFolder(
-                                              Path("E:/mjolnir_processing"), "tmp"),
-                                          jobs=selected_jobs)
-
-    get_vnir_files = MoveFiles(name="Get VNIR Files",
-                               input_folder=PipelineFolder(
-                                   Path("E:/mjolnir_processing"), "tmp"),
-                               output_folder=PipelineFolder(
-                                   Path("E:/mjolnir_processing"), "VNIR"),
-                               jobs=selected_jobs,
-                               regex_pattern=r"v1240")  # v1240 for VNIR
-    get_vnir_calibration_files = CopyFiles(name="Get VNIR Calibration Files",
-                                           input_folder=PipelineFolder(
-                                               get_base_path(__file__).parent / "apps", "calibration",
-                                               static=True), # Calibration files same for all jobs
-                                            output_folder=PipelineFolder(
-                                                Path("E:/mjolnir_processing"), "VNIR"),
-                                            jobs=selected_jobs,
-                                            regex_pattern=r"boresight_vnir|sensormodel")
-                               
-
-    get_swir_files = MoveFiles(name="Get SWIR Files",
-                               input_folder=PipelineFolder(
-                                   Path("E:/mjolnir_processing"), "tmp"),
-                               output_folder=PipelineFolder(
-                                   Path("E:/mjolnir_processing"), "SWIR"),
-                               jobs=selected_jobs,
-                               regex_pattern=r"s620")  # s620 for VNIR
-    
-    get_swir_calibration_files = CopyFiles(name="Get SWIR Calibration Files",
-                                           input_folder=PipelineFolder(
-                                               get_base_path(__file__).parent / "apps", "calibration",
-                                               static=True), # Calibration files same for all jobs
-                                            output_folder=PipelineFolder(
-                                                Path("E:/mjolnir_processing"), "SWIR"),
-                                            jobs=selected_jobs,
-                                            regex_pattern=r"boresight_swir|sensormodel")
-    
-    estimate_trajectory = EstimateTrajectory(name="Estimate Trajectory",
-                               input_folder=PipelineFolder(
-                                   Path("E:/mjolnir_processing"), "RAW"),
-                               output_folder=PipelineFolder(
-                                   Path("E:/mjolnir_processing"), "tmp"),
-                               jobs=selected_jobs)  
-    
+    """Step 4: Fetch Navigation Files"""
     fetch_navigation_files = FetchNavigationFiles(
         name="Fetch Navigation Files",
-        input_folder=PipelineFolder(Path("E:/mjolnir_processing"), ""),
-        output_folder=PipelineFolder(Path("E:/mjolnir_processing"), "tmp/navigation"),
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target=""),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"),
         jobs=selected_jobs)
+
+    """Step 5: Convert Binary to Radiance
+        Note: Better to move this step after Pospac and Hyspex Nav --> Can move SWIR and VNIR files combined"""
+    binary_to_radiance = BinaryToRadiance(
+        name="Binary to Radiance",
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "RAW"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "tmp"),
+        jobs=selected_jobs
+    )
+    """Step 6: Get VNIR Files
+         Note: Better to move this step after Pospac and Hyspex Nav --> Can move SWIR and VNIR files combined"""
+    get_vnir_files = MoveFiles(
+        name="Get VNIR Files",
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "tmp"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target= "VNIR"),
+        jobs=selected_jobs,
+        regex_pattern=r"v1240" # v1240 for VNIR
+    ) 
+    """Step 7: Get VNIR Calibration Files
+         Note: Required as Parge Preparation"""
+    get_vnir_calibration_files = CopyFiles(
+        name="Get VNIR Calibration Files",
+        input_folder=PipelineFolder(basefolder=get_base_path(__file__).parent / "apps", target="calibration", static=True),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="VNIR"),
+        jobs=selected_jobs,
+        regex_pattern=r"boresight_vnir|sensormodel"
+    )
+    """Step 8: Get SWIR Files
+         Note: Better to move this step after Pospac and Hyspex Nav --> Can move SWIR and VNIR files combined"""
+    get_swir_files = MoveFiles(
+        name="Get SWIR Files",
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="tmp"),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="SWIR"),
+        jobs=selected_jobs,
+        regex_pattern=r"s620"# s620 for VNIR
+    )  
+    """Step 9: Get SWIR Calibration Files
+         Note: Required as Parge Preparation"""
+    get_swir_calibration_files = CopyFiles(
+        name="Get SWIR Calibration Files",
+        input_folder=PipelineFolder(basefolder=get_base_path(__file__).parent / "apps", target="calibration", static=True),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="SWIR"),
+        jobs=selected_jobs,
+        regex_pattern=r"boresight_swir|sensormodel")
+    
+    
 
     # Run Steps
     #fetch_raw_data.run()
     #download_base_station_data.run()
-    #binary_to_radiance.run()
-    #get_vnir_files.run()
-    #get_swir_files.run()
-    #estimate_trajectory.run()
+    #georeference_sensors.run()
+
     fetch_navigation_files.run()
+    # Here implement HyspexNav 
+
+
+    # binary_to_radiance.run()
+    # Add here: 
+    # get_vnir_files.run()
+    # get_swir_files.run()
+    
 
     # Required for Parge (Georectification)
-    #get_swir_calibration_files.run()
-    #get_vnir_calibration_files.run()
+    # get_swir_calibration_files.run()
+    # get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")
