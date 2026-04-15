@@ -103,6 +103,31 @@ def wait_for_file_creation(
 
     print(f"File created: {file_path}")
 
+def wait_for_file_count(
+        folder:         Path,
+        expected_count: int,
+        pattern:        str = "*.*",
+        timeout_s:      int = 300,
+) -> None:
+    """Wait until a folder contains at least `expected_count` files matching `pattern`.
+
+    Example usage:
+    wait_for_file_count(
+        folder=Path("/path/to/folder"),
+        expected_count=6,
+        pattern="*.txt",
+        timeout_s=10
+    )
+    """
+    start = time.time()
+
+    while len(list(folder.glob(pattern))) < expected_count:
+        if time.time() - start > timeout_s:
+            raise TimeoutError(f"Expected {expected_count} file(s) matching '{pattern}' not found within {timeout_s}s: {folder}")
+        time.sleep(2)
+
+    print(f"Found {expected_count} file(s) matching '{pattern}' in {folder}")
+
 def move_and_extract_downloaded_zip( output_folder: Path) -> None:
     """Find the newest zip file in downloads, extract it to output folder and delete the zip."""
     download_folder = Path.home() / "Downloads"

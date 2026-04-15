@@ -1,11 +1,12 @@
 """Contains class to simulate HySpexNav Windows Application """
 import time
 from pathlib import Path
-from enum import StrEnum
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
-from code.file_utils import get_base_path
+from code.file_utils import get_base_path, wait_for_file_count
+
+
 
 
 class HyspexNavApplication:
@@ -77,10 +78,7 @@ class HyspexNavApplication:
         filename_editbox.type_keys("{ENTER}")
     
         # Wait for window to close
-        #settings_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
-
-        # Additional safety: ensure window is truly gone
-        time.sleep(2)  # Small buffer to ensure cleanup
+        settings_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
 
     def _open_addfiles_window(self, controlfinder: ControlFinder) -> UIAWrapper:
         """Open the 'Add Files' window to set the input files"""
@@ -88,7 +86,6 @@ class HyspexNavApplication:
             control_type="Button",
                 auto_id="HySpexNav.splitter.layoutWidgetMain.btnInputFileAdd")
         btn.invoke()
-        print("Add button clicked")
 
     def _get_addfiles_window(self, controlfinder: ControlFinder) -> UIAWrapper:
         """Get the 'Add Files' window after it has been opened."""
@@ -96,8 +93,8 @@ class HyspexNavApplication:
             window_title="Open")
         return imageselection_window
         
-    def _add_input_file(self, controlfinder: ControlFinder, input_file: Path):
-        """Add a single input file via the Add Files window.
+    def _add_input_files(self, controlfinder: ControlFinder, input_folder: Path):
+        """Add multiple input files via the Add Files window.
         Supported types: 
             events.txt, 
             VNIR_all_records.txt,
@@ -110,14 +107,23 @@ class HyspexNavApplication:
         # Write Path
         filename_editbox = addfiles_cf.find_by_name(
             control_type="Edit", control_name="file name:", exact=True)
-        filename_editbox.set_edit_text(str(input_file))
+        filename_editbox.set_edit_text(str(input_folder))
         filename_editbox.type_keys("{ENTER}")
+
+        # Mark all items
+        itemslist = addfiles_cf.find_by_name(
+            control_type="List", control_name="items view", exact=True)
+        itemslist.type_keys("^a")  # Ctrl+A
+
+        # Confirm Selection
+        open_btn = addfiles_cf.find_by_auto_id(control_type="Button",
+                                               auto_id="1")
+        open_btn.click()
     
         # Wait for window to close
-        #addfiles_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
+        addfiles_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
 
-        # Additional safety: ensure window is truly gone
-        time.sleep(2)  # Small buffer to ensure cleanup
+
 
     def _clear_file_input(self, controlfinder: ControlFinder):
         """Clear the file input list in the main window."""
@@ -133,6 +139,25 @@ class HyspexNavApplication:
             control_type="Edit", auto_id="HySpexNav.splitter.layoutWidgetMain.iOutputFolder")
 
         output_folder_editbox.set_edit_text(str(output_folder))
+
+    def _analyze_input_files(self, controlfinder: ControlFinder):
+        """Click the 'Analyze' button to stage the flght lines based on the input files."""
+        analyze_btn = controlfinder.find_by_auto_id(
+            control_type="Button", auto_id="HySpexNav.splitter.layoutWidgetMain.btnAnalyze")
+        analyze_btn.invoke()
+
+    def _generate_output_files(self, controlfinder: ControlFinder):
+        """Click the 'Generate Output' button to process the staged flight lines."""
+        generate_btn = controlfinder.find_by_auto_id(
+            control_type="Button", auto_id="HySpexNav.splitter.layoutWidgetFlightLines.btnGenerateOutput")
+        generate_btn.invoke()
+
+    def _clear_flightlines(self, controlfinder: ControlFinder):
+        """Click the 'Clear Flight Lines' button to clear the staged flight lines for the next iteration."""
+        clear_btn = controlfinder.find_by_auto_id(
+            control_type="Button", auto_id="HySpexNav.splitter.layoutWidgetFlightLines.btnFlightLineClear")
+        clear_btn.invoke()
+    
 
 
     def run(self):
@@ -151,29 +176,19 @@ class HyspexNavApplication:
                 # Reset Settings before next iteration
                 settings_path = get_base_path(__file__).parent /"configs" / "conf_hyspex_nav.ini" 
                 self._load_settings(main_window_cf, settings_path)
-                # Get Input Files
-                
-                input_files = list(input_folder.glob("*.*"))
-                
-
                 #Next Iteration
-                self._set_output_folder(main_window_cf, output_folder)  # Assuming same output folder for all jobs
-                for input_file in input_files:
-                    self._add_input_file(main_window_cf, input_file)
-                    print(input_files)
+                self._set_output_folder(main_window_cf, output_folder)  
+                output_folder.mkdir(parents=True, exist_ok=True)  # ensure output folder exists
+                self._add_input_files(main_window_cf, input_folder)
+                self._analyze_input_files(main_window_cf)
+                time.sleep(1)  # Wait a bit to ensure analysis is done before generating output
+                self._generate_output_files(main_window_cf)
+                wait_for_file_count(folder=output_folder, expected_count=6, pattern="*.txt", timeout_s=10)  
+                #Clear for next iteration
+                self._clear_flightlines(main_window_cf)  
+                self._clear_file_input(main_window_cf)  
                 
-                time.sleep(2)
-                self._clear_file_input(main_window_cf)  # Clear input list for next iteration
-
-            time.sleep(7)
-            
-
-        
-
-        
-
-
-
+                
 
 
 if __name__ == "__main__":
