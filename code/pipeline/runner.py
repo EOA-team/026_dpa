@@ -11,7 +11,7 @@ Example:
 from code.pipeline.steps import (
     CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles, 
     GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles,
-    NavigationDiscretization
+    NavigationDiscretization, BuildDigitalSurfaceModel
 )
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
@@ -87,7 +87,14 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"s620"# s620 for VNIR
     )  
-    """Step 9: Get SWIR Calibration Files
+    """Step 9: Build Digital Surface Model (DSM) from LiDAR Point Cloud"""
+    build_digital_surface_model = BuildDigitalSurfaceModel(
+        name="Build Digital Surface Model",
+        input_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target=""),
+        output_folder=PipelineFolder(basefolder=Path("E:/mjolnir_processing"), target="DSM"),
+        jobs=selected_jobs
+    )
+    """Step 10: Get SWIR Calibration Files
          Note: Required as Parge Preparation"""
     get_swir_calibration_files = CopyFiles(
         name="Get SWIR Calibration Files",
@@ -96,7 +103,7 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"boresight_swir|sensormodel")
     
-    """Step 10: Get VNIR Calibration Files
+    """Step 11: Get VNIR Calibration Files
          Note: Required as Parge Preparation"""
     get_vnir_calibration_files = CopyFiles(
         name="Get VNIR Calibration Files",
@@ -114,14 +121,17 @@ if __name__ == "__main__":
     #georeference_sensors.run()
 
     #fetch_navigation_files.run()
-    navigation_discretization.run()
-    binary_to_radiance.run()
-    get_vnir_files.run()
-    get_swir_files.run()
+    #navigation_discretization.run()
+    #binary_to_radiance.run()
+    #get_vnir_files.run()
+    #get_swir_files.run()
+
+    build_digital_surface_model.run()
+
     
 
     # Required for Parge (Georectification)
-    get_swir_calibration_files.run()
-    get_vnir_calibration_files.run()
+    #get_swir_calibration_files.run()
+    #get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")

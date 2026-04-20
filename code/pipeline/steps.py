@@ -20,7 +20,8 @@ from code.apps.hyspexnav import HyspexNavApplication
 from code.scrapers.basestation_scraper import TrajectoryObservationTimeFetcher, BasestationScraper
 from code.filehandling_helper import move_files_by_regex, copy_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
-from code.file_utils import move_and_extract_downloaded_zip
+from code.file_utils import move_and_extract_downloaded_zip, find_las_file
+from code.pdalgdal_helpers import las_to_geotif, geotiff_to_envi_dsm , fix_envi_header
 
 
 
@@ -207,5 +208,29 @@ class NavigationDiscretization(PipelineStep):
         hyspexnav = HyspexNavApplication(
             input_folders=self.input_folders, output_folders=self.output_folders)
         hyspexnav.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+    
+
+class BuildDigitalSurfaceModel(PipelineStep):
+    """Creates a digital surface model from the las point cloud file."""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            las_file_path = find_las_file(input_folder)
+            las_to_geotif(
+                input_las=las_file_path,
+                output_tif=output_folder / "DSM.tif",
+                resolution=0.05
+            )
+
+            geotiff_to_envi_dsm(
+                input_tif=output_folder / "DSM.tif",
+                output_file=output_folder / "DSM"
+            )
+
+            fix_envi_header(output_folder / "DSM.hdr")
+        
         print(f"Finished Step: {self.name} ✅")
         return True

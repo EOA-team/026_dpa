@@ -147,6 +147,14 @@ def move_and_extract_downloaded_zip( output_folder: Path) -> None:
     print(f"Extracted {newest_zip.name} to {output_folder} and deleted zip.")
 
 
-
+def find_las_file(folder: Path):
+    """Find the single .las file in the given directory. Raises error if not exactly one found."""
+    files = list(folder.rglob("*.las"))
+    if len(files) == 0:
+        raise FileNotFoundError(f"No .las file found in {folder}")
+    if len(files) > 1:
+        raise ValueError(f"Expected exactly one .las file, but found {len(files)}:\n" + 
+                        "\n".join(str(f) for f in files))
+    return files[0]
 
 
