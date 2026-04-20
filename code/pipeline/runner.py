@@ -17,7 +17,8 @@ from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250903"]
+    selected_jobs = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
+                     "re112o_250813", "re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -118,20 +119,20 @@ if __name__ == "__main__":
     # Run Steps
     fetch_raw_data.run()
     download_base_station_data.run()
-    #georeference_sensors.run()
+    georeference_sensors.run()
 
-    #fetch_navigation_files.run()
-    #navigation_discretization.run()
-    #binary_to_radiance.run()
-    #get_vnir_files.run()
-    #get_swir_files.run()
+    fetch_navigation_files.run()
+    navigation_discretization.run()
+    binary_to_radiance.run()
+    get_vnir_files.run()
+    get_swir_files.run()
 
-    #build_digital_surface_model.run()
+    build_digital_surface_model.run()
 
     
 
     # Required for Parge (Georectification)
-    #get_swir_calibration_files.run()
-    #get_vnir_calibration_files.run()
+    get_swir_calibration_files.run()
+    get_vnir_calibration_files.run()
 
     print("All Pipeline steps completed.")
