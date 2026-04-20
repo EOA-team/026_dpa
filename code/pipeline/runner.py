@@ -17,7 +17,7 @@ from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250903", "re112o_250918"]
+    selected_jobs = ["re112o_250903"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     
 
     # Run Steps
-    #fetch_raw_data.run()
-    #download_base_station_data.run()
+    fetch_raw_data.run()
+    download_base_station_data.run()
     #georeference_sensors.run()
 
     #fetch_navigation_files.run()
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     #get_vnir_files.run()
     #get_swir_files.run()
 
-    build_digital_surface_model.run()
+    #build_digital_surface_model.run()
 
     
 

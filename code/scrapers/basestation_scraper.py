@@ -15,20 +15,36 @@ import time
 from pathlib import Path
 from code.scrapers.base_scraper import BaseScraper
 from selenium.webdriver.common.by import By
-from datetime import datetime, timezone, tzinfo
+from datetime import datetime, timezone, tzinfo, timedelta
 
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 
-class TrajectoryObservationTimeFetcher:
-    """Fetches and holds observation period information from T04 trajectory files in an APX folder."""
+class RinexDownloadWindow:
+    """Parses T04 files in an APX folder and computes the RINEX download window.
 
-    def __init__(self, apx_folder: Path):
+    1) T04 filenames are parsed to retrieve the time window when the drone was active.
+    2) A convergence time and end buffer are added to ensure the RTX solution
+       converges on the base station coordinate before the first scan line.
+
+    Without sufficient convergence_time, POSPac may report similiar warnings:
+        'The occupation data covers only 32 minutes, which may give reduced accuracy.'
+        'RTX horizontal sigma (0.231 m) exceeds the tolerance (0.030 m).'
+        'RTX vertical sigma (0.068 m) exceeds the tolerance (0.050 m).'
+
+    Without a sufficient time window (at least 10min), POSPac may report this error:
+        'Unable to start order! Operation result: InvalidOperation, 
+        Error message: The order does not meet the session length requirement.
+
+    """
+    def __init__(self, apx_folder: Path,
+                 convergence_time: timedelta = timedelta(minutes=60),
+                 end_buffer: timedelta = timedelta(minutes=15)):
         self.apx_folder      = apx_folder
         self._datetimes      = self._load_datetimes()
 
-        self.flight_start    = self._datetimes[0]
-        self.flight_end      = self._datetimes[-1]
+        self.flight_start     = self._datetimes[0] - convergence_time
+        self.flight_end       = self._datetimes[-1]   + end_buffer
         self.duration_seconds = int((self.flight_end - self.flight_start).total_seconds())
 
         self.date             = self.flight_start.strftime("%d.%m.%Y")
@@ -38,6 +54,13 @@ class TrajectoryObservationTimeFetcher:
         self.duration_hours   = self.duration_seconds // 3600
         self.duration_minutes = (self.duration_seconds % 3600) // 60
 
+    def _load_datetimes(self) -> list[datetime]:
+        """Load and sort all datetimes from T04 files in the APX folder."""
+        filenames = self._get_t04_filenames()
+        if not filenames:
+            raise ValueError(f"No .t04 files found in {self.apx_folder}")
+        return sorted(self._parse_datetime(f) for f in filenames)
+    
     def _get_t04_filenames(self) -> list[str]:
         """Get all .t04 filenames in the APX folder."""
         return [f.name for f in self.apx_folder.glob("*.t04")]
@@ -48,17 +71,10 @@ class TrajectoryObservationTimeFetcher:
         dt = datetime.strptime(name_part[-12:], "%Y%m%d%H%M")
         return dt.replace(tzinfo=tzone)
 
-    def _load_datetimes(self) -> list[datetime]:
-        """Load and sort all datetimes from T04 files in the APX folder."""
-        filenames = self._get_t04_filenames()
-        if not filenames:
-            raise ValueError(f"No .t04 files found in {self.apx_folder}")
-        return sorted(self._parse_datetime(f) for f in filenames)
-
 class BasestationScraper(BaseScraper):
     """Scraper for Swiss Positioning Service (Swipos) to download RINEX observation data."""
 
-    def __init__(self, config: dict, observation_time: TrajectoryObservationTimeFetcher):
+    def __init__(self, config: dict, observation_time: RinexDownloadWindow):
         super().__init__(config=config)
         self.observation_time = observation_time
 
@@ -143,7 +159,7 @@ class BasestationScraper(BaseScraper):
         )
         btn.click()
     
-    def _set_date(self, obs: TrajectoryObservationTimeFetcher) -> None:
+    def _set_date(self, obs: RinexDownloadWindow) -> None:
         """Set the observation date in the SWIPOS form."""
         field = self.wait.until(
             EC.visibility_of_element_located(
@@ -153,7 +169,7 @@ class BasestationScraper(BaseScraper):
         field.clear()
         field.send_keys(obs.date)
     
-    def _set_start_time(self, obs: TrajectoryObservationTimeFetcher) -> None:
+    def _set_start_time(self, obs: RinexDownloadWindow) -> None:
         """Set the observation start time fields in the SWIPOS form."""
         fields = {
             "Hour":   obs.start_hour,
@@ -169,7 +185,7 @@ class BasestationScraper(BaseScraper):
             field.clear()
             field.send_keys(value)
 
-    def _set_duration(self, obs: TrajectoryObservationTimeFetcher) -> None:
+    def _set_duration(self, obs: RinexDownloadWindow) -> None:
         """Set the observation duration fields in the SWIPOS form."""
         fields = {
             "Hour":   obs.duration_hours,
@@ -193,7 +209,7 @@ class BasestationScraper(BaseScraper):
         )
         Select(select_element).select_by_value(interval_value)
 
-    def set_observation_period(self, obs: TrajectoryObservationTimeFetcher) -> None:
+    def set_observation_period(self, obs: RinexDownloadWindow) -> None:
         """Set the observation start time and duration in the SWIPOS form."""
         self._set_date(obs)
         self._set_start_time(obs)
