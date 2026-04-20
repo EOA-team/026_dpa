@@ -17,7 +17,7 @@ from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250610", "re112o_250619","re112o_250717_2","re112o_250723_4",
+    selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250717_2","re112o_250723_4",
                      "re112o_250813", "re112o_250903", "re112o_250918"]
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
