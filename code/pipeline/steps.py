@@ -63,7 +63,7 @@ class ScrapeBaseStationData(PipelineStep):
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
             obs = RinexDownloadWindow(
                 apx_folder=input_folder,
-                convergence_time=timedelta(minutes=60), # Add RTX convergence time
+                convergence_time=timedelta(minutes=120), # Add RTX convergence time
                 end_buffer=timedelta(minutes=15)
             )
 
