@@ -167,7 +167,7 @@ class BasestationScraper(BaseScraper):
                 )
             )
             field.clear()
-            field.send_keys(value)
+            field.send_keys(str(value))
 
     def _set_duration(self, obs: TrajectoryObservationTimeFetcher) -> None:
         """Set the observation duration fields in the SWIPOS form."""
@@ -182,7 +182,7 @@ class BasestationScraper(BaseScraper):
                 )
             )
             field.clear()
-            field.send_keys(value)
+            field.send_keys(str(value))
 
     def _select_interval(self, interval_value: str ) -> None:
         """Select the observation interval in seconds (default: 1s)."""
