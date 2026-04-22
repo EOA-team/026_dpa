@@ -4,6 +4,14 @@ exclude = [
     "tests"
 ]
 
+# Third-party libraries without type stubs — suppresses [import-untyped]
+[[tool.mypy.overrides]]
+module = [
+    "pywinauto.*",  # no stubs available
+    "osgeo.*",      # no stubs available
+    "pdal.*",       # no stubs available
+]
+follow_untyped_imports = true
 
 [tool.pylint.main]
 ignore = ["scripts", "tests"]
