@@ -4,9 +4,10 @@ Helper functions for file handling operations.
 import re
 from pathlib import Path
 from shutil import move, copy2
+from typing import Callable, Any
 
 def _process_files_by_regex(source: Path, destination: Path, regex_pattern: str,
-                             file_operation: callable,
+                             file_operation: Callable[..., Any],
                              print_progress: bool = False) -> None:
     """Internal helper that applies a file operation to all files matching a regex.
 
