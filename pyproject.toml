@@ -4,12 +4,21 @@ exclude = [
     "tests"
 ]
 
-# Third-party libraries without type stubs — suppresses [import-untyped]
+# osgeo, pdal and pywinauto have no stubs on PyPI and no py.typed marker (PEP 561).
+# State-of-the-art options for untyped libraries (best to worst):
+#   1. Library ships py.typed (PEP 561)       — ideal, no config needed
+#   2. Separate stub package on PyPI           — e.g. types-requests
+#   3. follow_untyped_imports = true           — mypy reads source directly
+#   4. # type: ignore[import-untyped]          — last resort, no type checking
+#
+# osgeo and pdal: option 3 works cleanly as their internals are well-structured.
+# pywinauto: option 3 fails because methods are generated dynamically at runtime —
+# mypy produces false-positive [attr-defined] errors → option 4 used per-import instead.
 [[tool.mypy.overrides]]
 module = [
-    "pywinauto.*",  # no stubs available
-    "osgeo.*",      # no stubs available
-    "pdal.*",       # no stubs available
+    "osgeo.*",  # no stubs available
+    "pdal.*",   # no stubs available
+    # pywinauto is not added, see reason above
 ]
 follow_untyped_imports = true
 
