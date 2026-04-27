@@ -13,29 +13,34 @@ All the data comes in RINEX format, which is a standard for GNSS data.
 
 import time
 from pathlib import Path
-from code.scrapers.base_scraper import BaseScraper
-from selenium.webdriver.common.by import By
 from datetime import datetime, timezone, tzinfo
 
+from code.scrapers.base_scraper import BaseScraper
+
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import Select, WebDriverWait
+
+
+
 
 class TrajectoryObservationTimeFetcher:
-    """Fetches and holds observation period information from T04 trajectory files in an APX folder."""
+    """Fetches and holds observation period information from T04 trajectory files in APX folder."""
 
     def __init__(self, apx_folder: Path):
-        self.apx_folder      = apx_folder
-        self._datetimes      = self._load_datetimes()
+        self.apx_folder = apx_folder
+        self._datetimes = self._load_datetimes()
 
-        self.flight_start    = self._datetimes[0]
-        self.flight_end      = self._datetimes[-1]
-        self.duration_seconds = int((self.flight_end - self.flight_start).total_seconds())
+        self.flight_start = self._datetimes[0]
+        self.flight_end = self._datetimes[-1]
+        self.duration_seconds = int(
+            (self.flight_end - self.flight_start).total_seconds())
 
-        self.date             = self.flight_start.strftime("%d.%m.%Y")
-        self.start_hour       = self.flight_start.hour
-        self.start_minute     = self.flight_start.minute
-        self.start_second     = self.flight_start.second
-        self.duration_hours   = self.duration_seconds // 3600
+        self.date = self.flight_start.strftime("%d.%m.%Y")
+        self.start_hour = self.flight_start.hour
+        self.start_minute = self.flight_start.minute
+        self.start_second = self.flight_start.second
+        self.duration_hours = self.duration_seconds // 3600
         self.duration_minutes = (self.duration_seconds % 3600) // 60
 
     def _get_t04_filenames(self) -> list[str]:
@@ -54,6 +59,7 @@ class TrajectoryObservationTimeFetcher:
         if not filenames:
             raise ValueError(f"No .t04 files found in {self.apx_folder}")
         return sorted(self._parse_datetime(f) for f in filenames)
+
 
 class BasestationScraper(BaseScraper):
     """Scraper for Swiss Positioning Service (Swipos) to download RINEX observation data."""
@@ -92,20 +98,22 @@ class BasestationScraper(BaseScraper):
                 (By.ID, "accept")
             )
         )
-        cookies_btn.click()        
+        cookies_btn.click()
 
     def open_rinexshop(self):
+        """ Navigate to the RINEX Shop page after logging in."""
         rinexshop_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.ID,"m_NavigationTreeViewt6")
+                (By.ID, "m_NavigationTreeViewt6")
             )
         )
         rinexshop_link.click()
 
     def open_neworder(self):
+        """Open the 'New Order' page to start a new RINEX data request."""
         new_order_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.ID,"ContentPlaceHolder1_m_BtnNewOrder")
+                (By.ID, "ContentPlaceHolder1_m_BtnNewOrder")
             )
         )
         new_order_link.click()
@@ -129,7 +137,8 @@ class BasestationScraper(BaseScraper):
         # Wait until the specific option is present in the dropdown
         self.wait.until(
             EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, f"#m_RefStationListBox option[value='{station_value}']")
+                (By.CSS_SELECTOR,
+                 f"#m_RefStationListBox option[value='{station_value}']")
             )
         )
         Select(select_element).select_by_value(station_value)
@@ -142,7 +151,7 @@ class BasestationScraper(BaseScraper):
             )
         )
         btn.click()
-    
+
     def _set_date(self, obs: TrajectoryObservationTimeFetcher) -> None:
         """Set the observation date in the SWIPOS form."""
         field = self.wait.until(
@@ -152,7 +161,7 @@ class BasestationScraper(BaseScraper):
         )
         field.clear()
         field.send_keys(obs.date)
-    
+
     def _set_start_time(self, obs: TrajectoryObservationTimeFetcher) -> None:
         """Set the observation start time fields in the SWIPOS form."""
         fields = {
@@ -184,7 +193,7 @@ class BasestationScraper(BaseScraper):
             field.clear()
             field.send_keys(str(value))
 
-    def _select_interval(self, interval_value: str ) -> None:
+    def _select_interval(self, interval_value: str) -> None:
         """Select the observation interval in seconds (default: 1s)."""
         select_element = self.wait.until(
             EC.visibility_of_element_located(
@@ -200,7 +209,7 @@ class BasestationScraper(BaseScraper):
         self._set_duration(obs)
         self._select_interval("1")  # Set interval to 1 second
         time.sleep(5)  # Small delay to ensure form is ready
-    
+
     def click_add_to_delivery(self) -> None:
         """Click the button to proceed to delivery options."""
         btn = self.wait.until(
@@ -227,7 +236,7 @@ class BasestationScraper(BaseScraper):
             )
         )
         Select(select_element).select_by_value(format_value)
-    
+
     def click_generate_data(self) -> None:
         """Click the button to start generating the RINEX data."""
         btn = self.wait.until(
@@ -236,13 +245,12 @@ class BasestationScraper(BaseScraper):
             )
         )
         btn.click()
-    
+
     def click_proceed_with_delivery_details(self, timeout: int = 600) -> None:
         """Wait for data generation to complete and proceed to delivery details.
-        
+
         Note: Data generation can take up to 10 minutes.
         """
-        from selenium.webdriver.support.ui import WebDriverWait
         long_wait = WebDriverWait(self.webdriver, timeout)
         btn = long_wait.until(
             EC.element_to_be_clickable(
@@ -250,7 +258,7 @@ class BasestationScraper(BaseScraper):
             )
         )
         btn.click()
-    
+
     def select_delivery(self) -> None:
         """Select the first (topmost) delivery option from the radio buttons."""
         radio_buttons = self.wait.until(
@@ -277,7 +285,6 @@ class BasestationScraper(BaseScraper):
             )
         )
         btn.click()
-    
 
     def run(self) -> None:
         self.open()
