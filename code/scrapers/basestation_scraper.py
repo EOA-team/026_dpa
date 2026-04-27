@@ -22,26 +22,42 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 
-
-
-class TrajectoryObservationTimeFetcher:
+class TrajectoryObservationTimeFetcher: # pylint: disable=too-few-public-methods
     """Fetches and holds observation period information from T04 trajectory files in APX folder."""
 
     def __init__(self, apx_folder: Path):
         self.apx_folder = apx_folder
         self._datetimes = self._load_datetimes()
-
         self.flight_start = self._datetimes[0]
         self.flight_end = self._datetimes[-1]
-        self.duration_seconds = int(
-            (self.flight_end - self.flight_start).total_seconds())
 
-        self.date = self.flight_start.strftime("%d.%m.%Y")
-        self.start_hour = self.flight_start.hour
-        self.start_minute = self.flight_start.minute
-        self.start_second = self.flight_start.second
-        self.duration_hours = self.duration_seconds // 3600
-        self.duration_minutes = (self.duration_seconds % 3600) // 60
+        @property
+        def duration_seconds(self) -> int:
+            return int((self.flight_end - self.flight_start).total_seconds())
+
+        @property
+        def date(self) -> str:
+            return self.flight_start.strftime("%d.%m.%Y")
+
+        @property
+        def start_hour(self) -> int:
+            return self.flight_start.hour
+
+        @property
+        def start_minute(self) -> int:
+            return self.flight_start.minute
+
+        @property
+        def start_second(self) -> int:
+            return self.flight_start.second
+
+        @property
+        def duration_hours(self) -> int:
+            return self.duration_seconds // 3600
+
+        @property
+        def duration_minutes(self) -> int:
+            return (self.duration_seconds % 3600) // 60
 
     def _get_t04_filenames(self) -> list[str]:
         """Get all .t04 filenames in the APX folder."""
