@@ -23,8 +23,8 @@ if __name__ == "__main__":
     # Define Steps
 
     # Step 1: Fetch Raw Data
-    #     Some old data folders from 2025 contain already base station data ["rinex"] 
-    #     --> Exclude to make sure all base station data is freshly fetched by 
+    #     Some old data folders from 2025 contain already base station data ["rinex"]
+    #     --> Exclude to make sure all base station data is freshly fetched by
     #     BasestationScraper and in the same format.
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         exclude_within_output_folder=["rinex"]
     )
     # Step 2: Download Base Station Data from Swipos
-    #     Use the APX files in the raw data to get the flight time info for the scraper 
+    #     Use the APX files in the raw data to get the flight time info for the scraper
     #     to know which base station data to download.
     download_base_station_data = ScrapeBaseStationData(
         name="Download Base Station Data",
