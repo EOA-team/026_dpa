@@ -1,6 +1,6 @@
 """ In the future there will be many different runner scripts for different pipelines
-At The moment at Agroscope we only use one default pipeline but in Future ther
-will probably be different
+At The moment at Agroscope we only use one default pipeline but in Future there will be
+different pipelines!
 Example:
  default_pipeline_runner.py
  high_accuracy_pipeline_runner.py # using georeferencing and additional corrections
