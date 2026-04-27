@@ -37,7 +37,8 @@ class PipelineFolder:
     def __init__(self, basefolder: Path, target: str, static: bool = False):
         self.basefolder = basefolder
         self.target = target
-        # If static is true, the folder is not job specific and the same for all jobs (e.g. calibration files)
+        #static = true, means folder is not job specific and same for all jobs
+        #(e.g. calibration files)
         self.static = static
 
     def get_job_paths(self, job_names: list[str]) -> list[Path]:
