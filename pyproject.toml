@@ -24,3 +24,9 @@ follow_untyped_imports = true
 
 [tool.pylint.main]
 ignore = ["scripts", "tests"]
+
+
+[tool.pylint.design]
+max-args = 6                # default is 5, increased to reflect real-world pipeline steps
+max-positional-arguments = 6 # same reasoning as max-args
+min-public-methods = 1      # data containers and single-responsibility classes expose only run()
