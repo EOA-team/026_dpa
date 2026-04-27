@@ -13,7 +13,7 @@ def _process_files_by_regex(source: Path, destination: Path, regex_pattern: str,
 
     Not intended to be called directly — use move_files_by_regex or
     copy_files_by_regex instead."""
-     
+
     destination.mkdir(parents=True, exist_ok=True)
     try:
         compiled_regex = re.compile(regex_pattern, re.IGNORECASE)
