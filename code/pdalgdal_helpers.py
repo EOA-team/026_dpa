@@ -1,11 +1,19 @@
-from osgeo import gdal
-import pdal
+""" This module contains helper functions for working with PDAL and GDAL 
+PDAL : Point Data Abstraction Library - https://pdal.io/
+GDAL : Geospatial Data Abstraction Library - https://gdal.org/
+"""
 import json
 import re
 from pathlib import Path
 
-gdal.UseExceptions()  # explicitly enable exceptions (recommended)
+from osgeo import gdal
+import pdal
 
+gdal.UseExceptions()  # explicitly enable gdal exceptions
+
+
+#TODO: Needs to be validated !
+# See Issue : https://github.com/EOA-team/026_dpa/issues/17
 def las_to_geotif(
         input_las:  Path,
         output_tif: Path,
@@ -16,8 +24,6 @@ def las_to_geotif(
     Uses per-cell maximum Z binning (writers.gdal, output_type='max').
     At 0.05m resolution this is equivalent in practice to the TIN interpolation
     used by the QGIS 'Export raster (using triangulation)' tool.
-
-    Note: Need to validate with ReSe if this is fine
 
     Args:
         input_las:   Path to the input .las file.
@@ -43,6 +49,7 @@ def las_to_geotif(
     pipeline.execute()
     print(f"DSM created: {output_tif}")
 
+
 def _rename_envi_bin(bin_file: Path, output_file: Path) -> None:
     """Rename GDAL-generated .bin file to the desired output filename (no extension).
 
@@ -54,6 +61,7 @@ def _rename_envi_bin(bin_file: Path, output_file: Path) -> None:
         output_file: Desired output path (no extension).
     """
     bin_file.rename(output_file)
+
 
 def geotiff_to_envi_dsm(
         input_tif:   Path,
@@ -111,7 +119,10 @@ def fix_envi_header(hdr_file: Path) -> None:
         parts = [p.strip() for p in match.group(1).split(",")]
         x, y, res = float(parts[3]), float(parts[4]), float(parts[5])
         res_str = f"{res:.9f}"
-        return f"map info = {{UTM,1,1,{x:.3f},{y:.3f}, {res_str}, {res_str},32,North,WGS-84,units=Meter}}"
+        return (
+            f"map info = {{UTM,1,1,{x:.3f},{y:.3f},{res_str},{res_str},32,North,WGS-84,"
+            f"units=Meter}}"
+        )
 
     text = re.sub(r"map info = \{(.*?)\}", fix_map_info, text)
 
@@ -128,10 +139,12 @@ def fix_envi_header(hdr_file: Path) -> None:
 
     # Add x start, y start after byte order
     if "x start" not in text:
-        text = re.sub(r"(byte order = 0\n)", "\\1x start =  1\ny start =  1\n", text)
+        text = re.sub(r"(byte order = 0\n)",
+                      "\\1x start =  1\ny start =  1\n", text)
 
     # Add pixel size after coordinate system string
-    res_match = re.search(r"map info = \{UTM,1,1,[\d.]+,[\d.]+, ([\d.]+),", text)
+    res_match = re.search(
+        r"map info = \{UTM,1,1,[\d.]+,[\d.]+, ([\d.]+),", text)
     if res_match and "pixel size" not in text:
         res_str = f"{float(res_match.group(1)):.9f}"
         text = re.sub(
@@ -147,10 +160,12 @@ def fix_envi_header(hdr_file: Path) -> None:
 
     hdr_file.write_text(text)
 
+
 if __name__ == "__main__":
     # Example usage:
     las_to_geotif(
-        input_las=Path("E:/dsm_creation_test/Mission 1_lidardump-2025.09.03-14.02.28.las"),
+        input_las=Path(
+            "E:/dsm_creation_test/Mission 1_lidardump-2025.09.03-14.02.28.las"),
         output_tif=Path("E:/dsm_creation_test/DSM.tif"),
         resolution=0.05
     )
@@ -161,6 +176,3 @@ if __name__ == "__main__":
     )
 
     fix_envi_header(Path("E:/dsm_creation_test/DSM.hdr"))
-
-    
-

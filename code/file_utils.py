@@ -5,7 +5,7 @@ from shutil import copy2
 import sys
 import zipfile
 from datetime import datetime
-import time 
+import time
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -56,9 +56,9 @@ def copy_with_logging(src, dst):
     logger.info("Copying %s (%.2f MB)", Path(src).name, size)
     return copy2(src, dst,)
 
-def wait_for_folder_stable(folder:Path, timeout:int, 
-                            stable_seconds:int, debug:bool) -> None:
-    
+
+def wait_for_folder_stable(folder: Path, timeout: int,
+                           stable_seconds: int, debug: bool) -> None:
     """Wait until no files in folder are modified for stable_seconds consecutive seconds."""
     start = time.time()
     last_mtime = 0.0
@@ -67,14 +67,16 @@ def wait_for_folder_stable(folder:Path, timeout:int,
 
     while stable_count < stable_seconds:
         if time.time() - start > timeout:
-            raise TimeoutError(f"Folder did not stabilize within {timeout}s: {folder}")
+            raise TimeoutError(
+                f"Folder did not stabilize within {timeout}s: {folder}")
 
         files = [f for f in folder.rglob("*") if f.is_file()]
         current_mtime = max((f.stat().st_mtime for f in files), default=0.0)
         newest_file = max(files, key=lambda f: f.stat().st_mtime, default=None)
 
         if debug and newest_file and newest_file != last_printed_file:
-            timestamp = datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S.%f')[:-3]
+            timestamp = datetime.fromtimestamp(
+                current_mtime).strftime('%H:%M:%S.%f')[:-3]
             print(f"Newest: {newest_file.name} - {timestamp}")
             last_printed_file = newest_file
 
@@ -84,12 +86,13 @@ def wait_for_folder_stable(folder:Path, timeout:int,
 
     print(f"Folder stable: {folder}")
 
+
 def wait_for_file_creation(
         file_path:    Path,
-        timeout_s: int 
+        timeout_s: int
 ) -> None:
     """Wait until a specific file is created.
-    
+
     Args:
         file:    Path to the file to wait for.
         timeout: Maximum time to wait in seconds before raising TimeoutError.
@@ -98,10 +101,12 @@ def wait_for_file_creation(
 
     while not file_path.exists():
         if time.time() - start > timeout_s:
-            raise TimeoutError(f"File was not created within {timeout_s}s: {file_path}")
+            raise TimeoutError(
+                f"File was not created within {timeout_s}s: {file_path}")
         time.sleep(2)
 
     print(f"File created: {file_path}")
+
 
 def wait_for_file_count(
         folder:         Path,
@@ -123,26 +128,30 @@ def wait_for_file_count(
 
     while len(list(folder.glob(pattern))) < expected_count:
         if time.time() - start > timeout_s:
-            raise TimeoutError(f"Expected {expected_count} file(s) matching '{pattern}' not found within {timeout_s}s: {folder}")
+            raise TimeoutError(
+                f"Expected {expected_count} file(s) matching '{pattern}' "
+                f"not found within {timeout_s}s: {folder}"
+                )
         time.sleep(2)
 
     print(f"Found {expected_count} file(s) matching '{pattern}' in {folder}")
 
-def move_and_extract_downloaded_zip( output_folder: Path) -> None:
+
+def move_and_extract_downloaded_zip(output_folder: Path) -> None:
     """Find the newest zip file in downloads, extract it to output folder and delete the zip."""
     download_folder = Path.home() / "Downloads"
-    
+
     zip_files = list(download_folder.glob("*.zip"))
     if not zip_files:
         raise FileNotFoundError(f"No zip files found in {download_folder}")
-    
+
     newest_zip = max(zip_files, key=lambda f: f.stat().st_mtime)
-    
+
     output_folder.mkdir(parents=True, exist_ok=True)
-    
+
     with zipfile.ZipFile(newest_zip, 'r') as zip_ref:
         zip_ref.extractall(output_folder)
-    
+
     newest_zip.unlink()
     print(f"Extracted {newest_zip.name} to {output_folder} and deleted zip.")
 
@@ -153,8 +162,6 @@ def find_las_file(folder: Path):
     if len(files) == 0:
         raise FileNotFoundError(f"No .las file found in {folder}")
     if len(files) > 1:
-        raise ValueError(f"Expected exactly one .las file, but found {len(files)}:\n" + 
-                        "\n".join(str(f) for f in files))
+        raise ValueError(f"Expected exactly one .las file, but found {len(files)}:\n" +
+                         "\n".join(str(f) for f in files))
     return files[0]
-
-

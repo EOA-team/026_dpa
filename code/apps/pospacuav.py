@@ -258,7 +258,7 @@ class PosPacUavApplication:
                                                    / "Mission 1" / "Extract"
                                                    / "gnss_nav_pri_interp_Mission 1.dat")
                 wait_for_file_creation(
-                    file_path=last_file_created_during_import, 
+                    file_path=last_file_created_during_import,
                     timeout_s=900 # Expected: 10min --> Margin: 15min
                     )
                 # Get Start and Stop Time for full processing batch file from extract log
