@@ -68,7 +68,8 @@ class HyspexRadApplication:
         # Application
         self.app_path: str = "G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe"
         self.work_dir: str = "G:/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/"
-        self.window_title: str = "HyspexRad_V3.5"  # Window title stays static, no need for window_auto_id
+        # Window title stays static, no need for window_auto_id
+        self.window_title: str = "HyspexRad_V3.5"
         self.is_idl_application: bool = False
 
     def _set_output_fileformat(self, controlfinder: ControlFinder, fileformat: OutputFileFormat):
@@ -235,7 +236,7 @@ class HyspexRadApplication:
         with ApplicationManager(app_path=self.app_path,
                                 work_dir=self.work_dir,
                                 window_title=self.window_title,
-                                window_auto_id= None, 
+                                window_auto_id= None,
                                 is_idl_application=self.is_idl_application) as hyspexrad_manager:
             main_window_cf = ControlFinder(window=hyspexrad_manager.window)
             main_window_cf.window.set_focus()
