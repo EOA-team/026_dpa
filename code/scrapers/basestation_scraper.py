@@ -54,7 +54,7 @@ class RinexDownloadWindow: # pylint: disable=too-few-public-methods
         @property
         def duration_seconds(self) -> int:
             return int((self.flight_end - self.flight_start).total_seconds())
-        
+
         @property
         def date(self) -> str:
             return self.flight_start.strftime("%d.%m.%Y")
@@ -187,7 +187,7 @@ class BasestationScraper(BaseScraper):
             )
         )
         btn.click()
-    
+
     def _set_date(self, obs: RinexDownloadWindow) -> None:
         """Set the observation date in the SWIPOS form."""
         field = self.wait.until(
@@ -197,7 +197,7 @@ class BasestationScraper(BaseScraper):
         )
         field.clear()
         field.send_keys(obs.date)
-    
+
     def _set_start_time(self, obs: RinexDownloadWindow) -> None:
         """Set the observation start time fields in the SWIPOS form."""
         fields = {
