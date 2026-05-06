@@ -235,7 +235,8 @@ dependencies:
       - click==8.3.2
       - fastapi==0.136.0
       - fastavro==1.12.1
-      - flirpy==0.6.2
+      - genicam==1.5.1
+      - harvesters==1.4.3
       - libusb==1.0.29.post7
       - natsort==8.4.0
       - numpy==2.3.5
