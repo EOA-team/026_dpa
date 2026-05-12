@@ -163,8 +163,8 @@ if __name__ == "__main__":
     )
 
     # Run Steps
-    fetch_raw_data.run()
-    download_base_station_data.run()
+    #fetch_raw_data.run()
+    #download_base_station_data.run()
     georeference_sensors.run()
 
     # fetch_navigation_files.run()
