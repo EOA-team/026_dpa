@@ -167,6 +167,7 @@ class PosPacUavApplication:
             output_folder:        Path,
             start_time_total_sec: float,
             stop_time_total_sec:  float,
+            stabilized_mount:     str
     ) -> None:
         """Create a POSPac full processing batch file from template.
 
@@ -177,6 +178,8 @@ class PosPacUavApplication:
             output_folder:        Path to the tmp/output folder.
             start_time_total_sec: GPS seconds for start of flight window.
             stop_time_total_sec:  GPS seconds for end of flight window.
+            stabilized_mount:     "None", "GimbalData", "StabilizedMount", or "SynthesizeGimbalData"
+            #More Info on stabilized_mount: https://github.com/EOA-team/026_dpa/issues/18
         """
         apx_folder = input_folder / "apx"
         rinex_folder = input_folder / "rinex"
@@ -217,6 +220,7 @@ class PosPacUavApplication:
             stop_time_total_sec=stop_time_total_sec,
             rinex_files=rinex_datafiles,
             pcap_file=pcap_files[0].name,
+            stabilized_mount=stabilized_mount
         )
 
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -282,7 +286,8 @@ class PosPacUavApplication:
                     # e.g. E:/mjolnir_processing/re112o_250610/tmp/re112o_250610_full_processing
                     output_folder=output_folder / tmp_posbat_file_path.stem,
                     start_time_total_sec=start_time,
-                    stop_time_total_sec=stop_time
+                    stop_time_total_sec=stop_time, 
+                    stabilized_mount="StabilizedMount" #Should be eq. to Model in UI
                 )
                 # Run Batch file "Full processing"
                 self._reset_batchmanager(controlfinder=main_window_cf)
