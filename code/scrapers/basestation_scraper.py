@@ -49,35 +49,33 @@ class RinexDownloadWindow: # pylint: disable=too-few-public-methods
         self.flight_start     = self._datetimes[0] - convergence_time
         self.flight_end       = self._datetimes[-1]   + end_buffer
 
+    @property
+    def duration_seconds(self) -> int:
+        return int((self.flight_end - self.flight_start).total_seconds())
 
+    @property
+    def date(self) -> str:
+        return self.flight_start.strftime("%d.%m.%Y")
 
-        @property
-        def duration_seconds(self) -> int:
-            return int((self.flight_end - self.flight_start).total_seconds())
+    @property
+    def start_hour(self) -> int:
+        return self.flight_start.hour
 
-        @property
-        def date(self) -> str:
-            return self.flight_start.strftime("%d.%m.%Y")
+    @property
+    def start_minute(self) -> int:
+        return self.flight_start.minute
 
-        @property
-        def start_hour(self) -> int:
-            return self.flight_start.hour
+    @property
+    def start_second(self) -> int:
+        return self.flight_start.second
 
-        @property
-        def start_minute(self) -> int:
-            return self.flight_start.minute
+    @property
+    def duration_hours(self) -> int:
+        return self.duration_seconds // 3600
 
-        @property
-        def start_second(self) -> int:
-            return self.flight_start.second
-
-        @property
-        def duration_hours(self) -> int:
-            return self.duration_seconds // 3600
-
-        @property
-        def duration_minutes(self) -> int:
-            return (self.duration_seconds % 3600) // 60
+    @property
+    def duration_minutes(self) -> int:
+        return (self.duration_seconds % 3600) // 60
 
     def _get_t04_filenames(self) -> list[str]:
         """Get all .t04 filenames in the APX folder."""
