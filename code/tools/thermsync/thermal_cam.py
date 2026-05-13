@@ -35,7 +35,7 @@ class ThermalCam:
 
     def __init__(self, target_fps: int, out_dir : Path):
         self._harvester         = None
-        self._image_acquirer    = None
+        self.image_acquirer    = None
         self._node_map          = None
         self._target_fps        = target_fps
         self._out_dir           = out_dir
@@ -57,24 +57,24 @@ class ThermalCam:
         self._harvester.update()
 
         print(f"[CAM] Connecting to camera serial {self.CAMERA_SERIAL} ...")
-        self._image_acquirer = self._harvester.create(search_key={"serial_number": self.CAMERA_SERIAL})
-        self._node_map = self._image_acquirer.remote_device.node_map
+        self.image_acquirer = self._harvester.create(search_key={"serial_number": self.CAMERA_SERIAL})
+        self._node_map = self.image_acquirer.remote_device.node_map
 
 
     def disconnect(self):
-        if self._image_acquirer:
+        if self.image_acquirer:
             try:
-                self._image_acquirer.stop()
+                self.image_acquirer.stop()
             except Exception as e:
                 print(f"[CAM] Warning: failed to stop image acquirer: {e}")
-            self._image_acquirer.destroy()
+            self.image_acquirer.destroy()
         if self._harvester:
             self._harvester.reset()
         print("[CAM] Disconnected.")
 
     def start_acquiring(self):
-        self._image_acquirer.start()
-        if self._image_acquirer.is_acquiring():
+        self.image_acquirer.start()
+        if self.image_acquirer.is_acquiring():
 
             print("[CAM] Acquisition started!")
         else:
@@ -82,8 +82,8 @@ class ThermalCam:
 
     def stop_acquiring(self):
 
-        self._image_acquirer.stop()
-        if not self._image_acquirer.is_acquiring():
+        self.image_acquirer.stop()
+        if not self.image_acquirer.is_acquiring():
             print("[CAM] Acquisition stopped!")
         else:
             raise RuntimeError("[CAM] Failed to stop acquisition — camera is still acquiring.")
@@ -91,7 +91,7 @@ class ThermalCam:
 
     def apply_default_config(self):
         """Apply camera settings. Called once at connect."""
-        ia = self._image_acquirer
+        ia = self.image_acquirer
         ia.num_buffers                       = 3
 
         nm = self._node_map
@@ -129,7 +129,7 @@ class ThermalCam:
 
     def read_config(self):
         """Read back and print current camera settings for verification."""
-        ia = self._image_acquirer
+        ia = self.image_acquirer
         nm = self._node_map
         settings = {
             "num_buffers": ia.num_buffers,
@@ -158,7 +158,7 @@ class ThermalCam:
         buffers = []
         try:
             while True:
-                buffers.append(self._image_acquirer.fetch(timeout=0.05))
+                buffers.append(self.image_acquirer.fetch(timeout=0.05))
                 count += 1
         except Exception as e:
             print(f"[CAM] ⚠ Buffer exhausted after {count} frame(s): {e}")
@@ -191,43 +191,28 @@ class ThermalCam:
     # ------------------------------------------------------------------
     # TIFF saving
     # ------------------------------------------------------------------
-    def _save_tiff(
-        self,
-        raw: np.ndarray,
-        gps_time: datetime,
-        lag_ms: float,
-        temps: dict,
-        frame_idx: int,
-    ):
+    def save_tiff(self, raw: np.ndarray, fname_stem: str,
+                  save_raw: bool = True, save_celsius: bool = True):
         """
-        Save raw uint16 frame as TIFF.
-
-        Filename:  thermal_2025-06-10_104532.120_UTC.tif
-        ImageDescription tag contains GPS timestamp + sync lag.
-        Extra TIFF tags carry device temperatures.
-
-        Pixels are saved as raw uint16.
-        Apply raw_to_celsius() in post-processing.
+        Save frame as TIFF.
+        fname_stem: filename without extension, e.g. 'thermal_2026-05-13_154532.200_UTC'
         """
-        ts_str  = gps_time.strftime("%Y-%m-%d_%H%M%S.") + f"{gps_time.microsecond // 1000:03d}"
-        fname   = self._out_dir / f"thermal_{ts_str}_UTC.tif"
+        self._out_dir.mkdir(parents=True, exist_ok=True)
 
-        description = (
-            f"gps_time={gps_time.isoformat()} "
-            f"synchronization_lag={lag_ms:.1f}ms "
-            f"SensorTemperature={temps.get('SensorTemperature')} "
-            f"DeviceTemperature={temps.get('DeviceTemperature')} "
-            f"HousingTemperature={temps.get('HousingTemperature')}"
-        )
+        if save_raw:
+            tifffile.imwrite(
+                self._out_dir / f"{fname_stem}_raw.tif",
+                raw,
+                photometric="minisblack"
+            )
 
-        tifffile.imwrite(
-            fname,
-            raw,
-            photometric="minisblack",
-            description=description,
-        )
-
-        print(f"[CAM] #{frame_idx:04d}  {fname.name}  lag={lag_ms:.1f}ms")
+        if save_celsius:
+            celsius = self.raw_to_celsius(raw)
+            tifffile.imwrite(
+                self._out_dir / f"{fname_stem}_celsius.tif",
+                celsius,
+                photometric="minisblack"
+            )
 
 if __name__ == "__main__":
     cam = ThermalCam(target_fps=1, out_dir= Path("D:/ThermalCamera"))
@@ -241,7 +226,7 @@ if __name__ == "__main__":
 
     for i in range(10):
         t0 = time.perf_counter()
-        with cam._image_acquirer.fetch(timeout=cam.buffer_timeout) as buffer:
+        with cam.image_acquirer.fetch(timeout=cam.buffer_timeout) as buffer:
             t_fetch = time.perf_counter()
             component = buffer.payload.components[0]
             raw = component.data.reshape(component.height, component.width).copy()
