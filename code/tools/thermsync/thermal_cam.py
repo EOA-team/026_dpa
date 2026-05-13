@@ -3,22 +3,6 @@ thermal_cam.py
 --------------
 FLIR A65 capture via harvesters + Spinnaker GenTL CTI.
 
-Handles:
-  - camera init and fixed config
-  - FFC (Flat Field Correction) auto <-> manual switching
-  - adjustable frame rate
-  - per-frame TIFF saving with GNSS timestamp + device temperatures
-  - raw_to_celsius() helper for post-processing
-
-Usage (via main.py):
-    cam = ThermalCam()
-    cam.connect()
-    cam.set_fps(5)
-    cam.start_capture(nmea_reader)   # locks FFC to Manual
-    # ... running ...
-    cam.stop_capture()               # unlocks FFC to Auto
-    cam.disconnect()
-
 Links:
 https://www.flir.com/support-center/instruments2/how-do-i-manually-control-the-nuc-auto-calibration-in-the-flir-a35-and-a65/
 https://www.flir.com/support-center/instruments2/how-do-i-configure-my-camera-to-stream-a-temperature-linear-signal/
@@ -46,7 +30,7 @@ class ThermalCam:
     # transport. Without it, Harvesters has no way to talk to the camera.
     CTI_PATH = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
     CAMERA_SERIAL = "75006073" # FLIR A65 thermal camera serial number
-    CAMERA_FPS = 30
+    CAMERA_FPS = 30 # Camera always runs with FPS=30 and streams data into buffer
     CAMERA_SAMPLING_PERIOD = float(1 / CAMERA_FPS) # 33.33ms
 
     def __init__(self, target_fps: int, out_dir : Path):
@@ -75,8 +59,6 @@ class ThermalCam:
         print(f"[CAM] Connecting to camera serial {self.CAMERA_SERIAL} ...")
         self._image_acquirer = self._harvester.create(search_key={"serial_number": self.CAMERA_SERIAL})
         self._node_map = self._image_acquirer.remote_device.node_map
-        print("[CAM] Connected. Camera warming up in Auto FFC mode.")
-        print("[CAM] Wait 2–5 minutes before starting capture.")
 
 
     def disconnect(self):
@@ -166,19 +148,9 @@ class ThermalCam:
             print(f"  {k:<30} {v}")
         return settings
 
-
-    def set_fps(self, fps: float):
-        """Set the target capture rate. Can be called before start_capture."""
-        if fps <= 0:
-            print("[CAM] ⚠ FPS must be > 0. Ignoring.")
-            return
-        self._fps = fps
-        print(f"[CAM] FPS set to {fps}")
-
-    def _set_ffc(self, mode: str):
-        """Switch FFC mode. mode = 'Auto' or 'Manual'."""
-        self._node_map.FFCMode.value = mode
-        print(f"[CAM] FFC mode → {mode}")
+    def set_nuc(self, mode: str):
+        """Switch NUC (Non-Uniformity Correction) mode. mode = 'Automatic' or 'Manual'."""
+        self._node_map.NUCMode.value = mode
 
     def _count_queued_frames(self) -> int:
         """Count how many frames are currently waiting in the buffer."""

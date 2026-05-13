@@ -25,9 +25,27 @@ if __name__ == "__main__":
             target_fps=config["target_fps"],
             out_dir=Path(config["destination_path"])
         )
+        cam.prepare()
+        logger.info("Connected to Thermal Camera...")
 
-        print(cam._target_fps)
-        print(cam._out_dir)
+        cam.apply_default_config()
+        logger.info("Loaded Default Config...")
+
+        cam.start_acquiring()
+
+        logger.info("Image Acquisition Started...")
+        logger.info("Important! Wait 10min before Saving Geotiffs")
+
+        while input("Press <s> + Enter to start sampling: ").strip().lower() != "s":
+            print("  ⚠ Press S then Enter.")
+        cam.set_nuc(mode="Manual")
+
+        cam.stop_acquiring()
+        cam.disconnect()
+
+
+
+
 
     except Exception as e: # pylint: disable=broad-exception-caught
         logger.error("Program failed: %s", e, exc_info=True)
