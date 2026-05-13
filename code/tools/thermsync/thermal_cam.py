@@ -37,16 +37,6 @@ from code.file_utils import get_base_path
 config_path = get_base_path(__file__) / "config.yaml"
 config = load_config_from_yamlfile(config_path)
 
-
-# GenTL producer (DLL) that bridges Harvesters to the camera hardware via the GenTL
-# standard interface. Handles device discovery, low-level communication, and data
-# transport. Without it, Harvesters has no way to talk to the camera.
-CTI_PATH      = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
-
-
-OUTPUT_ROOT   = Path("recordings") / "thermal"
-
-
 # ---------------------------------------------------------------------------
 # Camera
 # ---------------------------------------------------------------------------
@@ -57,19 +47,29 @@ class ThermalCam:
     CTI_PATH = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
     CAMERA_SERIAL = "75006073" # FLIR A65 thermal camera serial number
     CAMERA_FPS = 30
-    CAMERA_SAMPLING_PERIOD = 1 / CAMERA_FPS # 33.33ms
+    CAMERA_SAMPLING_PERIOD = float(1 / CAMERA_FPS) # 33.33ms
 
-    def __init__(self):
+    def __init__(self, target_fps: int, out_dir : Path):
         self._harvester         = None
         self._image_acquirer    = None
         self._node_map          = None
-        self._fps               = None
-        self._out_dir           = None
+        self._target_fps        = target_fps
+        self._out_dir           = out_dir
+
+    @property
+    def sampling_period(self) -> float:
+        return 1/self._target_fps
+
+    @property
+    def buffer_timeout(self) -> int:
+        """Expect to fetch Image from Buffer latest after Sampling Period + Camera Sampling Period
+        E.g. fps = 10 , tsample = 100ms , tcam_sampl = 33ms (FPS=30) """
+        return self.sampling_period + self.CAMERA_SAMPLING_PERIOD
 
     def prepare(self):
-        print(f"[CAM] Loading GenTL CTI: {CTI_PATH}")
+        print(f"[CAM] Loading GenTL CTI: {self.CTI_PATH}")
         self._harvester = Harvester()
-        self._harvester.add_file(CTI_PATH)
+        self._harvester.add_file(self.CTI_PATH)
         self._harvester.update()
 
         print(f"[CAM] Connecting to camera serial {self.CAMERA_SERIAL} ...")
@@ -92,17 +92,17 @@ class ThermalCam:
 
     def start_acquiring(self):
         self._image_acquirer.start()
-        print(self._image_acquirer.is_acquiring())
         if self._image_acquirer.is_acquiring():
 
-            print("[CAM] Acquisition started successfully.")
+            print("[CAM] Acquisition started!")
         else:
             raise RuntimeError("[CAM] Failed to start acquisition — camera is not acquiring.")
 
     def stop_acquiring(self):
+
         self._image_acquirer.stop()
         if not self._image_acquirer.is_acquiring():
-            print("[CAM] Acquisition stopped successfully.")
+            print("[CAM] Acquisition stopped!")
         else:
             raise RuntimeError("[CAM] Failed to stop acquisition — camera is still acquiring.")
 
@@ -121,6 +121,29 @@ class ThermalCam:
         nm.AcquisitionMode.value             = "Continuous"
         nm.CounterTriggerSource.value        = "Off"
         nm.NUCMode.value                     = "Automatic"
+
+    @staticmethod
+    def raw_to_celsius(image: np.ndarray) -> np.ndarray:
+        """
+        Convert raw uint16 pixel values from the FLIR A65 to degrees Celsius.
+
+        Camera settings:
+          - PixelFormat:                 Mono14
+          - CMOSBitDepth:                bit14bit
+          - TemperatureLinearMode:       On
+          - TemperatureLinearResolution: High
+
+        Formula (from FLIR documentation):
+          T [K] = raw * 0.04
+          T [°C] = T [K] - 273.15
+
+        Args:
+            image: uint16 ndarray as delivered by the camera (H x W).
+
+        Returns:
+            float32 ndarray of temperature in °C, same shape as input.
+        """
+        return image.astype(np.float32) * 0.04 - 273.15
 
     def read_config(self):
         """Read back and print current camera settings for verification."""
@@ -235,10 +258,43 @@ class ThermalCam:
         print(f"[CAM] #{frame_idx:04d}  {fname.name}  lag={lag_ms:.1f}ms")
 
 if __name__ == "__main__":
-    cam = ThermalCam()
+    cam = ThermalCam(target_fps=1, out_dir= Path("D:/ThermalCamera"))
+    print(cam.sampling_period)
+    print(cam.buffer_timeout)
     cam.prepare()
     cam.apply_default_config()
+
     cam.start_acquiring()
+
+
+    for i in range(10):
+        t0 = time.perf_counter()
+        with cam._image_acquirer.fetch(timeout=cam.buffer_timeout) as buffer:
+            t_fetch = time.perf_counter()
+            component = buffer.payload.components[0]
+            raw = component.data.reshape(component.height, component.width).copy()
+            t_copy = time.perf_counter()
+
+        celsius = ThermalCam.raw_to_celsius(raw)
+
+        fname = cam._out_dir / f"thermal_{i:04d}.tif"
+        fname.parent.mkdir(parents=True, exist_ok=True)
+        tifffile.imwrite(fname, celsius, photometric="minisblack")
+        t_write = time.perf_counter()
+
+        print(
+            f"[{i:04d}] fetch={t_fetch - t0:.3f}s  copy={t_copy - t_fetch:.3f}s  write={t_write - t_copy:.3f}s  total={t_write - t0:.3f}s"
+        )
+
+        elapsed = time.perf_counter() - t0
+        additional_wait = cam.sampling_period - elapsed
+        time.sleep(max(0, additional_wait))  # Do not wait when value already negative
+
+        print("elapsed time:", elapsed)
+        print("waiting time:", additional_wait)
+        print("sampling period", cam.sampling_period)
+
+
     #Now here ask for start sampling
     cam.stop_acquiring()
     cam.disconnect()
