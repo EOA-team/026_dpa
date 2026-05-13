@@ -1,19 +1,20 @@
+from os import mkdir
+
 from harvesters.core import Harvester
 import tifffile
 from pathlib import Path
 import time
 
 CTI = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
-#CTI = r"C:\Program Files\Teledyne\Spinnaker\cti\vs2015\Spinnaker_GenTL_v140.cti"
-out_dir = Path(__file__).resolve().parent
+out_dir = Path("D:\ThermalCamera")
 
 # Constants given By Camera
 CAMERA_FPS = 30 # The Camera is sampled with 30FPS, cannot be set!
 CAMERA_SAMPLING_PERIOD = 1/ CAMERA_FPS
 
 # Can be adjusted
-TARGET_FPS = 35
-N_FRAMES = 10
+TARGET_FPS = 1
+N_FRAMES = 20
 
 h = Harvester()
 h.add_file(CTI)
@@ -62,6 +63,7 @@ try:
             t_copy = time.perf_counter()
 
         fname = out_dir / f"thermal_{i:04d}.tif"
+        fname.parent.mkdir(parents=True, exist_ok=True)
         tifffile.imwrite(fname, raw, photometric="minisblack")
         t_write = time.perf_counter()
 
