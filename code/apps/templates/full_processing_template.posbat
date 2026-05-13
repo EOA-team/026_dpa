@@ -75,7 +75,7 @@ Template Parameters:
 
             <CustomSettings>
                 <ImuContext>Remote</ImuContext>
-                <StabilizedMount>${stabilized_mount}</StabilizedMount>
+                <StabilizedMountType>${stabilized_mount}</StabilizedMountType>
                 <PriGNSSLeverX>-0.020</PriGNSSLeverX>
                 <PriGNSSLeverY>0.000</PriGNSSLeverY>
                 <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
