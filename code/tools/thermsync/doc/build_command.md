@@ -1,0 +1,1 @@
+pyinstaller --onedir --console --name=ThermalSync_MVP --collect-all jaraco --collect-all numpy code/tools/thermsync/thermsync.py
