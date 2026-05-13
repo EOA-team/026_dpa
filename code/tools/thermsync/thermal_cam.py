@@ -42,7 +42,7 @@ config = load_config_from_yamlfile(config_path)
 # standard interface. Handles device discovery, low-level communication, and data
 # transport. Without it, Harvesters has no way to talk to the camera.
 CTI_PATH      = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
-CAMERA_SERIAL = "75006073" # FLIR A65 thermal camera serial number
+
 
 OUTPUT_ROOT   = Path("recordings") / "thermal"
 
@@ -51,6 +51,14 @@ OUTPUT_ROOT   = Path("recordings") / "thermal"
 # Camera
 # ---------------------------------------------------------------------------
 class ThermalCam:
+    # GenTL producer (DLL) that bridges Harvesters to the camera hardware via the GenTL
+    # standard interface. Handles device discovery, low-level communication, and data
+    # transport. Without it, Harvesters has no way to talk to the camera.
+    CTI_PATH = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
+    CAMERA_SERIAL = "75006073" # FLIR A65 thermal camera serial number
+    CAMERA_FPS = 30
+    CAMERA_SAMPLING_PERIOD = 1 / CAMERA_FPS # 33.33ms
+
     def __init__(self):
         self._harvester         = None
         self._image_acquirer    = None
@@ -64,8 +72,8 @@ class ThermalCam:
         self._harvester.add_file(CTI_PATH)
         self._harvester.update()
 
-        print(f"[CAM] Connecting to camera serial {CAMERA_SERIAL} ...")
-        self._image_acquirer = self._harvester.create(search_key={"serial_number": "75006073"})
+        print(f"[CAM] Connecting to camera serial {self.CAMERA_SERIAL} ...")
+        self._image_acquirer = self._harvester.create(search_key={"serial_number": self.CAMERA_SERIAL})
         self._node_map = self._image_acquirer.remote_device.node_map
         print("[CAM] Connected. Camera warming up in Auto FFC mode.")
         print("[CAM] Wait 2–5 minutes before starting capture.")
@@ -82,8 +90,28 @@ class ThermalCam:
             self._harvester.reset()
         print("[CAM] Disconnected.")
 
+    def start_acquiring(self):
+        self._image_acquirer.start()
+        print(self._image_acquirer.is_acquiring())
+        if self._image_acquirer.is_acquiring():
+
+            print("[CAM] Acquisition started successfully.")
+        else:
+            raise RuntimeError("[CAM] Failed to start acquisition — camera is not acquiring.")
+
+    def stop_acquiring(self):
+        self._image_acquirer.stop()
+        if not self._image_acquirer.is_acquiring():
+            print("[CAM] Acquisition stopped successfully.")
+        else:
+            raise RuntimeError("[CAM] Failed to stop acquisition — camera is still acquiring.")
+
+
     def apply_default_config(self):
         """Apply camera settings. Called once at connect."""
+        ia = self._image_acquirer
+        ia.num_buffers                       = 3
+
         nm = self._node_map
         nm.PixelFormat.value                 = "Mono14"
         nm.CMOSBitDepth.value                = "bit14bit"
@@ -93,12 +121,13 @@ class ThermalCam:
         nm.AcquisitionMode.value             = "Continuous"
         nm.CounterTriggerSource.value        = "Off"
         nm.NUCMode.value                     = "Automatic"
-        print("[CAM] Fixed config applied. FFC = Auto (warmup).")
 
     def read_config(self):
         """Read back and print current camera settings for verification."""
+        ia = self._image_acquirer
         nm = self._node_map
         settings = {
+            "num_buffers": ia.num_buffers,
             "PixelFormat": nm.PixelFormat.value,
             "CMOSBitDepth": nm.CMOSBitDepth.value,
             "SensorGainMode": nm.SensorGainMode.value,
@@ -114,6 +143,7 @@ class ThermalCam:
             print(f"  {k:<30} {v}")
         return settings
 
+
     def set_fps(self, fps: float):
         """Set the target capture rate. Can be called before start_capture."""
         if fps <= 0:
@@ -126,6 +156,21 @@ class ThermalCam:
         """Switch FFC mode. mode = 'Auto' or 'Manual'."""
         self._node_map.FFCMode.value = mode
         print(f"[CAM] FFC mode → {mode}")
+
+    def _count_queued_frames(self) -> int:
+        """Count how many frames are currently waiting in the buffer."""
+        count = 0
+        buffers = []
+        try:
+            while True:
+                buffers.append(self._image_acquirer.fetch(timeout=0.05))
+                count += 1
+        except Exception as e:
+            print(f"[CAM] ⚠ Buffer exhausted after {count} frame(s): {e}")
+        finally:
+            for b in buffers:
+                b.queue()  # return all buffers unconsumed
+        return count
 
 
 
@@ -192,7 +237,8 @@ class ThermalCam:
 if __name__ == "__main__":
     cam = ThermalCam()
     cam.prepare()
-    cam.read_config()
     cam.apply_default_config()
-    cam.read_config()
+    cam.start_acquiring()
+    #Now here ask for start sampling
+    cam.stop_acquiring()
     cam.disconnect()
