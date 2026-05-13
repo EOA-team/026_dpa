@@ -7,17 +7,27 @@ CTI = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.ct
 #CTI = r"C:\Program Files\Teledyne\Spinnaker\cti\vs2015\Spinnaker_GenTL_v140.cti"
 out_dir = Path(__file__).resolve().parent
 
-TARGET_FPS = 0.2
+# Constants given By Camera
+CAMERA_FPS = 30 # The Camera is sampled with 30FPS, cannot be set!
+CAMERA_SAMPLING_PERIOD = 1/ CAMERA_FPS
+
+# Can be adjusted
+TARGET_FPS = 35
 N_FRAMES = 10
 
 h = Harvester()
 h.add_file(CTI)
 h.update()
 
-ia = h.create(search_key={"serial_number": "75006073"})
 
+ia = h.create(search_key={"serial_number": "75006073"})
+print("Buffer count:", ia.num_buffers) # Comes by default with 3 Buffers , so the oldes image in buffer is at max 66.6667 ms off
+# And the time to fetch the
 
 ia.remote_device.node_map.PixelFormat.value = "Mono8"
+
+
+print("Buffer count:", ia.num_buffers)
 
 nm = ia.remote_device.node_map
 nm.SensorGainMode.value              = "HighGainMode"
@@ -38,14 +48,14 @@ print("SensorFrameRate:             ", nm.SensorFrameRate.value)
 
 ia.start()
 
-
-interval = 1.0 / TARGET_FPS
+sampling_period  = 1.0 / TARGET_FPS
+buffer_timeout = sampling_period + CAMERA_SAMPLING_PERIOD # e.g. 1s + 33.33ms
 
 try:
     for i in range(N_FRAMES):
         t0 = time.perf_counter()
 
-        with ia.fetch() as buffer:
+        with ia.fetch(timeout = buffer_timeout) as buffer: # If no image fetched within this time, something went wrong
             t_fetch = time.perf_counter()
             component = buffer.payload.components[0]
             raw = component.data.reshape(component.height, component.width).copy()
@@ -60,7 +70,11 @@ try:
         )
 
         elapsed = time.perf_counter() - t0
-        time.sleep(max(0, interval - elapsed))
+        additional_wait = sampling_period - elapsed
+        time.sleep(max(0, additional_wait)) # Do not wait when value already negative
+        print("elapsed time:", elapsed)
+        print("waiting time:", additional_wait)
+        print("sampling period", sampling_period)
 
 finally:
     ia.stop()
