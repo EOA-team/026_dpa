@@ -76,43 +76,37 @@ Template Parameters:
             <CustomSettings>
                 <ImuContext>Remote</ImuContext>
                 <StabilizedMountType>${stabilized_mount}</StabilizedMountType>
+
+                <!--Onboard IMU Settings-->
                 <PriGNSSLeverX>-0.020</PriGNSSLeverX>
                 <PriGNSSLeverY>0.000</PriGNSSLeverY>
                 <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
                 <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD>
-
-                <RefToIMULeverX>0.052</RefToIMULeverX>
-                <RefToIMULeverY>-0.043</RefToIMULeverY>
-                <RefToIMULeverZ>0.018</RefToIMULeverZ>
-                <RefToIMUMountingAnglX>180</RefToIMUMountingAnglX>
-                <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
-                <RefToIMUMountingAnglZ>0</RefToIMUMountingAnglZ>
-
-                <VehRefMntAngX>0</VehRefMntAngX>
-                <VehRefMntAngY>0</VehRefMntAngY>
-                <VehRefMntAngZ>0</VehRefMntAngZ>
-            </CustomSettings>
-
-            <!-- For ONBOARD IMU, use the following lever arms and mounting angles instead 
-            <CustomSettings>
-                <ImuContext>Onboard</ImuContext>
-                <PriGNSSLeverX>-0.020</PriGNSSLeverX>
-                <PriGNSSLeverY>0.000</PriGNSSLeverY>
-                <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
-                <PriGNSSLeverSD>SDLessthan1cm</PriGNSSLeverSD>
-
                 <RefToIMULeverX>-0.011</RefToIMULeverX>
-                <RefToIMULeverY>-0.088</RefToIMULeverY>
+                <RefToIMULeverY>0.088</RefToIMULeverY>
                 <RefToIMULeverZ>-0.281</RefToIMULeverZ>
                 <RefToIMUMountingAnglX>0</RefToIMUMountingAnglX>
                 <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
                 <RefToIMUMountingAnglZ>-90</RefToIMUMountingAnglZ>
-
                 <VehRefMntAngX>0</VehRefMntAngX>
                 <VehRefMntAngY>0</VehRefMntAngY>
                 <VehRefMntAngZ>0</VehRefMntAngZ>
+
+                <!--Remote IMU Settings-->
+                <RemoteIMUPriGNSSLeverX>-0.020</RemoteIMUPriGNSSLeverX>
+                <RemoteIMUPriGNSSLeverY>0.000</RemoteIMUPriGNSSLeverY>
+                <RemoteIMUPriGNSSLeverZ>-0.638</RemoteIMUPriGNSSLeverZ>
+                <RemoteIMUPriGNSSLeverSD>SDLessthan3cm</RemoteIMUPriGNSSLeverSD>
+                <RefToRemoteIMULeverX>0.052</RefToRemoteIMULeverX>
+                <RefToRemoteIMULeverY>-0.043</RefToRemoteIMULeverY>
+                <RefToRemoteIMULeverZ>0.018</RefToRemoteIMULeverZ>
+                <RefToRemoteIMUMountingAnglX>180</RefToRemoteIMUMountingAnglX>
+                <RefToRemoteIMUMountingAnglY>0</RefToRemoteIMUMountingAnglY>
+                <RefToRemoteIMUMountingAnglZ>0</RefToRemoteIMUMountingAnglZ>
+                <VehRemoteIMURefMntAngX>0</VehRemoteIMURefMntAngX>
+                <VehRemoteIMURefMntAngY>0</VehRemoteIMURefMntAngY>
+                <VehRemoteIMURefMntAngZ>0</VehRemoteIMURefMntAngZ>
             </CustomSettings>
-            -->
         </Process>
 
         <!-- ================================================================
