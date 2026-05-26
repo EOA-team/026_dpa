@@ -287,7 +287,7 @@ class PosPacUavApplication:
                     output_folder=output_folder / tmp_posbat_file_path.stem,
                     start_time_total_sec=start_time,
                     stop_time_total_sec=stop_time, 
-                    stabilized_mount="SynthesizeGimbalData" #Default: "SynthesizeGimbalData" 
+                    stabilized_mount="SynthesizeGimbalData" #Default: "SynthesizeGimbalData" , "StabilizedMount", "None"
                 )
                 # Run Batch file "Full processing"
                 self._reset_batchmanager(controlfinder=main_window_cf)

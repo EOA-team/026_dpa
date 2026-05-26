@@ -14,7 +14,7 @@ wait_time = 5
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
-sel_flights = ["re112o_250903", "re112o_250918"] # Relevant Flights for MT 
+sel_flights = ["re112o_250918_model"] # Relevant Flights for MT 
 
 
 activate_processes = [ "Geocoding","Reflectance Retrieval","Rectification", "Mosaic" ]
