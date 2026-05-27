@@ -64,12 +64,11 @@ Template Parameters:
              ================================================================ -->
         <Process>
             <GnssMode>INFusion_SingleBase</GnssMode>
-            <GnssNavType>None</GnssNavType>
             <SingleBaseList>
                 <BatchBaseStationCoordinateInfo>
                     <StationID>ETH2</StationID>
+                    <UseAvePos>true</UseAvePos> 
                     ${rinex_files}
-                    <UseRtxPos>true</UseRtxPos>
                 </BatchBaseStationCoordinateInfo>
             </SingleBaseList>
 
