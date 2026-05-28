@@ -50,7 +50,9 @@ Template Parameters:
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <Project>
-        <Name>${job_name}</Name>
+        <!--Removed on purpose: <Name>${job_name}</Name> 
+        Makes sure that NO subfolder is created with job_name
+        -->
         <!-- ================================================================
              EXTRACT: APX rover data (T04 format)
              ================================================================ -->
