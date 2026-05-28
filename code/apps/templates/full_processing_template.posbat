@@ -241,7 +241,6 @@ Template Parameters:
                 <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
-                <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Lidar>
 
@@ -261,10 +260,10 @@ Template Parameters:
             <GeneratePointCloud>true</GeneratePointCloud>
             <CustomSettings>
                 <LASCreatorFolder>${output_folder}\Mission 1\LiDAR</LASCreatorFolder>
+                <LiDARQCRangeMin>30</LiDARQCRangeMin>
                 <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
-                <TargetEpoch>0</TargetEpoch>
             </CustomSettings>
         </Lidar>
 
