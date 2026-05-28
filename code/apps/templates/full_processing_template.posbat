@@ -16,6 +16,11 @@ Description:
 Note:
     Base station is hardcoded to ETH2 (Agroscope standard).
 
+All Infos relevant for this Batch File can be found on drone station:
+    "C:\Program Files\Applanix\POSPac UAV 9.3\Manuals\Batch Documentation"
+    "C:\Program Files\Applanix\POSPac UAV 9.3\Manuals\POSPac GNSS-Inertial Tools.pdf"
+    https://applanix.my.site.com/support/s/airborne-downloads
+
 Template Parameters:
     job_name             - Name of the job
                            e.g. 're112o_250610'
@@ -45,10 +50,9 @@ Template Parameters:
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <Project>
-        <n>${job_name}</n>
-
+        <Name>${job_name}</Name>
         <!-- ================================================================
-             EXTRACT: APX rover data (T04 format, APX-20)
+             EXTRACT: APX rover data (T04 format)
              ================================================================ -->
         <Extract>
             <FirstPosFile>${input_folder}\apx\${first_pos_file}</FirstPosFile>
@@ -67,7 +71,8 @@ Template Parameters:
             <SingleBaseList>
                 <BatchBaseStationCoordinateInfo>
                     <StationID>ETH2</StationID>
-                    <UseAvePos>true</UseAvePos> 
+                    <UseAvePos>true</UseAvePos> <!--reads POSITION XYZ from the RINEX .25o header-->
+                    <!-- Removed <UseRtxPos>true</UseRtxPos> : because we have Permanent Base Station ETH2 -->
                     ${rinex_files}
                 </BatchBaseStationCoordinateInfo>
             </SingleBaseList>
@@ -82,7 +87,7 @@ Template Parameters:
                 <PriGNSSLeverX>-0.020</PriGNSSLeverX>
                 <PriGNSSLeverY>0.000</PriGNSSLeverY>
                 <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
-                <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD>
+                <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD> <!--smallest setting: <3cm-->
                 <RefToIMULeverX>-0.011</RefToIMULeverX>
                 <RefToIMULeverY>0.088</RefToIMULeverY>
                 <RefToIMULeverZ>-0.281</RefToIMULeverZ>
@@ -97,7 +102,7 @@ Template Parameters:
                 <RemoteIMUPriGNSSLeverX>-0.020</RemoteIMUPriGNSSLeverX>
                 <RemoteIMUPriGNSSLeverY>0.000</RemoteIMUPriGNSSLeverY>
                 <RemoteIMUPriGNSSLeverZ>-0.638</RemoteIMUPriGNSSLeverZ>
-                <RemoteIMUPriGNSSLeverSD>SDLessthan3cm</RemoteIMUPriGNSSLeverSD>
+                <RemoteIMUPriGNSSLeverSD>SDLessthan3cm</RemoteIMUPriGNSSLeverSD> <!--smallest setting: <3cm-->
                 <RefToRemoteIMULeverX>0.052</RefToRemoteIMULeverX>
                 <RefToRemoteIMULeverY>-0.043</RefToRemoteIMULeverY>
                 <RefToRemoteIMULeverZ>0.018</RefToRemoteIMULeverZ>
@@ -136,7 +141,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <UseMissionEpoch>true</UseMissionEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -166,7 +171,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <UseMissionEpoch>true</UseMissionEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -190,7 +195,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <UseMissionEpoch>true</UseMissionEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -213,7 +218,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <UseMissionEpoch>true</UseMissionEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -223,7 +228,7 @@ Template Parameters:
              Approximate boresight angles: TX=90 deg (5400 arcmin), TY=-62 deg (3720 arcmin), TZ=90 deg (5400 arcmin)
              ================================================================ -->
         <Lidar>
-            <Type>VelodynePCAP</Type>
+            <Type>VelodynePCAP</Type> <!-- VLP (16,32)-->
             <VelodynePCAPOptions>
                 <Model>1</Model>
                 <DataPort>2368</DataPort>
@@ -231,16 +236,16 @@ Template Parameters:
             </VelodynePCAPOptions>
             <LidarFile>${input_folder}\${pcap_file}</LidarFile>
             <CalibrateAndQC>true</CalibrateAndQC>
-            <ExportTrajectory>true</ExportTrajectory>
+            <ExportTrajectory>true</ExportTrajectory> <!-- Note: We do not have CalibrationSBETLicense-->
             <GeneratePointCloud>true</GeneratePointCloud>
             <CustomSettings>
                 <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
                 <LeverX>-0.115</LeverX>
                 <LeverY>-0.008</LeverY>
                 <LeverZ>0.13</LeverZ>
-                <Tx>5400</Tx>
-                <Ty>-3720</Ty>
-                <Tz>5400</Tz>
+                <Tx>5400</Tx> <!-- 90 degrees in arcminutes -->
+                <Ty>-3720</Ty> <!-- -62 degrees in arcminutes -->
+                <Tz>5400</Tz> <!-- 90 degrees in arcminutes -->
                 <LiDARQCAdjustTrajectory>true</LiDARQCAdjustTrajectory>
                 <LiDARQCCalibrateBoresights>true</LiDARQCCalibrateBoresights>
                 <LiDARQCRangeMin>30</LiDARQCRangeMin>
@@ -249,7 +254,7 @@ Template Parameters:
                 <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
-                <UseMissionEpoch>true</UseMissionEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Lidar>
     </Project>
