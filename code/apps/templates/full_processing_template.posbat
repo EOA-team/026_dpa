@@ -212,8 +212,7 @@ Template Parameters:
         </Export>
 
         <!-- ================================================================
-             LIDAR Run 1: Calibrate and QC
-             Sensor: Velodyne VLP-32C (.pcap format)
+             LIDAR Run : Calibrate and QC + Point Cloud Generator
              LiDAR lever arms: X=-0.115, Y=-0.008, Z=0.13
              Approximate boresight angles: TX=90 deg (5400 arcmin), TY=-62 deg (3720 arcmin), TZ=90 deg (5400 arcmin)
              ================================================================ -->
@@ -226,7 +225,8 @@ Template Parameters:
             </VelodynePCAPOptions>
             <LidarFile>${input_folder}\${pcap_file}</LidarFile>
             <CalibrateAndQC>true</CalibrateAndQC>
-            <GeneratePointCloud>false</GeneratePointCloud>
+            <ExportTrajectory>true</ExportTrajectory>
+            <GeneratePointCloud>true</GeneratePointCloud>
             <CustomSettings>
                 <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
                 <LeverX>-0.115</LeverX>
@@ -243,30 +243,6 @@ Template Parameters:
                 <Datum>WGS84</Datum>
             </CustomSettings>
         </Lidar>
-
-
-        <!-- ================================================================
-             LIDAR Run 2: Point Cloud Generator
-             ================================================================ -->
-        <Lidar>
-            <Type>VelodynePCAP</Type>
-            <VelodynePCAPOptions>
-                <Model>1</Model>
-                <DataPort>2368</DataPort>
-                <PositionPort>8308</PositionPort>
-            </VelodynePCAPOptions>
-            <LidarFile>${input_folder}\${pcap_file}</LidarFile>
-            <CalibrateAndQC>false</CalibrateAndQC>
-            <GeneratePointCloud>true</GeneratePointCloud>
-            <CustomSettings>
-                <LASCreatorFolder>${output_folder}\Mission 1\LiDAR</LASCreatorFolder>
-                <LiDARQCRangeMin>30</LiDARQCRangeMin>
-                <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
-                <Ellipsoid>WGS84</Ellipsoid>
-                <Datum>WGS84</Datum>
-            </CustomSettings>
-        </Lidar>
-
     </Project>
 
     <Version>4.0</Version>
