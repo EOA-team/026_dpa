@@ -18,7 +18,7 @@ from pathlib import Path
 
 file_path = Path(__file__).parent
 
-CSV_PATH = file_path / "260526_gcp_accuracy.csv"
+CSV_PATH = file_path / "260528_gcp_accuracy.csv"
 
 df = pd.read_csv(CSV_PATH, sep = ";")
 df = df[df["GCP"].apply(lambda x: str(x).isdigit())].copy()
