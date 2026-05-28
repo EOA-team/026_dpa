@@ -73,6 +73,8 @@ Template Parameters:
             </SingleBaseList>
 
             <CustomSettings>
+                <StartTime>${start_time_total_sec}</StartTime>
+                <EndTime>${stop_time_total_sec}</EndTime>
                 <ImuContext>Remote</ImuContext>
                 <StabilizedMountType>${stabilized_mount}</StabilizedMountType>
 
@@ -134,6 +136,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch>
             </CustomSettings>
         </Export>
 
@@ -163,6 +166,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch>
             </CustomSettings>
         </Export>
 
@@ -186,6 +190,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch>
             </CustomSettings>
         </Export>
 
@@ -208,6 +213,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch>
             </CustomSettings>
         </Export>
 
@@ -239,8 +245,11 @@ Template Parameters:
                 <LiDARQCCalibrateBoresights>true</LiDARQCCalibrateBoresights>
                 <LiDARQCRangeMin>30</LiDARQCRangeMin>
                 <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
+                <LASCreatorRangeMin>30</LASCreatorRangeMin>
+                <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
+                <UseMissionEpoch>true</UseMissionEpoch>
             </CustomSettings>
         </Lidar>
     </Project>
