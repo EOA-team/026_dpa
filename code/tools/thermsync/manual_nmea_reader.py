@@ -361,6 +361,18 @@ class NmeaReader:
         self._buf = bytearray(tail)
         return updated
 
+    @staticmethod
+    def get_timestamp(zda: ZDA) -> str:
+        """Return 'YYMMDD_HHMMSS_ms' from a ZDA sentence."""
+        yy = str(zda.year)[-2:]
+        mm = f"{zda.month:02d}"
+        dd = f"{zda.day:02d}"
+        hh = zda.time_utc[0:2]
+        mi = zda.time_utc[2:4]
+        ss = zda.time_utc[4:6]
+        ms = f"{round(float('0.' + zda.time_utc.split('.')[1]) * 1000):03d}"
+        return f"{yy}{mm}{dd}_{hh}{mi}{ss}_{ms}"
+
 
 # ---------------------------------------------------------------------------
 # Quick smoke-test
@@ -371,12 +383,12 @@ if __name__ == "__main__":
     reader.connect()
 
     for i in range(10):
-        time.sleep(10)
+        time.sleep(1)
         reader.drain()
         print(reader.get_latest(ZDA))
         print(reader.get_latest(PASHR))
         print(reader.get_latest(GGA))
         print(reader.get_latest(PTNLAVR))
-        print()
+        print(reader.get_timestamp(reader.get_latest(ZDA)))
 
     reader.disconnect()
