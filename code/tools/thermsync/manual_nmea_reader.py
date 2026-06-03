@@ -7,6 +7,10 @@ Supported sentences
   ZDA      – UTC date + time                         (100 Hz)
   GGA      – position, altitude, fix quality         (100 Hz)
   PTNL,AVR – yaw / tilt / roll, moving baseline RTK  (100 Hz)
+
+
+TODO: Do not understand how buffer fills up, but it works xD
+TODO: Do not fully understand how data are retrieved from buffer, but it works xD
 """
 import time
 import socket
@@ -267,8 +271,7 @@ class NmeaReader:
     # ------------------------------------------------------------------
 
     def connect(self) -> None:
-        self._sock = socket.create_connection((self._host, self._port), timeout=5)
-        self._sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self._sock = socket.create_connection((self._host, self._port))
         self._sock.setblocking(False)
         print(f"[NMEA] connected to {self._host}:{self._port}")
 
@@ -368,7 +371,7 @@ if __name__ == "__main__":
     reader.connect()
 
     for i in range(10):
-        time.sleep(1)
+        time.sleep(10)
         reader.drain()
         print(reader.get_latest(ZDA))
         print(reader.get_latest(PASHR))
