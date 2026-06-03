@@ -32,6 +32,7 @@ class NmeaReader:
         self._gps_time    = None   # latest parsed datetime
         self._received_at = None   # monotonic time of last update
         self._stop_event  = threading.Event()
+        self._new_data    = threading.Event()
         self._thread      = threading.Thread(target=self._run, daemon=True, name="NmeaReader")
 
     # ------------------------------------------------------------------
@@ -58,6 +59,12 @@ class NmeaReader:
             lag_ms = (time.monotonic() - self._received_at) * 1000.0
             return self._gps_time, lag_ms
 
+    def wait(self, timeout: float = 2.0) -> bool:
+        """Block until a new sentence arrives. Returns False on timeout."""
+        fired = self._new_data.wait(timeout)
+        self._new_data.clear()
+        return fired
+
     @property
     def is_alive(self) -> bool:
         return self._thread.is_alive()
@@ -69,6 +76,7 @@ class NmeaReader:
         with self._lock:
             self._gps_time    = gps_time
             self._received_at = time.monotonic()
+        self._new_data.set()
 
     def _run(self):
         while not self._stop_event.is_set():
@@ -141,11 +149,10 @@ if __name__ == "__main__":
     reader.start()
 
     try:
-        while True:
+        while reader.wait(timeout=2.0):
             gps_time, lag_ms = reader.get()
             if gps_time is not None:
                 print(f"[ZDA] {gps_time}  lag={lag_ms:.1f}ms")
-            time.sleep(1.1)
     except KeyboardInterrupt:
         print("\nStopped by user.")
     finally:
