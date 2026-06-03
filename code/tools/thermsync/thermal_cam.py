@@ -8,8 +8,7 @@ https://www.flir.com/support-center/instruments2/how-do-i-manually-control-the-n
 https://www.flir.com/support-center/instruments2/how-do-i-configure-my-camera-to-stream-a-temperature-linear-signal/
 """
 
-import time
-import threading
+import csv
 import numpy as np
 from datetime import datetime, timezone
 from pathlib import Path
@@ -216,70 +215,70 @@ class ThermalCam:
 
     def fetch_metadata(self) -> dict:
         """
-                Fetch meaningful metadata from the camera node map.
+            Fetch metadata from the Thermal camera node map.
 
-                Used for:
-                - Post-processing: Temperature linear multiplier conversion (raw→°C) using the
-                  0.04/0.4 High/Low resolution factor. Emissivity, atmospheric corrections,
-                  and window transmissions are applied for precise radiometric accuracy.
-                  SensorFocalLength is collected for frame stitching.
-                - Device health: SensorTemperature and HousingTemperature to detect overheating
-                  or thermal drift; ShutterTemperature to verify NUC functionality.
+            Used for:
+            - Post-processing: Temperature linear multiplier conversion (raw→°C) using the
+              0.04/0.4 High/Low resolution factor. Emissivity, atmospheric corrections,
+              and window transmissions are applied for precise radiometric accuracy.
+              SensorFocalLength is collected for frame stitching.
+            - Device health: SensorTemperature and HousingTemperature to detect overheating
+              or thermal drift; ShutterTemperature to verify NUC functionality.
 
-                NOTE: Because TemperatureLinearMode=On, the traditional Planck calibration
-                constants (R, B, F, O) are bypassed and ignored during image conversion.
+            NOTE: Because TemperatureLinearMode=On, the traditional Planck calibration
+            constants (R, B, F, O) are bypassed and ignored during image conversion.
 
-                Keys collected and their purpose:
+            Keys collected and their purpose:
 
-                Camera Identity:
-                    DeviceModelName         : Camera model name (e.g. 'FLIR AX5')
-                    DeviceID                : Camera serial number as reported by GigE device
-                    CameraSN                : Camera body serial number
-                    SensorSN                : Sensor module serial number
-                    CameraFirmwareVersion   : Firmware version of the camera body
-                    SensorFirmwareVersion   : Firmware version of the sensor module
-                    SensorFocalLength       : Lens focal length identifier (e.g. 'FL025' = 25mm)
+            Camera Identity:
+                DeviceModelName         : Camera model name (e.g. 'FLIR AX5')
+                DeviceID                : Camera serial number as reported by GigE device
+                CameraSN                : Camera body serial number
+                SensorSN                : Sensor module serial number
+                CameraFirmwareVersion   : Firmware version of the camera body
+                SensorFirmwareVersion   : Firmware version of the sensor module
+                SensorFocalLength       : Lens focal length identifier (e.g. 'FL025' = 25mm)
 
-                Thermal Calibration (Bypassed by Linear Mode, but stored for reference):
-                    R, B, F, O              : Planck constants — internal factory calibration constants.
-                                              Ignored during raw processing when TemperatureLinearMode=On.
-                    J1                      : Radiometric gain — scaling factor for the signal (Ignored).
-                    RThg                    : Planck R constant for high gain mode specifically (Ignored).
+            Thermal Calibration (Bypassed by Linear Mode, but stored for reference):
+                R, B, F, O              : Planck constants — internal factory calibration constants.
+                                          Ignored during raw processing when TemperatureLinearMode=On.
+                J1                      : Radiometric gain — scaling factor for the signal (Ignored).
+                RThg                    : Planck R constant for high gain mode specifically (Ignored).
 
-                Radiometric Environment Corrections (Still active and required):
-                    ObjectEmissivity        : Emissivity of the target surface (1.0 = perfect blackbody)
-                    ReflectedTempInternal   : Reflected apparent temperature (scaled: Value / 100 = °C) —
-                                              compensates for background radiation reflected off the target
-                    AtmTempInternal         : Atmospheric temperature (scaled: Value / 100 = °C) —
-                                              corrects for absorption by air between camera and target
-                    AtmosphericTransmission : Fraction of radiation transmitted through atmosphere (0-1)
-                    WindowTransmission      : Fraction of radiation transmitted through IR window (0-1)
-                    WindowTempInternal      : IR window temperature (scaled: Value / 100 = °C) —
-                                              compensates for radiation emitted by the window itself
+            Radiometric Environment Corrections (Still active and required):
+                ObjectEmissivity        : Emissivity of the target surface (1.0 = perfect blackbody)
+                ReflectedTempInternal   : Reflected apparent temperature (scaled: Value / 100 = °C) —
+                                          compensates for background radiation reflected off the target
+                AtmTempInternal         : Atmospheric temperature (scaled: Value / 100 = °C) —
+                                          corrects for absorption by air between camera and target
+                AtmosphericTransmission : Fraction of radiation transmitted through atmosphere (0-1)
+                WindowTransmission      : Fraction of radiation transmitted through IR window (0-1)
+                WindowTempInternal      : IR window temperature (scaled: Value / 100 = °C) —
+                                          compensates for radiation emitted by the window itself
 
-                Sensor Temperatures (Camera health and drift monitoring):
-                    SensorTemperature       : Temperature of the IR sensor chip in °C —
-                                              affects calibration drift; monitors core stability
-                    HousingTemperature      : Temperature of the camera housing in °C —
-                                              indicator of thermal stability of the outer camera body
-                    ShutterTemperature      : Temperature of the internal shutter in Kelvin —
-                                              used as reference during NUC (Non-Uniformity Correction)
+            Sensor Temperatures (Camera health and drift monitoring):
+                SensorTemperature       : Temperature of the IR sensor chip in °C —
+                                          affects calibration drift; monitors core stability
+                HousingTemperature      : Temperature of the camera housing in °C —
+                                          indicator of thermal stability of the outer camera body
+                ShutterTemperature      : Temperature of the internal shutter in Kelvin —
+                                          used as reference during NUC (Non-Uniformity Correction)
 
-                Acquisition Settings (Defines raw pixel data interpretation):
-                    PixelFormat             : Pixel encoding format (e.g. 'Mono14' = 14-bit monochrome)
-                    CMOSBitDepth            : Bit depth of the CMOS sensor output (e.g. 'bit14bit')
-                    SensorGainMode          : Gain setting — HighGainMode (bounds range to approx. -25°C to 135°C),
-                                              LowGainMode for hot scenes with wider temperature range
-                    TemperatureLinearMode   : 'On' — Forces pixel values to scale linearly with absolute temperature (Kelvin)
-                    TemperatureLinearResolution : 'High' = 0.04 Kelvin/DN multiplier, 'Low' = 0.4 Kelvin/DN multiplier.
-                                              Formula: °C = (Raw_Pixel * Resolution_Multiplier) - 273.15
-                    NUCMode                 : Non-Uniformity Correction mode — 'Automatic' means camera
-                                              self-corrects periodically using the internal shutter
-                    SensorFrameRate         : Frame rate setting of the sensor ('Fast' = 30fps/60fps, 'Slow' = 9fps)
+            Acquisition Settings (Defines raw pixel data interpretation):
+                PixelFormat             : Pixel encoding format (e.g. 'Mono14' = 14-bit monochrome)
+                CMOSBitDepth            : Bit depth of the CMOS sensor output (e.g. 'bit14bit')
+                SensorGainMode          : Gain setting — HighGainMode (bounds range to approx. -25°C to 135°C),
+                                          LowGainMode for hot scenes with wider temperature range
+                TemperatureLinearMode   : 'On' — Forces pixel values to scale linearly with absolute temperature (Kelvin)
+                TemperatureLinearResolution : 'High' = 0.04 Kelvin/DN multiplier, 'Low' = 0.4 Kelvin/DN multiplier.
+                                          Formula: °C = (Raw_Pixel * Resolution_Multiplier) - 273.15
+                NUCMode                 : Non-Uniformity Correction mode — 'Automatic' means camera
+                                          self-corrects periodically using the internal shutter
+                SensorFrameRate         : Frame rate setting of the sensor ('Fast' = 30fps/60fps, 'Slow' = 9fps)
 
-                Live Reading (Sanity check):
-                    Spot                    : Current center-pixel spot temperature in °C —
-                                              useful to verify custom script calculations match camera firmware
+            Live Reading (Sanity check):
+                Spot                    : Current center-pixel spot temperature in °C —
+                                          useful to verify custom script calculations match camera firmware
         """
         nm = self._node_map
 
@@ -299,12 +298,37 @@ class ThermalCam:
         metadata = {"timestamp": datetime.now(timezone.utc).isoformat()}
 
         for key in KEYS:
-            try:
-                metadata[key] = getattr(nm, key).value
-            except Exception:
-                metadata[key] = None
+            metadata[key] = getattr(nm, key).value
 
         return metadata
+
+    def save_metadata(self, metadata: dict, filename: str, save_readme: bool = True) -> None:
+        """
+        Save metadata to a CSV file in self._out_dir.
+        Optionally writes a readme.txt from the fetch_metadata() docstring.
+
+        Args:
+            metadata    : dict returned by fetch_metadata()
+            filename    : base filename without extension (e.g. 'session_2024-03-15')
+            save_readme : if True, writes readme.txt to self._out_dir (default: True)
+        """
+        self._out_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save CSV
+        csv_path = self._out_dir / f"{filename}.csv"
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Parameter", "Value"])
+            for key, value in metadata.items():
+                writer.writerow([key, value])
+        print(f"[ThermalCamera] Metadata saved to {csv_path}")
+
+        # Optionally save README from docstring
+        if save_readme:
+            readme_path = self._out_dir / f"{filename}_readme.txt"
+            with open(readme_path, "w", encoding="utf-8") as f:
+                f.write(self.fetch_metadata.__doc__)
+            print(f"[ThermalCamera] README saved to {readme_path}")
 
 if __name__ == "__main__":
     cam = ThermalCam(target_fps=1, out_dir= Path("D:/ThermalCamera"))
@@ -313,7 +337,8 @@ if __name__ == "__main__":
     cam.prepare()
     cam.apply_default_config()
 
-    print(cam.fetch_metadata())
+    meta_data = cam.fetch_metadata()
+    cam.save_metadata(metadata=meta_data, save_readme=True, filename="test_meta_260603")
     # cam.start_acquiring()
     #
     #
