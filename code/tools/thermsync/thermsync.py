@@ -38,6 +38,14 @@ if __name__ == "__main__":
         cam.apply_default_config()
         logger.info("Loaded Default Config...")
 
+        camera_metadata = cam.fetch_metadata()
+        cam.save_metadata_as_csv(
+            filename=f"thermalcamara_metadata",
+            metadata=camera_metadata,
+            save_readme=True
+        )
+        logger.info("Save Initial Thermal Camera Metadaa...")
+
         cam.start_acquiring()
 
         logger.info("Image Acquisition Started...")
@@ -57,10 +65,17 @@ if __name__ == "__main__":
         while not listener.quit_requested:
             t0 = time.perf_counter()
 
+            #Get Raw image from Buffer
             with cam.image_acquirer.fetch(timeout=cam.buffer_timeout) as buffer:
                 gps_time, lag_ms = nmea.get()
                 component = buffer.payload.components[0]
-                raw = component.data.reshape(component.height, component.width).copy()
+                raw_image = component.data.reshape(component.height, component.width).copy()
+
+            #Get Thermal Camera Metadata
+            camera_metadata = cam.fetch_metadata()
+
+            #Transform Raw to Celsius
+            celsius_image = cam.raw_to_celsius(thermal_image=raw_image)
 
             # timestamp string for filename
             if gps_time is not None:
@@ -69,7 +84,14 @@ if __name__ == "__main__":
                 ts_str = f"frame_{frame_idx:04d}"
                 lag_ms = -1.0
 
-            cam.save_tiff(raw, fname_stem=f"thermal_{ts_str}_UTC", save_raw=True, save_celsius=False)
+            #Save Files
+            cam.save_tiff(thermal_image=raw_image, filename=f"{ts_str}_UTC_raw")
+            cam.save_tiff(thermal_image=celsius_image, filename=f"{ts_str}_UTC_celsius")
+            cam.save_metadata_as_csv(
+                filename = f"{ts_str}_UTC_thermalcamara_metadata.csv",
+                metadata=camera_metadata,
+                save_readme=False
+            )
             logger.info(f"[{frame_idx:04d}] Image written at {ts_str}")
 
 

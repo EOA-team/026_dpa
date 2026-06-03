@@ -104,7 +104,7 @@ class ThermalCam:
         nm.NUCMode.value                     = "Automatic"
 
     @staticmethod
-    def raw_to_celsius(image: np.ndarray) -> np.ndarray:
+    def raw_to_celsius(thermal_image: np.ndarray) -> np.ndarray:
         """
         Convert raw uint16 pixel values from the FLIR A65 to degrees Celsius.
 
@@ -119,12 +119,12 @@ class ThermalCam:
           T [°C] = T [K] - 273.15
 
         Args:
-            image: uint16 ndarray as delivered by the camera (H x W).
+            thermal_image: uint16 ndarray as delivered by the camera (H x W).
 
         Returns:
             float32 ndarray of temperature in °C, same shape as input.
         """
-        return image.astype(np.float32) * 0.04 - 273.15
+        return thermal_image.astype(np.float32) * 0.04 - 273.15
 
     def read_config(self):
         """Read back and print current camera settings for verification."""
@@ -190,28 +190,18 @@ class ThermalCam:
     # ------------------------------------------------------------------
     # TIFF saving
     # ------------------------------------------------------------------
-    def save_tiff(self, raw: np.ndarray, fname_stem: str,
-                  save_raw: bool = True, save_celsius: bool = True):
+    def save_tiff(self, thermal_image: np.ndarray, filename: str):
         """
-        Save frame as TIFF.
-        fname_stem: filename without extension, e.g. 'thermal_2026-05-13_154532.200_UTC'
+        Save image as TIFF.
+        filename: filename without extension, e.g. '2026-05-13_154532.200_UTC_raw'
         """
         self._out_dir.mkdir(parents=True, exist_ok=True)
 
-        if save_raw:
-            tifffile.imwrite(
-                self._out_dir / f"{fname_stem}_raw.tif",
-                raw,
-                photometric="minisblack"
-            )
-
-        if save_celsius:
-            celsius = self.raw_to_celsius(raw)
-            tifffile.imwrite(
-                self._out_dir / f"{fname_stem}_celsius.tif",
-                celsius,
-                photometric="minisblack"
-            )
+        tifffile.imwrite(
+            self._out_dir / f"{filename}.tif",
+            thermal_image,
+            photometric="minisblack"
+        )
 
     def fetch_metadata(self) -> dict:
         """
@@ -302,7 +292,7 @@ class ThermalCam:
 
         return metadata
 
-    def save_metadata(self, metadata: dict, filename: str, save_readme: bool = True) -> None:
+    def save_metadata_as_csv(self, metadata: dict, filename: str, save_readme: bool = True) -> None:
         """
         Save metadata to a CSV file in self._out_dir.
         Optionally writes a readme.txt from the fetch_metadata() docstring.
