@@ -16,6 +16,11 @@ Description:
 Note:
     Base station is hardcoded to ETH2 (Agroscope standard).
 
+All Infos relevant for this Batch File can be found on drone station:
+    "C:\Program Files\Applanix\POSPac UAV 9.3\Manuals\Batch Documentation"
+    "C:\Program Files\Applanix\POSPac UAV 9.3\Manuals\POSPac GNSS-Inertial Tools.pdf"
+    https://applanix.my.site.com/support/s/airborne-downloads
+
 Template Parameters:
     job_name             - Name of the job
                            e.g. 're112o_250610'
@@ -45,10 +50,11 @@ Template Parameters:
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <Project>
-        <n>${job_name}</n>
-
+        <!--Removed on purpose: <Name>${job_name}</Name> 
+        Makes sure that NO subfolder is created with job_name
+        -->
         <!-- ================================================================
-             EXTRACT: APX rover data (T04 format, APX-20)
+             EXTRACT: APX rover data (T04 format)
              ================================================================ -->
         <Extract>
             <FirstPosFile>${input_folder}\apx\${first_pos_file}</FirstPosFile>
@@ -64,54 +70,51 @@ Template Parameters:
              ================================================================ -->
         <Process>
             <GnssMode>INFusion_SingleBase</GnssMode>
-            <GnssNavType>None</GnssNavType>
             <SingleBaseList>
                 <BatchBaseStationCoordinateInfo>
                     <StationID>ETH2</StationID>
+                    <UseAvePos>true</UseAvePos> <!--reads POSITION XYZ from the RINEX .25o header-->
+                    <!-- Removed <UseRtxPos>true</UseRtxPos> : because we have Permanent Base Station ETH2 -->
                     ${rinex_files}
-                    <UseRtxPos>true</UseRtxPos>
                 </BatchBaseStationCoordinateInfo>
             </SingleBaseList>
 
             <CustomSettings>
+                <StartTime>${start_time_total_sec}</StartTime>
+                <EndTime>${stop_time_total_sec}</EndTime>
                 <ImuContext>Remote</ImuContext>
+                <StabilizedMountType>${stabilized_mount}</StabilizedMountType>
+
+                <!--Onboard IMU Settings-->
                 <PriGNSSLeverX>-0.020</PriGNSSLeverX>
                 <PriGNSSLeverY>0.000</PriGNSSLeverY>
                 <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
-                <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD>
-
-                <RefToIMULeverX>0.052</RefToIMULeverX>
-                <RefToIMULeverY>-0.043</RefToIMULeverY>
-                <RefToIMULeverZ>0.018</RefToIMULeverZ>
-                <RefToIMUMountingAnglX>180</RefToIMUMountingAnglX>
-                <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
-                <RefToIMUMountingAnglZ>0</RefToIMUMountingAnglZ>
-
-                <VehRefMntAngX>0</VehRefMntAngX>
-                <VehRefMntAngY>0</VehRefMntAngY>
-                <VehRefMntAngZ>0</VehRefMntAngZ>
-            </CustomSettings>
-
-            <!-- For ONBOARD IMU, use the following lever arms and mounting angles instead 
-            <CustomSettings>
-                <ImuContext>Onboard</ImuContext>
-                <PriGNSSLeverX>-0.020</PriGNSSLeverX>
-                <PriGNSSLeverY>0.000</PriGNSSLeverY>
-                <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
-                <PriGNSSLeverSD>SDLessthan1cm</PriGNSSLeverSD>
-
+                <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD> <!--smallest setting: <3cm-->
                 <RefToIMULeverX>-0.011</RefToIMULeverX>
-                <RefToIMULeverY>-0.088</RefToIMULeverY>
+                <RefToIMULeverY>0.088</RefToIMULeverY>
                 <RefToIMULeverZ>-0.281</RefToIMULeverZ>
                 <RefToIMUMountingAnglX>0</RefToIMUMountingAnglX>
                 <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
                 <RefToIMUMountingAnglZ>-90</RefToIMUMountingAnglZ>
-
                 <VehRefMntAngX>0</VehRefMntAngX>
                 <VehRefMntAngY>0</VehRefMntAngY>
                 <VehRefMntAngZ>0</VehRefMntAngZ>
+
+                <!--Remote IMU Settings-->
+                <RemoteIMUPriGNSSLeverX>-0.020</RemoteIMUPriGNSSLeverX>
+                <RemoteIMUPriGNSSLeverY>0.000</RemoteIMUPriGNSSLeverY>
+                <RemoteIMUPriGNSSLeverZ>-0.638</RemoteIMUPriGNSSLeverZ>
+                <RemoteIMUPriGNSSLeverSD>SDLessthan3cm</RemoteIMUPriGNSSLeverSD> <!--smallest setting: <3cm-->
+                <RefToRemoteIMULeverX>0.052</RefToRemoteIMULeverX>
+                <RefToRemoteIMULeverY>-0.043</RefToRemoteIMULeverY>
+                <RefToRemoteIMULeverZ>0.018</RefToRemoteIMULeverZ>
+                <RefToRemoteIMUMountingAnglX>180</RefToRemoteIMUMountingAnglX>
+                <RefToRemoteIMUMountingAnglY>0</RefToRemoteIMUMountingAnglY>
+                <RefToRemoteIMUMountingAnglZ>0</RefToRemoteIMUMountingAnglZ>
+                <VehRemoteIMURefMntAngX>0</VehRemoteIMURefMntAngX>
+                <VehRemoteIMURefMntAngY>0</VehRemoteIMURefMntAngY>
+                <VehRemoteIMURefMntAngZ>0</VehRemoteIMURefMntAngZ>
             </CustomSettings>
-            -->
         </Process>
 
         <!-- ================================================================
@@ -121,6 +124,8 @@ Template Parameters:
         <Export>
             <CustomSettings>
                 <OutputFile>${output_folder}\Mission 1\Export\VNIR_all_records.txt</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -138,7 +143,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <TargetEpoch>0</TargetEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -149,6 +154,8 @@ Template Parameters:
         <Export>
             <CustomSettings>
                 <OutputFile>${output_folder}\Mission 1\Export\SWIR_all_records.txt</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -166,7 +173,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <TargetEpoch>0</TargetEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -177,6 +184,8 @@ Template Parameters:
         <Export>
             <CustomSettings>
                 <OutputFile>${output_folder}\Mission 1\Export\events.txt</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
                 <OutputFormat>HySpex_geographic</OutputFormat>
                 <EventNum>Event1Time</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -188,7 +197,7 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <TargetEpoch>0</TargetEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
@@ -198,6 +207,8 @@ Template Parameters:
         <Export>
             <CustomSettings>
                 <OutputFile>${output_folder}\Mission 1\Export\sbet_${job_name}.out</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
                 <OutputFormat>Custom Smoothed BET</OutputFormat>
                 <EventNum>AllRecords</EventNum>
                 <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
@@ -209,18 +220,17 @@ Template Parameters:
                 <HeightOutputWGS84>false</HeightOutputWGS84>
                 <CoordinateUnits>Meter</CoordinateUnits>
                 <LatLonUnits>DegDecimal</LatLonUnits>
-                <TargetEpoch>0</TargetEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Export>
 
         <!-- ================================================================
-             LIDAR Run 1: Calibrate and QC
-             Sensor: Velodyne VLP-32C (.pcap format)
+             LIDAR Run : Calibrate and QC + Point Cloud Generator
              LiDAR lever arms: X=-0.115, Y=-0.008, Z=0.13
              Approximate boresight angles: TX=90 deg (5400 arcmin), TY=-62 deg (3720 arcmin), TZ=90 deg (5400 arcmin)
              ================================================================ -->
         <Lidar>
-            <Type>VelodynePCAP</Type>
+            <Type>VelodynePCAP</Type> <!-- VLP (16,32)-->
             <VelodynePCAPOptions>
                 <Model>1</Model>
                 <DataPort>2368</DataPort>
@@ -228,48 +238,27 @@ Template Parameters:
             </VelodynePCAPOptions>
             <LidarFile>${input_folder}\${pcap_file}</LidarFile>
             <CalibrateAndQC>true</CalibrateAndQC>
-            <GeneratePointCloud>false</GeneratePointCloud>
+            <ExportTrajectory>true</ExportTrajectory> <!-- Note: We do not have CalibrationSBETLicense-->
+            <GeneratePointCloud>true</GeneratePointCloud>
             <CustomSettings>
                 <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
                 <LeverX>-0.115</LeverX>
                 <LeverY>-0.008</LeverY>
                 <LeverZ>0.13</LeverZ>
-                <Tx>5400</Tx>
-                <Ty>-3720</Ty>
-                <Tz>5400</Tz>
+                <Tx>5400</Tx> <!-- 90 degrees in arcminutes -->
+                <Ty>-3720</Ty> <!-- -62 degrees in arcminutes -->
+                <Tz>5400</Tz> <!-- 90 degrees in arcminutes -->
                 <LiDARQCAdjustTrajectory>true</LiDARQCAdjustTrajectory>
                 <LiDARQCCalibrateBoresights>true</LiDARQCCalibrateBoresights>
                 <LiDARQCRangeMin>30</LiDARQCRangeMin>
                 <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
-                <Ellipsoid>WGS84</Ellipsoid>
-                <Datum>WGS84</Datum>
-                <TargetEpoch>0</TargetEpoch>
-            </CustomSettings>
-        </Lidar>
-
-
-        <!-- ================================================================
-             LIDAR Run 2: Point Cloud Generator
-             ================================================================ -->
-        <Lidar>
-            <Type>VelodynePCAP</Type>
-            <VelodynePCAPOptions>
-                <Model>1</Model>
-                <DataPort>2368</DataPort>
-                <PositionPort>8308</PositionPort>
-            </VelodynePCAPOptions>
-            <LidarFile>${input_folder}\${pcap_file}</LidarFile>
-            <CalibrateAndQC>false</CalibrateAndQC>
-            <GeneratePointCloud>true</GeneratePointCloud>
-            <CustomSettings>
-                <LASCreatorFolder>${output_folder}\Mission 1\LiDAR</LASCreatorFolder>
+                <LASCreatorRangeMin>30</LASCreatorRangeMin>
                 <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
                 <Ellipsoid>WGS84</Ellipsoid>
                 <Datum>WGS84</Datum>
-                <TargetEpoch>0</TargetEpoch>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
             </CustomSettings>
         </Lidar>
-
     </Project>
 
     <Version>4.0</Version>
