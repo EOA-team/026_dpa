@@ -31,7 +31,7 @@ if __name__ == "__main__":
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
-            basefolder=Path("D:/data/mjolnir"),
+            basefolder=Path("D:/data/mjolnir/raw"),
             target="01_raw_data"),
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),

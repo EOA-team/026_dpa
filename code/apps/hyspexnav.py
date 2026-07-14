@@ -23,8 +23,8 @@ class HyspexNavApplication:
         self.output_folders = output_folders
 
         # Application
-        self.app_path: str = "G:/02. HySpex software/HySpex NAV v2.6.1/HySpexNavGui.exe"
-        self.work_dir: str = "G:/02. HySpex software/HySpex NAV v2.6.1/"
+        self.app_path: str = "D:/hyspex_training/02. HySpex software/HySpex NAV v2.6.1/HySpexNavGui.exe"
+        self.work_dir: str = "D:/hyspex_training/02. HySpex software/HySpex NAV v2.6.1/"
         self.window_auto_id: str = "HySpexNav"
         self.is_idl_application: bool = False
 
