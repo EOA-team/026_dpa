@@ -262,8 +262,8 @@ class BasestationScraper(BaseScraper):
         )
         btn.click()
 
-    def select_output_format(self, format_value: str = "RINEX 3.03") -> None:
-        """Select the output file format (default: RINEX 3.03)."""
+    def select_output_format(self, format_value: str = "RINEX 3.04") -> None:
+        """Select the output file format (default: RINEX 3.04)."""
         select_element = self.wait.until(
             EC.visibility_of_element_located(
                 (By.ID, "ContentPlaceHolder1_FileFormatDropDownList")
@@ -333,7 +333,7 @@ class BasestationScraper(BaseScraper):
         self.set_observation_period(obs=self.observation_time)
         self.click_add_to_delivery()
         self.click_proceed_with_delivery_option()
-        self.select_output_format(format_value="RINEX 3.03")
+        self.select_output_format(format_value="RINEX 3.04")
         self.click_generate_data()
         self.click_proceed_with_delivery_details()
         self.select_delivery()
