@@ -21,35 +21,32 @@ class M4MProc_Application:
     https://intacor.com/
     """
 
-def __init__(self, input_folders: list[Path], output_folders: list[Path]):
-    self.input_folders = input_folders
-    self.output_folders = output_folders
+    def __init__(self, input_folders: list[Path], output_folders: list[Path]):
+        self.input_folders = input_folders
+        self.output_folders = output_folders
 
-    # Application
-    self.app_path: str = "C:/ReSe_Software_Win/m4mproc/M4Mproc.exe"
-    self.work_dir: str = "C:/ReSe_Software_Win/m4mproc/"
-    # Window title stays static, no need for window_auto_id
-    self.window_title: str = "ReSe Hyspex Processor 2025"
-    self.is_idl_application: bool = True
+        # Application
+        self.app_path: str = "C:/ReSe_Software_Win/m4mproc/M4Mproc.exe"
+        self.work_dir: str = "C:/ReSe_Software_Win/m4mproc/"
+        # Window title stays static, no need for window_auto_id
+        self.window_title: str = "ReSe Hyspex Processor 2025"
+        self.is_idl_application: bool = True
 
-def run(self):
-    """Run M4MProc for each input/output folder pair (= job)."""
-    with ApplicationManager(app_path=self.app_path,
-                            work_dir=self.work_dir,
-                            window_title=self.window_title,
-                            window_auto_id= None,
-                            is_idl_application=self.is_idl_application) as m4mproc_manager:
-        main_window_cf = ControlFinder(window=m4mproc_manager.window)
-        time.sleep(5)  # Wait for the application to be fully loaded
+    def run(self):
+        """Run M4MProc for each input/output folder pair (= job)."""
+        with ApplicationManager(app_path=self.app_path,
+                                work_dir=self.work_dir,
+                                window_title=self.window_title,
+                                window_auto_id= None,
+                                is_idl_application=self.is_idl_application) as m4mproc_manager:
+            main_window_cf = ControlFinder(window=m4mproc_manager.window)
+            time.sleep(5)  # Wait for the application to be fully loaded
 
 
 if __name__ == "__main__":
-    test_output_folders = [Path("E:/mjolnir_processing/re112o_250610/tmp"),
-                           Path("E:/mjolnir_processing/re112o_250918/tmp")]
-    test_input_folders = [Path("E:/mjolnir_processing//re112o_250610/RAW"),
-                          Path("E:/mjolnir_processing/re112o_250918/RAW")]
+    test_output_folders = [Path("E:/mjolnir_processing/re112o_250918/tmp")]
+    test_input_folders = [Path("E:/mjolnir_processing//re112o_250610/RAW")]
     
-    m4mproc = M4MProc_Application(input_folders=test_input_folders,
-                                   output_folders=test_output_folders)
+    m4mproc = M4MProc_Application(input_folders=test_input_folders, output_folders=test_output_folders)
     m4mproc.run()
     
