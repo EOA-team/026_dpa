@@ -11,7 +11,8 @@ Example:
 from code.pipeline.steps import (
     CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles,
     GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles,
-    NavigationDiscretization, BuildDigitalSurfaceModel
+    NavigationDiscretization, BuildDigitalSurfaceModel, Geocoding,
+    CreateRadianceOrthomosaic, CreateReflectanceOrthomosaic
 )
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
@@ -161,22 +162,60 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"boresight_vnir|sensormodel"
     )
+    # Step 12: Geocoding
+    geocoding =  Geocoding(
+        name="Geocoding",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output"),
+        jobs=selected_jobs
+    )
+    # Step 13: Create Radiance Orthomosaic
+    create_radiance_orthomosaic = CreateRadianceOrthomosaic(
+        name="Create Radiance Orthomosaic",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output"),
+        jobs=selected_jobs
+    )
+    # Step 14: Create Reflectance Orthomosaic
+    create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
+        name="Create Reflectance Orthomosaic",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output"),
+        jobs=selected_jobs
+    )
+
 
     # Run Steps
     #fetch_raw_data.run()
     #download_base_station_data.run()
     #georeference_sensors.run()
 
-    fetch_navigation_files.run()
-    navigation_discretization.run()
-    binary_to_radiance.run()
-    get_vnir_files.run()
-    get_swir_files.run()
+    #fetch_navigation_files.run()
+    #navigation_discretization.run()
+    #binary_to_radiance.run()
+    #get_vnir_files.run()
+    #get_swir_files.run()
 
-    build_digital_surface_model.run()
+    #build_digital_surface_model.run()
 
     # Required for Parge (Georectification)
-    get_swir_calibration_files.run()
-    get_vnir_calibration_files.run()
+    #get_swir_calibration_files.run()
+    #get_vnir_calibration_files.run()
+
+    geocoding.run()
+    create_radiance_orthomosaic.run()   
+    create_reflectance_orthomosaic.run()
 
     print("All Pipeline steps completed.")
