@@ -239,21 +239,21 @@ class ControlFinder:
         Find a UI control by type and name.
         Examples:
             # Find button (partial match)
-            btn = manager.find_control(
+            btn = manager.find_by_name(
                 window=window, control_type="Button", control_name="Submit"
             )
             # Find button (exact match)
-            btn = manager.find_control(
+            btn = manager.find_by_name(
                 window=window, control_type="Button", 
                 control_name="Submit", exact=True
             )
             # Find second ComboBox named "Save"
-            combo = manager.find_control(
+            combo = manager.find_by_name(
                 window=window, control_type="ComboBox", 
                 control_name="Save", exact=True, found_index=1
             )
             # Find second ListBox (any name)
-            listbox = manager.find_control(
+            listbox = manager.find_by_name(
                 window=window, control_type="ListBox", found_index=1
             )
         """
