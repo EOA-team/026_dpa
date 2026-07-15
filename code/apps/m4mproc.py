@@ -2,7 +2,7 @@
 import time
 from pathlib import Path
 from enum import Enum
-from code.file_utils import get_base_path
+from code.file_utils import get_base_path, wait_for_file_count
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
@@ -35,11 +35,16 @@ class M4MProc_Application:
     4. Mosaic : Stitch multiple images into a single image
     https://intacor.com/
     """
-    def __init__(self, input_folders: list[Path], output_folders: list[Path], selected_steps: list[M4MProcStep], config: Path):
+    def __init__(self, input_folders: list[Path], 
+                 output_folders: list[Path], 
+                 selected_steps: list[M4MProcStep], 
+                 config: Path,
+                 finish_condition: tuple[str, int, int]):
         self.input_folders = input_folders
         self.output_folders = output_folders
         self.active_steps = selected_steps
         self._config = config
+        self.finish_condition = finish_condition # (output_subfolder, file_pattern, expected_count, timeout_s) 
 
         # Application
         self.app_path: str = "C:/ReSe_Software_Win/m4mproc/M4Mproc.exe"
@@ -143,13 +148,14 @@ class M4MProc_Application:
 
     def confirm_process_start(self, controlfinder: ControlFinder) -> None:
         """M4MProc shows a confirmation dialog before starting the process. This method confirms the dialog."""
-        controlfinder.debug_print_controls()
         idl_alert_window = controlfinder.find_child_window_by_title(window_title="IDL Control Window")
         idl_alert_window.wait('exists', timeout=DEFAULT_WAIT_TIME)
         idl_alert_cf = ControlFinder(window=idl_alert_window)
-        idl_alert_cf.debug_print_controls()
         ok_btn = idl_alert_cf.find_by_name(control_type="Button", control_name="OK")
         ok_btn.click()
+
+
+
 
     def run(self):
         """Run M4MProc for each input/output folder pair (= job)."""
@@ -174,7 +180,12 @@ class M4MProc_Application:
                                  output_folder=output_folder)
                 self.start_process(controlfinder=main_window_cf)
                 self.confirm_process_start(controlfinder=main_window_cf)
-                time.sleep(30)
+                wait_for_file_count(folder=output_folder / self.finish_condition[0],
+                                    pattern=self.finish_condition[1],
+                                    expected_count=self.finish_condition[2],
+                                    timeout_s=self.finish_condition[3])
+                
+
             
         
 
@@ -186,11 +197,13 @@ if __name__ == "__main__":
     test_input_folders = [Path("E:/mjolnir_processing/re112o_250918")]
 
     config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
+    process_finished_condition = ("geocoded","*.bsq", 9, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
     
     m4mproc = M4MProc_Application(input_folders=test_input_folders, 
                                   output_folders=test_output_folders,
                                   selected_steps=[M4MProcStep.GEOCODING],
-                                  config=config_path)
+                                  config=config_path,
+                                  finish_condition=process_finished_condition)
 
     
     m4mproc.run()
