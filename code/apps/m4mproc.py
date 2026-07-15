@@ -2,6 +2,7 @@
 import time
 from pathlib import Path
 from enum import Enum
+from code.file_utils import get_base_path
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
@@ -34,10 +35,11 @@ class M4MProc_Application:
     4. Mosaic : Stitch multiple images into a single image
     https://intacor.com/
     """
-    def __init__(self, input_folders: list[Path], output_folders: list[Path], selected_steps: list[M4MProcStep]):
+    def __init__(self, input_folders: list[Path], output_folders: list[Path], selected_steps: list[M4MProcStep], config: Path):
         self.input_folders = input_folders
         self.output_folders = output_folders
         self.active_steps = selected_steps
+        self._config = config
 
         # Application
         self.app_path: str = "C:/ReSe_Software_Win/m4mproc/M4Mproc.exe"
@@ -58,6 +60,51 @@ class M4MProc_Application:
                 checkbox_simulator.enable_checkbox()
             else:
                 checkbox_simulator.disable_checkbox()
+    
+    @property
+    def config(self) -> Path:
+        return self._config
+    
+    @config.setter
+    def config(self, value: Path) -> None:
+        self._config = value
+
+    def _expand_edit_tab(self, controlfinder: ControlFinder) -> None:
+        """Expand the 'Edit' tab in the M4MProc GUI to access load config"""
+        edit_tab = controlfinder.find_by_name(control_type="MenuItem", 
+                                              control_name="Edit")
+        edit_tab.expand()
+    
+    def _open_file_selector(self, controlfinder: ControlFinder) -> None:
+        """Press the 'Load Config' MenuItem in the 'Edit' tab to open file selector"""
+        self._expand_edit_tab(controlfinder)
+        load_config= controlfinder.find_by_auto_id(control_type= "MenuItem", auto_id="1283")
+        load_config.click_input()
+
+    def _get_file_selector_window(self, controlfinder: ControlFinder) -> UIAWrapper:
+        """Get the file selector window that opens after pressing 'Load Config'"""
+        file_selector_window = controlfinder.find_child_window_by_title(
+            window_title="Please Select a File")
+        return file_selector_window
+    
+    
+    def _load_config(self, controlfinder: ControlFinder):
+        """ Load settings from a json file  """
+        self._open_file_selector(controlfinder)
+        addfiles_cf = ControlFinder(
+            window=self._get_file_selector_window(controlfinder))
+
+        # Write Path
+        filename_editbox = addfiles_cf.find_by_name(
+            control_type="Edit", control_name="File name:", exact=True)
+        filename_editbox.set_edit_text(str(self.config))
+        time.sleep(10)
+        filename_editbox.type_keys("{ENTER}")
+
+        # Wait for window to close
+        addfiles_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
+
+
 
     def run(self):
         """Run M4MProc for each input/output folder pair (= job)."""
@@ -68,40 +115,31 @@ class M4MProc_Application:
                                 is_idl_application=self.is_idl_application) as m4mproc_manager:
             main_window_cf = ControlFinder(window=m4mproc_manager.window)
 
-            main_window_cf.window.wait('enabled', timeout=DEFAULT_WAIT_TIME)
-            main_window_cf.window.set_focus()
-            m4mproc.set_processing_steps(controlfinder=main_window_cf, steps=[M4MProcStep.GEOCODING])
-            time.sleep(5)
-
-
-            # for input_folder, output_folder in zip(self.input_folders, self.output_folders):
-            #     # Make sure Window is ready before starting next iteration
-            #     main_window_cf.window.wait(
-            #         'enabled', timeout=DEFAULT_WAIT_TIME)
-            #     main_window_cf.window.set_focus()
-            #     # Next iteration
-            #     job_name = input_folder.parent.name
-            #     # load config
+            for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+                # Make sure Window is ready before starting next iteration
+                main_window_cf.window.wait(
+                    'enabled', timeout=DEFAULT_WAIT_TIME)
+                main_window_cf.window.set_focus()
+                # Next iteration
+                job_name = input_folder.parent.name
+                self._load_config(controlfinder=main_window_cf)
+                self.set_processing_steps(controlfinder=main_window_cf, steps=self.active_steps)
 
                 
                 
 
 if __name__ == "__main__":
-    test_output_folders = [Path("E:/mjolnir_processing/re112o_250918/tmp")]
-    test_input_folders = [Path("E:/mjolnir_processing//re112o_250610/RAW")]
+    test_output_folders = [Path("E:/mjolnir_processing/re112o_250918")]
+    test_input_folders = [Path("E:/mjolnir_processing/re112o_250919")]
+
+    config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
     
     m4mproc = M4MProc_Application(input_folders=test_input_folders, 
                                   output_folders=test_output_folders,
-                                  selected_steps=[M4MProcStep.GEOCODING])
+                                  selected_steps=[M4MProcStep.GEOCODING],
+                                  config=config_path)
     
     
-    # Load Config
-
-    # Set Steps 
-    m4mproc.active_steps = [M4MProcStep.GEOCODING]
     m4mproc.run()
     
-
-
-    #m4mproc.run()
     
