@@ -98,13 +98,58 @@ class M4MProc_Application:
         filename_editbox = addfiles_cf.find_by_name(
             control_type="Edit", control_name="File name:", exact=True)
         filename_editbox.set_edit_text(str(self.config))
-        time.sleep(10)
         filename_editbox.type_keys("{ENTER}")
 
         # Wait for window to close
         addfiles_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
 
+    def _set_input_folder(self, controlfinder: ControlFinder, input_folder: Path) -> None:
+        """Set the input folder in the M4MProc GUI."""
+        input_folder_editbox = controlfinder.find_by_name(
+            control_type="Edit",
+            control_name="Main Input Directory")
+        input_folder_editbox.set_edit_text(str(input_folder) + "\\")
+        # The '\' is important otherwise SWIR and VNIR are not found'
 
+    def _set_dsm_input_file(self, controlfinder: ControlFinder, input_folder: Path) -> None:
+        """Set the input folder in the M4MProc GUI."""
+        input_folder_editbox = controlfinder.find_by_name(
+            control_type="Edit",
+            control_name="DSM File")
+        input_folder_editbox.set_edit_text(str(input_folder / "DSM" / "DSM"))
+
+
+    def _set_output_folder(self, controlfinder: ControlFinder, output_folder: Path) -> None:
+        """Set the output folder in the M4MProc GUI."""
+        output_folder_editbox = controlfinder.find_by_name(
+            control_type="Edit",
+            control_name="Output directory")
+        output_folder_editbox.set_edit_text(str(output_folder))
+
+
+    def set_paths(self, controlfinder: ControlFinder, input_folder: Path, output_folder: Path) -> None:
+        """Set the input and output folders/files in the M4MProc GUI."""
+        self._set_input_folder(controlfinder, input_folder)
+        self._set_dsm_input_file(controlfinder, input_folder)
+        self._set_output_folder(controlfinder, output_folder)
+
+    def start_process(self, controlfinder: ControlFinder) -> None:
+        """Start the M4MProc process."""
+        start_btn = controlfinder.find_by_name(
+            control_type="Button",
+            control_name="Process")
+        start_btn.click()
+
+
+    def confirm_process_start(self, controlfinder: ControlFinder) -> None:
+        """M4MProc shows a confirmation dialog before starting the process. This method confirms the dialog."""
+        controlfinder.debug_print_controls()
+        idl_alert_window = controlfinder.find_child_window_by_title(window_title="IDL Control Window")
+        idl_alert_window.wait('exists', timeout=DEFAULT_WAIT_TIME)
+        idl_alert_cf = ControlFinder(window=idl_alert_window)
+        idl_alert_cf.debug_print_controls()
+        ok_btn = idl_alert_cf.find_by_name(control_type="Button", control_name="OK")
+        ok_btn.click()
 
     def run(self):
         """Run M4MProc for each input/output folder pair (= job)."""
@@ -120,17 +165,25 @@ class M4MProc_Application:
                 main_window_cf.window.wait(
                     'enabled', timeout=DEFAULT_WAIT_TIME)
                 main_window_cf.window.set_focus()
+
                 # Next iteration
-                job_name = input_folder.parent.name
                 self._load_config(controlfinder=main_window_cf)
                 self.set_processing_steps(controlfinder=main_window_cf, steps=self.active_steps)
+                self.set_paths(controlfinder=main_window_cf, 
+                                 input_folder=input_folder, 
+                                 output_folder=output_folder)
+                self.start_process(controlfinder=main_window_cf)
+                self.confirm_process_start(controlfinder=main_window_cf)
+                time.sleep(30)
+            
+        
 
                 
                 
 
 if __name__ == "__main__":
-    test_output_folders = [Path("E:/mjolnir_processing/re112o_250918")]
-    test_input_folders = [Path("E:/mjolnir_processing/re112o_250919")]
+    test_output_folders = [Path("E:/mjolnir_processing/re112o_250918/output")]
+    test_input_folders = [Path("E:/mjolnir_processing/re112o_250918")]
 
     config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
     
@@ -138,7 +191,7 @@ if __name__ == "__main__":
                                   output_folders=test_output_folders,
                                   selected_steps=[M4MProcStep.GEOCODING],
                                   config=config_path)
-    
+
     
     m4mproc.run()
     
