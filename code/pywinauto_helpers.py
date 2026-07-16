@@ -8,7 +8,7 @@ import pywinauto.keyboard as kb  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
 # Configure Module
-DEFAULT_WAIT_TIME = 10
+DEFAULT_WAIT_TIME = 20
 DEFAULT_BACKEND = "uia"
 IDL_VM_WINDOW_TITLE = "Runtime App"
 
