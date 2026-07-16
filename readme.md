@@ -1,26 +1,34 @@
-Project name: Drone Pipeline Automation
-Project PI: Helge Aasen
-Project colaborators: Valerie Schneider
+# Drone Pipeline Automation
 
-Link to confluence page: https://eoa-team.atlassian.net/wiki/spaces/EOAintern/pages/686359066/026_DPA_DronePipelineAutomation
-Link to github repo: https://github.com/EOA-team/026_dpa
+[![Python](https://img.shields.io/badge/python-3.12-blue)](.python-version)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL%20v3-blue)](LICENSE)
 
 
-## Changes
-**2026-03-04**
-- PostFlightDTT v1.0.0 released as portable executable — automates APX-20 trajectory scraping and drone-to-HD/HD-to-NAS data transfer 
+**What is it?** 
 
-**2026-01-21**
-- Pipeline Support run with : > python -m code.pipeline.runner
-- HyspexRad implemented as application
-- pywinautohelpers in use --> more robust simulation 
+dpa is a data pipeline that allows for a fully automatic data processing of uav hyperspectral imagery. It replaces an internal labour intensive and error-prone manual processing workflow including 6x differen proprietary software tools, 2x services and more than 100 parameters that need to be set per uav flight. 
+
+--- 
+
+**Main Features**
+
+- **Data Preparation**: File Handling and Folder Structure (copy, move, regex, ...)
+- **Modular Architecture**: Each Pipeline-Step can be replaced with new SW-Versions, different SW-Tools or even internal developed python algorithms.
+- **Configurable Runner Scripts**: Processes and Data Structure changes fast in Research. Our researchers need a simple script (high abstraction) to adjust the pipeline to their specific needs without understanding every detail of the code.
+- **Batch Processing**: Process batches of flights within one go (Speed-Up)
+- **End-to-End Pipeline** including all pipeline steps from raw hyperspectral imagery to final radinace and reflectance orthomosaics.
+
+****
 
 
-**2025-12-15**
-- Environment upgraded to Python 3.12.12
-- Added working scripts for 019_Hypercover (Valerie Master Thesis)
+- Base Station Scraper (Swiss Positioning Service Swipos))
+- Georeferecing (VNIR,SWIR, LAS) using PospacUAV with Batch Manager 
+- Navigation Discretization: Discretizes a continuous IMU/GPS stream against sensor trigger events
+- Build DSM: Creates a digital surface model from the las point cloud file
+- Geocoding: Attaching a geographic coordinate system to the imagery
+- Orthomosaic Creation: Radiance and Reflectance 
 
-For detailed documentation, see [026_Rolling_Documentation](https://eoa-team.atlassian.net/wiki/spaces/EOAintern/pages/686359066/026_Rolling_Documentation#Intermediate-Process-Documentation)
+team.atlassian.net/wiki/spaces/EOAintern/pages/686359066/026_Rolling_Documentation#Intermediate-Process-Documentation)
 
 
 
