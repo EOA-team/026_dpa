@@ -263,11 +263,16 @@ class BuildDigitalSurfaceModel(PipelineStep):
 
 class Geocoding(PipelineStep):
     """Attaching a geographic coordinate system to the imagery"""
+    
+    def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
+                 output_folder: PipelineFolder, nr_of_flight_lines: int):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.nr_of_flight_lines = nr_of_flight_lines
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"  # Could also select reflectance config , same settings for geocoding
-        process_finished_condition = ("geocoded","*.bsq", 9, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = ("geocoded","*.bsq", 3*self.nr_of_flight_lines, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
         m4mproc = M4MProc_Application(
             input_folders=self.input_folders, 
             output_folders=self.output_folders,
@@ -284,7 +289,7 @@ class CreateRadianceOrthomosaic(PipelineStep):
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
-        process_finished_condition = ("mosaics","mosaic_radiance.hdr", 1, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = ("mosaics","mosaic_radiance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
         m4mproc = M4MProc_Application(
             input_folders=self.input_folders, 
             output_folders=self.output_folders,
@@ -301,7 +306,7 @@ class CreateReflectanceOrthomosaic(PipelineStep):
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_reflectance.json"
-        process_finished_condition = ("mosaics","mosaic_reflectance.hdr", 1, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = ("mosaics","mosaic_reflectance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
         m4mproc = M4MProc_Application(
             input_folders=self.input_folders, 
             output_folders=self.output_folders,

@@ -17,9 +17,10 @@ from code.pipeline.steps import (
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
+NR_OF_FLIGHT_LINES = 5
+
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250918" ]
-        
+    selected_jobs = ["ZOFE_260529_80_3", "ZOFE_260529_80_1" ]
   
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
@@ -32,8 +33,8 @@ if __name__ == "__main__":
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
-            basefolder=Path("D:/data/mjolnir/raw"), # Important: use link to NAS at Reckenholz, not cached at Changins!
-            target="01_raw_data"),
+            basefolder=Path("Z:/drone/DERIS/data/RE/ZOFE/hypSpec"), # Important: use link to NAS at Reckenholz, not cached at Changins!
+            target=""),
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
             target="RAW"),
@@ -171,7 +172,8 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
             target="output"),
-        jobs=selected_jobs
+        jobs=selected_jobs,
+        nr_of_flight_lines = NR_OF_FLIGHT_LINES
     )
     # Step 13: Create Radiance Orthomosaic
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
