@@ -11,15 +11,17 @@ Example:
 from code.pipeline.steps import (
     CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles,
     GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles,
-    NavigationDiscretization, BuildDigitalSurfaceModel
+    NavigationDiscretization, BuildDigitalSurfaceModel, Geocoding,
+    CreateRadianceOrthomosaic, CreateReflectanceOrthomosaic
 )
 from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
 
+NR_OF_FLIGHT_LINES = 5
+
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250918"]
-    # selected_jobs = ["re112o_250610", "re112o_250619_old","re112o_250717_2","re112o_250723_4",
-    #                  "re112o_250813", "re112o_250903", "re112o_250918"]
+    selected_jobs = ["ZOFE_260529_80_3", "ZOFE_260529_80_1" ]
+  
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -31,8 +33,8 @@ if __name__ == "__main__":
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
-            basefolder=Path("D:/data/mjolnir/raw"),
-            target="01_raw_data"),
+            basefolder=Path("Z:/drone/DERIS/data/RE/ZOFE/hypSpec"), # Important: use link to NAS at Reckenholz, not cached at Changins!
+            target=""),
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
             target="RAW"),
@@ -161,11 +163,46 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"boresight_vnir|sensormodel"
     )
+    # Step 12: Geocoding
+    geocoding =  Geocoding(
+        name="Geocoding",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output"),
+        jobs=selected_jobs,
+        nr_of_flight_lines = NR_OF_FLIGHT_LINES
+    )
+    # Step 13: Create Radiance Orthomosaic
+    create_radiance_orthomosaic = CreateRadianceOrthomosaic(
+        name="Create Radiance Orthomosaic",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output"),
+        jobs=selected_jobs
+    )
+    # Step 14: Create Reflectance Orthomosaic
+    create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
+        name="Create Reflectance Orthomosaic",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output"),
+        jobs=selected_jobs
+    )
+
 
     # Run Steps
-    #fetch_raw_data.run()
-    #download_base_station_data.run()
-    #georeference_sensors.run()
+    fetch_raw_data.run()
+    download_base_station_data.run()
+    georeference_sensors.run()
 
     fetch_navigation_files.run()
     navigation_discretization.run()
@@ -178,5 +215,9 @@ if __name__ == "__main__":
     # Required for Parge (Georectification)
     get_swir_calibration_files.run()
     get_vnir_calibration_files.run()
+
+    geocoding.run()
+    create_radiance_orthomosaic.run()   
+    create_reflectance_orthomosaic.run()
 
     print("All Pipeline steps completed.")

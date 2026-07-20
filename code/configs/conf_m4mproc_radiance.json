@@ -1,6 +1,6 @@
 {
     "PRC": {
-        "INDIR": "input",
+        "INDIR": "",
         "CALDIR": "",
         "IMUFILE": "",
         "OUTDIR": "",
@@ -27,11 +27,11 @@
         "BRDFOPT": "brefcor: 0",
         "PRODUCTS": "products.json",
         "PRODUCTOPT": "P4: USGS MICA",
-        "RECTOPT": "resampling: nearbilin; input: reflectance; ffilter: *_rfl.bsq",
+        "RECTOPT": "resampling: nearbilin; input: radiance; ffilter: *_mraw.bsq",
         "MOSAICOPT": "nearest; psize:  0.040",
         "MOSDIR": "",
-        "MOSFILT": "*geo.bsq",
-        "MOSFILE": "mosaic.bsq",
+        "MOSFILT": "*_mraw_geo.bsq",
+        "MOSFILE": "mosaic_radiance.bsq",
         "POINTSOPT": "LAS",
         "POINTSDIR": "",
         "POINTSFILT": "*mica.bsq",
@@ -45,7 +45,7 @@
         "TMPDIR": "C:\\Users\\F80877978\\AppData\\Local\\Temp\\",
         "INSTPATH": "C:\\ReSe_Software_Win\\m4mproc\\",
         "VERSION": "M4M Processor, Version 1.4",
-        "FLAGS": "{0, 1, 1, 1, 1, 0, 0, 1, 0, 0}",
+        "FLAGS": "{0, 0, 0, 0, 0, 1, 1, 0, 0, 0}",
         "VALI": ""
     }
 }

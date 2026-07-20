@@ -8,7 +8,7 @@ import pywinauto.keyboard as kb  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper # type: ignore[import-untyped]
 
 # Configure Module
-DEFAULT_WAIT_TIME = 10
+DEFAULT_WAIT_TIME = 20
 DEFAULT_BACKEND = "uia"
 IDL_VM_WINDOW_TITLE = "Runtime App"
 
@@ -239,21 +239,21 @@ class ControlFinder:
         Find a UI control by type and name.
         Examples:
             # Find button (partial match)
-            btn = manager.find_control(
+            btn = manager.find_by_name(
                 window=window, control_type="Button", control_name="Submit"
             )
             # Find button (exact match)
-            btn = manager.find_control(
+            btn = manager.find_by_name(
                 window=window, control_type="Button", 
                 control_name="Submit", exact=True
             )
             # Find second ComboBox named "Save"
-            combo = manager.find_control(
+            combo = manager.find_by_name(
                 window=window, control_type="ComboBox", 
                 control_name="Save", exact=True, found_index=1
             )
             # Find second ListBox (any name)
-            listbox = manager.find_control(
+            listbox = manager.find_by_name(
                 window=window, control_type="ListBox", found_index=1
             )
         """

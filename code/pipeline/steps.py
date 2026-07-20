@@ -18,10 +18,11 @@ from code.pipeline.base import PipelineStep, PipelineFolder
 from code.apps.hyspexrad import HyspexRadApplication
 from code.apps.pospacuav import PosPacUavApplication
 from code.apps.hyspexnav import HyspexNavApplication
+from code.apps.m4mproc import M4MProc_Application, M4MProcStep
 from code.scrapers.basestation_scraper import RinexDownloadWindow, BasestationScraper
 from code.filehandling_helper import move_files_by_regex, copy_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
-from code.file_utils import move_and_extract_downloaded_zip, find_las_file
+from code.file_utils import move_and_extract_downloaded_zip, find_las_file, get_base_path
 from code.pdalgdal_helpers import las_to_geotif, geotiff_to_envi_dsm, fix_envi_header
 
 from dotenv import load_dotenv
@@ -259,3 +260,60 @@ class BuildDigitalSurfaceModel(PipelineStep):
 
         print(f"Finished Step: {self.name} ✅")
         return True
+
+class Geocoding(PipelineStep):
+    """Attaching a geographic coordinate system to the imagery"""
+    
+    def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
+                 output_folder: PipelineFolder, nr_of_flight_lines: int):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.nr_of_flight_lines = nr_of_flight_lines
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"  # Could also select reflectance config , same settings for geocoding
+        process_finished_condition = ("geocoded","*.bsq", 3*self.nr_of_flight_lines, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        m4mproc = M4MProc_Application(
+            input_folders=self.input_folders, 
+            output_folders=self.output_folders,
+            selected_steps=[M4MProcStep.GEOCODING],
+            config=config_path,
+            finish_condition=process_finished_condition)
+        m4mproc.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+class CreateRadianceOrthomosaic(PipelineStep):
+    """Creates a radiance orthomosaic"""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
+        process_finished_condition = ("mosaics","mosaic_radiance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        m4mproc = M4MProc_Application(
+            input_folders=self.input_folders, 
+            output_folders=self.output_folders,
+            selected_steps=[M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
+            config=config_path,
+            finish_condition=process_finished_condition)
+        m4mproc.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+class CreateReflectanceOrthomosaic(PipelineStep):
+    """Creates a radiance orthomosaic"""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_reflectance.json"
+        process_finished_condition = ("mosaics","mosaic_reflectance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        m4mproc = M4MProc_Application(
+            input_folders=self.input_folders, 
+            output_folders=self.output_folders,
+            selected_steps=[M4MProcStep.REFLECTANCE_RETRIEVAL, M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
+            config=config_path,
+            finish_condition=process_finished_condition)
+        m4mproc.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+    

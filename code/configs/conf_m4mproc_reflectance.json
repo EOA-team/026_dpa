@@ -1,6 +1,6 @@
 {
     "PRC": {
-        "INDIR": "input",
+        "INDIR": "",
         "CALDIR": "",
         "IMUFILE": "",
         "OUTDIR": "",
@@ -30,8 +30,8 @@
         "RECTOPT": "resampling: nearbilin; input: reflectance; ffilter: *_rfl.bsq",
         "MOSAICOPT": "nearest; psize:  0.040",
         "MOSDIR": "",
-        "MOSFILT": "*geo.bsq",
-        "MOSFILE": "mosaic.bsq",
+        "MOSFILT": "*_rfl_geo.bsq",
+        "MOSFILE": "mosaic_reflectance.bsq",
         "POINTSOPT": "LAS",
         "POINTSDIR": "",
         "POINTSFILT": "*mica.bsq",
