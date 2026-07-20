@@ -189,10 +189,12 @@ class PosPacUavApplication:
         if not t04_files:
             raise ValueError(f"No .T04 files found in {apx_folder}")
 
-        rinex_extensions = {".25o", ".25n", ".25g", ".25l", ".25c"}
+        # Rinex extensions from Swipos: .YYo, .YYn, .YYg, .YYl, .YYc
+        # Example Year 2025: .25o, .25n, .25g, .25l, .25c
+        rinex_extensions = re.compile(r"\.\d{2}[onglc]$")
         rinex_files = sorted(
             f for f in rinex_folder.glob(f"{rinex_station_id}*")
-            if f.suffix in rinex_extensions
+            if rinex_extensions.match(f.suffix)
         )
         if not rinex_files:
             raise ValueError(
