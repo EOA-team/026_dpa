@@ -76,3 +76,6 @@ Thumbs.db
 
 # Ignore bin folders
 bin/
+
+#ignore data folder
+data/
