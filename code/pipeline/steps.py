@@ -23,7 +23,7 @@ from code.scrapers.basestation_scraper import RinexDownloadWindow, BasestationSc
 from code.filehandling_helper import move_files_by_regex, copy_files_by_regex
 from code.scrapers.base_scraper import BaseScraper
 from code.file_utils import move_and_extract_downloaded_zip, find_las_file, get_base_path
-from code.pdalgdal_helpers import las_to_geotif, geotiff_to_envi_dsm, fix_envi_header
+from code.pdalgdal_helpers import las_to_geotif, geotiff_to_envi_dsm, fix_envi_header, envi_to_geotiff
 
 from dotenv import load_dotenv
 
@@ -317,3 +317,18 @@ class CreateReflectanceOrthomosaic(PipelineStep):
         print(f"Finished Step: {self.name} ✅")
         return True
     
+
+class OrthomosaicToGeoTiff(PipelineStep):
+    """Creates a Geotiff orthomosaic from the ENVI orthomosaic"""
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            # ensure output folder exists
+            output_folder.mkdir(parents=True, exist_ok=True)
+            envi_orthom = list(input_folder.rglob("*.bsq"))
+            for file in envi_orthom:
+                envi_to_geotiff(bsq_file_path=file, output_file_path=output_folder / f"{file.stem}.tif")
+                print(f"Converted {file} to {output_folder / f'{file.stem}.tif'}")
+        print(f"Finished Step: {self.name} ✅")
+        return True
+

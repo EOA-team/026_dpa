@@ -8,19 +8,30 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import (
-    CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles,
-    GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles,
-    NavigationDiscretization, BuildDigitalSurfaceModel, Geocoding,
-    CreateRadianceOrthomosaic, CreateReflectanceOrthomosaic
-)
-from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
+from code.pipeline.base import Path, PipelineFolder
+from code.pipeline.steps import (
+    BinaryToRadiance,
+    BuildDigitalSurfaceModel,
+    CopyFiles,
+    CopyJobFolders,
+    CreateRadianceOrthomosaic,
+    CreateReflectanceOrthomosaic,
+    FetchNavigationFiles,
+    Geocoding,
+    GeoreferenceSensors,
+    MoveFiles,
+    NavigationDiscretization,
+    ScrapeBaseStationData,
+    OrthomosaicToGeoTiff,
+)
 
 NR_OF_FLIGHT_LINES = 5
 
 if __name__ == "__main__":
-    selected_jobs = ["ZOFE_260529_80_3", "ZOFE_260529_80_1" ]
+    selected_jobs = ["ZOFE_260521_80_2", "ZOFE_260522_80_2", "ZOFE_260522_80_4", 
+                     "ZOFE_260522_80_5", "ZOFE_260526_80_1", "ZOFE_260529_80_1", 
+                     "ZOFE_260529_80_2", "ZOFE_260529_80_3", "ZOFE_260423_80" ]
   
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
@@ -198,26 +209,39 @@ if __name__ == "__main__":
         jobs=selected_jobs
     )
 
+    # Step 15: Translate Orthomosaics to Geotiff 
+    orthomosaic_to_geotiff = OrthomosaicToGeoTiff(
+        name="Translate Orthomosaics to Geotiff",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing/GeotiffTranslation"),
+            target=""),
+        output_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing/GeotiffTranslation"),
+            target="final"),
+        jobs=selected_jobs
+    )
+
 
     # Run Steps
-    fetch_raw_data.run()
-    download_base_station_data.run()
-    georeference_sensors.run()
+    #fetch_raw_data.run()
+    #download_base_station_data.run()
+    #georeference_sensors.run()
 
-    fetch_navigation_files.run()
-    navigation_discretization.run()
-    binary_to_radiance.run()
-    get_vnir_files.run()
-    get_swir_files.run()
+    #fetch_navigation_files.run()
+    #navigation_discretization.run()
+    #binary_to_radiance.run()
+    #get_vnir_files.run()
+    #get_swir_files.run()
 
-    build_digital_surface_model.run()
+    #build_digital_surface_model.run()
 
     # Required for Parge (Georectification)
-    get_swir_calibration_files.run()
-    get_vnir_calibration_files.run()
+    #get_swir_calibration_files.run()
+    #get_vnir_calibration_files.run()
 
-    geocoding.run()
-    create_radiance_orthomosaic.run()   
-    create_reflectance_orthomosaic.run()
+    #geocoding.run()
+    #create_radiance_orthomosaic.run()   
+    #create_reflectance_orthomosaic.run()
+    orthomosaic_to_geotiff.run()
 
     print("All Pipeline steps completed.")

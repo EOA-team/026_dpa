@@ -7,10 +7,14 @@ import re
 from pathlib import Path
 
 from osgeo import gdal
+from enum import StrEnum
 import pdal
 
 gdal.UseExceptions()  # explicitly enable gdal exceptions
 
+class OrthomosaicFormats(StrEnum):
+    GTIFF = "GTiff"
+    ENVI = "ENVI"
 
 #TODO: Needs to be validated !
 # See Issue : https://github.com/EOA-team/026_dpa/issues/17
@@ -159,6 +163,36 @@ def fix_envi_header(hdr_file: Path) -> None:
     text = re.sub(r"default bands = \{.*?\}\n", "", text)
 
     hdr_file.write_text(text)
+
+def envi_to_geotiff(bsq_file_path: str, output_file_path: str) -> gdal.Dataset:
+    """
+    Export ENVI (.bsq + .hdr) to a tiled, BAND-interleaved GeoTIFF.
+    Make sure all metadata is preserved through COPY_SRC_MDD=YES option.
+    """
+    envi_file = gdal.Open(str(bsq_file_path))
+ 
+    options = [
+        "-of", "GTiff",      
+        "-co", "COMPRESS=LZW", # Lossless is standard in GIS analysis 
+        "-co", "TILED=YES", # Allows for instant spatial queries with Rasterio
+        "-co", "BLOCKXSIZE=512",   # Set tile width to 512 (COG Standard)
+        "-co", "BLOCKYSIZE=512",   # Set tile height to 512 (COG Standard)
+        "-co", "BIGTIFF=YES", # Protection against >4GB crashes (gtiff limit is 4GB)
+        "-co", "NUM_THREADS=ALL_CPUS", # MAke sure to use all threads for speed
+        "-co", "INTERLEAVE=BAND", # Interleave= Best for per band statistics | Interleave= PIXEL is best for visualization (RGB)
+        "-co", "COPY_SRC_MDD=YES",   # copy through all source metadata domains verbatim
+        # Note : GDAL Triggers resampling only if pixel size changes --> no need to define resampling method here.
+    ]
+
+    out=gdal.Translate(
+        output_file_path,
+        envi_file,
+        options=options,
+        callback=gdal.TermProgress_nocb, #Show Progress
+    )
+    envi_file = None  # close file
+    return out 
+
 
 
 if __name__ == "__main__":
