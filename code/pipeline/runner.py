@@ -231,7 +231,7 @@ if __name__ == "__main__":
     get_vnir_files.run()
     get_swir_files.run()
 
-    #build_digital_surface_model.run()
+    build_digital_surface_model.run()
 
     # Required for Parge (Georectification)
     get_swir_calibration_files.run()
