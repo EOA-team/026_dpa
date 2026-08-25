@@ -327,7 +327,9 @@ class OrthomosaicToGeoTiff(PipelineStep):
             output_folder.mkdir(parents=True, exist_ok=True)
             envi_orthom = list(input_folder.rglob("*.bsq"))
             for file in envi_orthom:
-                envi_to_geotiff(bsq_file_path=file, output_file_path=output_folder / f"{file.stem}.tif")
+                envi_to_geotiff(
+                    bsq_file_path=str(file), 
+                    output_file_path= str(output_folder / f"{file.stem}.tif"))
                 print(f"Converted {file} to {output_folder / f'{file.stem}.tif'}")
         print(f"Finished Step: {self.name} ✅")
         return True
