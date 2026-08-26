@@ -8,20 +8,29 @@ Example:
  etc.
 """
 
-from code.pipeline.steps import (
-    CopyJobFolders, BinaryToRadiance, MoveFiles, CopyFiles,
-    GeoreferenceSensors, ScrapeBaseStationData, FetchNavigationFiles,
-    NavigationDiscretization, BuildDigitalSurfaceModel, Geocoding,
-    CreateRadianceOrthomosaic, CreateReflectanceOrthomosaic
-)
-from code.pipeline.base import PipelineFolder, Path
 from code.file_utils import get_base_path
+from code.pipeline.base import Path, PipelineFolder
+from code.pipeline.steps import (
+    BinaryToRadiance,
+    BuildDigitalSurfaceModel,
+    CopyFiles,
+    CopyJobFolders,
+    CreateRadianceOrthomosaic,
+    CreateReflectanceOrthomosaic,
+    FetchNavigationFiles,
+    Geocoding,
+    GeoreferenceSensors,
+    MoveFiles,
+    NavigationDiscretization,
+    OrthomosaicToGeoTiff,
+    ScrapeBaseStationData,
+)
 
 NR_OF_FLIGHT_LINES = 5
 
 if __name__ == "__main__":
-    selected_jobs = ["ZOFE_260529_80_3", "ZOFE_260529_80_1" ]
-  
+    selected_jobs = ["ZOFE_260522_80_5"]
+
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
     # Define Steps
@@ -33,7 +42,8 @@ if __name__ == "__main__":
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
-            basefolder=Path("Z:/drone/DERIS/data/RE/ZOFE/hypSpec"), # Important: use link to NAS at Reckenholz, not cached at Changins!
+            # Important: use link to NAS at Reckenholz, not cached at Changins!
+            basefolder=Path("Z:/drone/DERIS/data/RE/ZOFE/hypSpec"),
             target=""),
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
@@ -55,7 +65,7 @@ if __name__ == "__main__":
             target="RAW/rinex"),
         jobs=selected_jobs
     )
-    #Step 3: Georeference Sensors
+    # Step 3: Georeference Sensors
     georeference_sensors = GeoreferenceSensors(
         name="Georeference Sensors (SWIR, VNIR, LiDAR)",
         input_folder=PipelineFolder(
@@ -66,7 +76,7 @@ if __name__ == "__main__":
             target="tmp"),
         jobs=selected_jobs)
 
-    #Step 4: Fetch Navigation Files
+    # Step 4: Fetch Navigation Files
     fetch_navigation_files = FetchNavigationFiles(
         name="Fetch Navigation Files",
         input_folder=PipelineFolder(
@@ -77,7 +87,7 @@ if __name__ == "__main__":
             target="tmp/input_hyspexnav"),
         jobs=selected_jobs)
 
-    #Step 5: NavigationDiscretization
+    # Step 5: NavigationDiscretization
     navigation_discretization = NavigationDiscretization(
         name="Navigation Discretization",
         input_folder=PipelineFolder(
@@ -89,7 +99,7 @@ if __name__ == "__main__":
         jobs=selected_jobs
     )
 
-    #Step 6: Convert Binary to Radiance
+    # Step 6: Convert Binary to Radiance
     binary_to_radiance = BinaryToRadiance(
         name="Binary to Radiance",
         input_folder=PipelineFolder(
@@ -100,7 +110,7 @@ if __name__ == "__main__":
             target="tmp/swirvnir_data"),
         jobs=selected_jobs
     )
-    #Step 7: Get VNIR Files
+    # Step 7: Get VNIR Files
     get_vnir_files = MoveFiles(
         name="Get VNIR Files",
         input_folder=PipelineFolder(
@@ -113,7 +123,7 @@ if __name__ == "__main__":
         regex_pattern=r"v1240"  # v1240 for VNIR
     )
 
-    #Step 8: Get SWIR Files
+    # Step 8: Get SWIR Files
     get_swir_files = MoveFiles(
         name="Get SWIR Files",
         input_folder=PipelineFolder(
@@ -125,7 +135,7 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"s620"  # s620 for VNIR
     )
-    #Step 9: Build Digital Surface Model (DSM) from LiDAR Point Cloud
+    # Step 9: Build Digital Surface Model (DSM) from LiDAR Point Cloud
     build_digital_surface_model = BuildDigitalSurfaceModel(
         name="Build Digital Surface Model",
         input_folder=PipelineFolder(
@@ -164,7 +174,7 @@ if __name__ == "__main__":
         regex_pattern=r"boresight_vnir|sensormodel"
     )
     # Step 12: Geocoding
-    geocoding =  Geocoding(
+    geocoding = Geocoding(
         name="Geocoding",
         input_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
@@ -173,7 +183,7 @@ if __name__ == "__main__":
             basefolder=Path("E:/mjolnir_processing"),
             target="output"),
         jobs=selected_jobs,
-        nr_of_flight_lines = NR_OF_FLIGHT_LINES
+        nr_of_flight_lines=NR_OF_FLIGHT_LINES
     )
     # Step 13: Create Radiance Orthomosaic
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
@@ -198,6 +208,17 @@ if __name__ == "__main__":
         jobs=selected_jobs
     )
 
+    # Step 15: Translate Orthomosaics to Geotiff
+    orthomosaic_to_geotiff = OrthomosaicToGeoTiff(
+        name="Translate Orthomosaics to Geotiff",
+        input_folder=PipelineFolder(
+            basefolder=Path("E:/mjolnir_processing"),
+            target="output/mosaics"),
+        output_folder=PipelineFolder(
+            basefolder=Path(Path("E:/mjolnir_processing")),
+            target="output/mosaics"),
+        jobs=selected_jobs
+    )
 
     # Run Steps
     fetch_raw_data.run()
@@ -217,7 +238,8 @@ if __name__ == "__main__":
     get_vnir_calibration_files.run()
 
     geocoding.run()
-    create_radiance_orthomosaic.run()   
+    create_radiance_orthomosaic.run()
     create_reflectance_orthomosaic.run()
+    orthomosaic_to_geotiff.run()
 
     print("All Pipeline steps completed.")

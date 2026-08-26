@@ -4,16 +4,24 @@ GDAL : Geospatial Data Abstraction Library - https://gdal.org/
 """
 import json
 import re
+from enum import StrEnum
 from pathlib import Path
 
-from osgeo import gdal
 import pdal
+from osgeo import gdal
 
 gdal.UseExceptions()  # explicitly enable gdal exceptions
 
 
-#TODO: Needs to be validated !
+class OrthomosaicFormats(StrEnum):
+    """ Formats supported by DPA """
+    GTIFF = "GTiff"
+    ENVI = "ENVI"
+
+# TODO: Needs to be validated !
 # See Issue : https://github.com/EOA-team/026_dpa/issues/17
+
+
 def las_to_geotif(
         input_las:  Path,
         output_tif: Path,
@@ -159,6 +167,41 @@ def fix_envi_header(hdr_file: Path) -> None:
     text = re.sub(r"default bands = \{.*?\}\n", "", text)
 
     hdr_file.write_text(text)
+
+
+def envi_to_geotiff(bsq_file_path: str, output_file_path: str) -> gdal.Dataset:
+    """
+    Export ENVI (.bsq + .hdr) to a tiled, BAND-interleaved GeoTIFF.
+    Make sure all metadata is preserved through COPY_SRC_MDD=YES option.
+    """
+    envi_file = gdal.Open(str(bsq_file_path))
+
+    options = [
+        "-of", "GTiff",
+        "-co", "COMPRESS=LZW",  # Lossless is standard in GIS analysis
+        "-co", "TILED=YES",  # Allows for instant spatial queries with Rasterio
+        "-co", "BLOCKXSIZE=512",   # Set tile width to 512 (COG Standard)
+        "-co", "BLOCKYSIZE=512",   # Set tile height to 512 (COG Standard)
+        # Protection against >4GB crashes (gtiff limit is 4GB)
+        "-co", "BIGTIFF=YES",
+        "-co", "NUM_THREADS=ALL_CPUS",  # MAke sure to use all threads for speed
+        # Interleave= Best for per band statistics
+        # Interleave= PIXEL is best for visualization (RGB)
+        "-co", "INTERLEAVE=BAND",
+        # copy through all source metadata domains verbatim
+        "-co", "COPY_SRC_MDD=YES",   
+        # Note : GDAL Triggers resampling only if pixel size changes
+        #  --> no need to define resampling method here.
+    ]
+
+    out = gdal.Translate(
+        output_file_path,
+        envi_file,
+        options=options,
+        callback=gdal.TermProgress_nocb,  # Show Progress
+    )
+    envi_file = None  # close file
+    return out
 
 
 if __name__ == "__main__":

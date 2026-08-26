@@ -8,22 +8,28 @@ for advanced operations, e.g., automatic georeferencing of orthomosaics using GD
 3. **Calls to a Windows application** 
 for steps that cannot yet be implemented in Python and must be simulated.
 """
-from shutil import copytree
-from shutil import ignore_patterns, copy2
-from pathlib import Path
-from datetime import timedelta
-
-
-from code.pipeline.base import PipelineStep, PipelineFolder
-from code.apps.hyspexrad import HyspexRadApplication
-from code.apps.pospacuav import PosPacUavApplication
 from code.apps.hyspexnav import HyspexNavApplication
+from code.apps.hyspexrad import HyspexRadApplication
 from code.apps.m4mproc import M4MProc_Application, M4MProcStep
-from code.scrapers.basestation_scraper import RinexDownloadWindow, BasestationScraper
-from code.filehandling_helper import move_files_by_regex, copy_files_by_regex
+from code.apps.pospacuav import PosPacUavApplication
+from code.file_utils import (
+    find_las_file,
+    get_base_path,
+    move_and_extract_downloaded_zip,
+)
+from code.filehandling_helper import copy_files_by_regex, move_files_by_regex
+from code.pdalgdal_helpers import (
+    envi_to_geotiff,
+    fix_envi_header,
+    geotiff_to_envi_dsm,
+    las_to_geotif,
+)
+from code.pipeline.base import PipelineFolder, PipelineStep
 from code.scrapers.base_scraper import BaseScraper
-from code.file_utils import move_and_extract_downloaded_zip, find_las_file, get_base_path
-from code.pdalgdal_helpers import las_to_geotif, geotiff_to_envi_dsm, fix_envi_header
+from code.scrapers.basestation_scraper import BasestationScraper, RinexDownloadWindow
+from datetime import timedelta
+from pathlib import Path
+from shutil import copy2, copytree, ignore_patterns
 
 from dotenv import load_dotenv
 
@@ -34,6 +40,7 @@ from dotenv import load_dotenv
 # a pipeline step has one responsibility: to be run.
 
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-positional-arguments
+
 
 class CopyJobFolders(PipelineStep):
     """Copies data folders from input to output for each job.
@@ -75,7 +82,8 @@ class ScrapeBaseStationData(PipelineStep):
         for input_folder, output_folder in zip(self.input_folders, self.output_folders):
             obs = RinexDownloadWindow(
                 apx_folder=input_folder,
-                convergence_time=timedelta(minutes=60), # Add RTX convergence time
+                # Add RTX convergence time
+                convergence_time=timedelta(minutes=60),
                 end_buffer=timedelta(minutes=15)
             )
 
@@ -261,9 +269,10 @@ class BuildDigitalSurfaceModel(PipelineStep):
         print(f"Finished Step: {self.name} ✅")
         return True
 
+
 class Geocoding(PipelineStep):
     """Attaching a geographic coordinate system to the imagery"""
-    
+
     def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
                  output_folder: PipelineFolder, nr_of_flight_lines: int):
         super().__init__(name, jobs, input_folder, output_folder)
@@ -271,10 +280,14 @@ class Geocoding(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"  # Could also select reflectance config , same settings for geocoding
-        process_finished_condition = ("geocoded","*.bsq", 3*self.nr_of_flight_lines, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        # Could also select reflectance config , same settings for geocoding
+        config_path = get_base_path(
+            __file__).parent / "configs" / "conf_m4mproc_radiance.json"
+        # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = (
+            "geocoded", "*.bsq", 3*self.nr_of_flight_lines, 300)
         m4mproc = M4MProc_Application(
-            input_folders=self.input_folders, 
+            input_folders=self.input_folders,
             output_folders=self.output_folders,
             selected_steps=[M4MProcStep.GEOCODING],
             config=config_path,
@@ -283,37 +296,64 @@ class Geocoding(PipelineStep):
         print(f"Finished Step: {self.name} ✅")
         return True
 
+
 class CreateRadianceOrthomosaic(PipelineStep):
     """Creates a radiance orthomosaic"""
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
-        process_finished_condition = ("mosaics","mosaic_radiance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        config_path = get_base_path(
+            __file__).parent / "configs" / "conf_m4mproc_radiance.json"
+        # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = ("mosaics", "mosaic_radiance.hdr", 1, 400)
         m4mproc = M4MProc_Application(
-            input_folders=self.input_folders, 
+            input_folders=self.input_folders,
             output_folders=self.output_folders,
-            selected_steps=[M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
+            selected_steps=[
+                M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
             config=config_path,
             finish_condition=process_finished_condition)
         m4mproc.run()
         print(f"Finished Step: {self.name} ✅")
         return True
+
 
 class CreateReflectanceOrthomosaic(PipelineStep):
     """Creates a radiance orthomosaic"""
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_reflectance.json"
-        process_finished_condition = ("mosaics","mosaic_reflectance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+        config_path = get_base_path(
+            __file__).parent / "configs" / "conf_m4mproc_reflectance.json"
+        # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = (
+            "mosaics", "mosaic_reflectance.hdr", 1, 400)
         m4mproc = M4MProc_Application(
-            input_folders=self.input_folders, 
+            input_folders=self.input_folders,
             output_folders=self.output_folders,
-            selected_steps=[M4MProcStep.REFLECTANCE_RETRIEVAL, M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
+            selected_steps=[M4MProcStep.REFLECTANCE_RETRIEVAL,
+                            M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
             config=config_path,
             finish_condition=process_finished_condition)
         m4mproc.run()
         print(f"Finished Step: {self.name} ✅")
         return True
-    
+
+
+class OrthomosaicToGeoTiff(PipelineStep):
+    """Creates a Geotiff orthomosaic from the ENVI orthomosaic"""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            # ensure output folder exists
+            output_folder.mkdir(parents=True, exist_ok=True)
+            envi_orthom = list(input_folder.rglob("*.bsq"))
+            for file in envi_orthom:
+                envi_to_geotiff(
+                    bsq_file_path=str(file),
+                    output_file_path=str(output_folder / f"{file.stem}.tif"))
+                print(
+                    f"Converted {file} to {output_folder / f'{file.stem}.tif'}")
+        print(f"Finished Step: {self.name} ✅")
+        return True
