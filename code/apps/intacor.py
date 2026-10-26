@@ -1,5 +1,7 @@
 # TODO: Adjust M4m Template to Intacor 
-"""Contains class to simulate M4MProc Windows Application """
+"""Contains class to simulate INTACOR for Hyspex Windows Application 
+https://intacor.com/
+"""
 import time
 from pathlib import Path
 from enum import Enum
@@ -9,9 +11,9 @@ from code.pywinauto_helpers import (
 )
 
 
-class M4MProcStep(Enum):
-        """Supported processing steps in M4MProc
-        Checkbox Index is used to select the processing steps in the M4MProc GUI, 
+class IntacorStep(Enum):
+        """Supported processing steps in INTACOR
+        Checkbox Index is used to select the processing steps in the INTACOR GUI, 
         because the checkboxes are not uniquely identifiable by their names.
         (Name, Checkbox Index)"""
 
@@ -23,10 +25,10 @@ class M4MProcStep(Enum):
         ORTHORECTIFICATION = ("Orthorectification", 5)
         MOSAIC = ("Mosaic", 6)
         POINT_CLOUD = ("Point Cloud", 7)
-class M4MProc_Application:
+class Intacor_Application:
     """
-    Class to simulate M4MProc which is only available as a Windows Application.
-    M4mProc is a Beta Version of the Intacor Software. It integrates DROACOR and
+    Class to simulate INTACOR which is only available as a Windows Application.
+    In is a Beta Version of the Intacor Software. It integrates DROACOR and
     PARGE into one single processing software.
 
     The Processing Steps that are used in DPA are :
@@ -34,11 +36,12 @@ class M4MProc_Application:
     2. Reflectance Retrieval : Converting the digital numbers to reflectance values (liighting and atmospheric correction)   
     3. Orthorectification : Uses a 3D terrain model to eliminate scale errors caused by uneven terrain and sensor tilt. 
     4. Mosaic : Stitch multiple images into a single image
+    # TODO : Also update with LAS import step 
     https://intacor.com/
     """
     def __init__(self, input_folders: list[Path], 
                  output_folders: list[Path], 
-                 selected_steps: list[M4MProcStep], 
+                 selected_steps: list[IntacorStep], 
                  config: Path,
                  finish_condition: tuple[str, int, int]):
         self.input_folders = input_folders
@@ -48,15 +51,15 @@ class M4MProc_Application:
         self.finish_condition = finish_condition # (output_subfolder, file_pattern, expected_count, timeout_s) 
 
         # Application
-        self.app_path: str = "C:/ReSe_Software_Win/m4mproc/M4Mproc.exe"
-        self.work_dir: str = "C:/ReSe_Software_Win/m4mproc/"
+        self.app_path: str = "C:/ReSe_Software_Win/intacor/INTACOR.exe"
+        self.work_dir: str = "C:/ReSe_Software_Win/intacor/"
         # Window title stays static, no need for window_auto_id
-        self.window_title: str = "ReSe Hyspex Processor 2025"
+        self.window_title: str = "Intacor for Hyspex, Version 1.0"
         self.is_idl_application: bool = True
     
-    def set_processing_steps(self, controlfinder: ControlFinder, steps: list[M4MProcStep]) -> None:
-        """Set the processing steps in the M4MProc GUI by checking/unchecking the corresponding checkboxes."""
-        for step in list(M4MProcStep):
+    def set_processing_steps(self, controlfinder: ControlFinder, steps: list[IntacorStep]) -> None:
+        """Set the processing steps in the INTACOR GUI by checking/unchecking the corresponding checkboxes."""
+        for step in list(IntacorStep):
             checkbox = controlfinder.find_by_name(
                 control_type="CheckBox",
                 found_index=step.value[1]
@@ -76,7 +79,7 @@ class M4MProc_Application:
         self._config = value
 
     def _expand_edit_tab(self, controlfinder: ControlFinder) -> None:
-        """Expand the 'Edit' tab in the M4MProc GUI to access load config"""
+        """Expand the 'Edit' tab in the INTACOR GUI to access load config"""
         edit_tab = controlfinder.find_by_name(control_type="MenuItem", 
                                               control_name="Edit")
         edit_tab.expand()
@@ -84,7 +87,7 @@ class M4MProc_Application:
     def _open_file_selector(self, controlfinder: ControlFinder) -> None:
         """Press the 'Load Config' MenuItem in the 'Edit' tab to open file selector"""
         self._expand_edit_tab(controlfinder)
-        load_config= controlfinder.find_by_auto_id(control_type= "MenuItem", auto_id="1283")
+        load_config= controlfinder.find_by_auto_id(control_type= "MenuItem", auto_id="1284")
         load_config.click_input()
 
     def _get_file_selector_window(self, controlfinder: ControlFinder) -> UIAWrapper:
@@ -110,7 +113,7 @@ class M4MProc_Application:
         addfiles_cf.window.wait_not('exists', timeout=DEFAULT_WAIT_TIME)
 
     def _set_input_folder(self, controlfinder: ControlFinder, input_folder: Path) -> None:
-        """Set the input folder in the M4MProc GUI."""
+        """Set the input folder in the INTACOR GUI."""
         input_folder_editbox = controlfinder.find_by_name(
             control_type="Edit",
             control_name="Main Input Directory")
@@ -118,7 +121,7 @@ class M4MProc_Application:
         # The '\' is important otherwise SWIR and VNIR are not found'
 
     def _set_dsm_input_file(self, controlfinder: ControlFinder, input_folder: Path) -> None:
-        """Set the input folder in the M4MProc GUI."""
+        """Set the input folder in the INTACOR GUI."""
         input_folder_editbox = controlfinder.find_by_name(
             control_type="Edit",
             control_name="DSM File")
@@ -126,7 +129,7 @@ class M4MProc_Application:
 
 
     def _set_output_folder(self, controlfinder: ControlFinder, output_folder: Path) -> None:
-        """Set the output folder in the M4MProc GUI."""
+        """Set the output folder in the INTACOR GUI."""
         output_folder_editbox = controlfinder.find_by_name(
             control_type="Edit",
             control_name="Output directory")
@@ -134,13 +137,13 @@ class M4MProc_Application:
 
 
     def set_paths(self, controlfinder: ControlFinder, input_folder: Path, output_folder: Path) -> None:
-        """Set the input and output folders/files in the M4MProc GUI."""
+        """Set the input and output folders/files in the INTACOR GUI."""
         self._set_input_folder(controlfinder, input_folder)
         self._set_dsm_input_file(controlfinder, input_folder)
         self._set_output_folder(controlfinder, output_folder)
 
     def start_process(self, controlfinder: ControlFinder) -> None:
-        """Start the M4MProc process."""
+        """Start the INTACOR process."""
         start_btn = controlfinder.find_by_name(
             control_type="Button",
             control_name="Process")
@@ -148,7 +151,7 @@ class M4MProc_Application:
 
 
     def confirm_process_start(self, controlfinder: ControlFinder) -> None:
-        """M4MProc shows a confirmation dialog before starting the process. This method confirms the dialog."""
+        """INTACOR shows a confirmation dialog before starting the process. This method confirms the dialog."""
         idl_alert_window = controlfinder.find_child_window_by_title(window_title="IDL Control Window")
         idl_alert_window.wait('exists', timeout=DEFAULT_WAIT_TIME)
         idl_alert_cf = ControlFinder(window=idl_alert_window)
@@ -159,13 +162,13 @@ class M4MProc_Application:
 
 
     def run(self):
-        """Run M4MProc for each input/output folder pair (= job)."""
+        """Run INTACOR for each input/output folder pair (= job)."""
         with ApplicationManager(app_path=self.app_path,
                                 work_dir=self.work_dir,
                                 window_title=self.window_title,
                                 window_auto_id= None,
-                                is_idl_application=self.is_idl_application) as m4mproc_manager:
-            main_window_cf = ControlFinder(window=m4mproc_manager.window)
+                                is_idl_application=self.is_idl_application) as intacor_manager:
+            main_window_cf = ControlFinder(window=intacor_manager.window)
 
             for input_folder, output_folder in zip(self.input_folders, self.output_folders):
                 # Make sure Window is ready before starting next iteration
@@ -197,16 +200,16 @@ if __name__ == "__main__":
     test_output_folders = [Path("E:/mjolnir_processing/re112o_250918/output")]
     test_input_folders = [Path("E:/mjolnir_processing/re112o_250918")]
 
-    config_path = get_base_path(__file__).parent / "configs" / "conf_m4mproc_radiance.json"
-    process_finished_condition = ("geocoded","*.bsq", 9, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+    config_path = get_base_path(__file__).parent / "configs" / "conf_intacor_radiance.json"
+    process_finished_condition = ("3_geocoded","*.bsq", 9, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
     
-    m4mproc = M4MProc_Application(input_folders=test_input_folders, 
+    intacor = Intacor_Application(input_folders=test_input_folders, 
                                   output_folders=test_output_folders,
-                                  selected_steps=[M4MProcStep.GEOCODING],
+                                  selected_steps=[IntacorStep.GEOCODING],
                                   config=config_path,
                                   finish_condition=process_finished_condition)
 
     
-    m4mproc.run()
+    intacor.run()
     
     
