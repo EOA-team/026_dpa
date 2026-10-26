@@ -48,7 +48,7 @@
         "TMPDIR": "C:\\Users\\F80877978\\AppData\\Local\\Temp\\",
         "INSTPATH": "C:\\ReSe_Software_Win\\intacor\\",
         "VERSION": "M4M Processor, Version 1.4",
-        "FLAGS": "{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}",
+        "FLAGS": "{0, 1, 1, 0, 0, 1, 1, 0, 0, 0}",
         "VALI": ""
     }
 }
