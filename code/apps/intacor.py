@@ -178,7 +178,9 @@ class Intacor_Application:
 
                 # Next iteration
                 self._load_config(controlfinder=main_window_cf)
+                time.sleep(5)
                 self.set_processing_steps(controlfinder=main_window_cf, steps=self.active_steps)
+                time.sleep(5)
                 self.set_paths(controlfinder=main_window_cf, 
                                  input_folder=input_folder, 
                                  output_folder=output_folder)
@@ -201,11 +203,11 @@ if __name__ == "__main__":
     test_input_folders = [Path("E:/mjolnir_processing/re112o_250918")]
 
     config_path = get_base_path(__file__).parent / "configs" / "conf_intacor_radiance.json"
-    process_finished_condition = ("3_geocoded","*.bsq", 9, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
+    process_finished_condition = ("7_mosaics","*mosaic_radiance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
     
     intacor = Intacor_Application(input_folders=test_input_folders, 
                                   output_folders=test_output_folders,
-                                  selected_steps=[IntacorStep.GEOCODING],
+                                  selected_steps=[IntacorStep.ORTHORECTIFICATION, IntacorStep.MOSAIC],
                                   config=config_path,
                                   finish_condition=process_finished_condition)
 
