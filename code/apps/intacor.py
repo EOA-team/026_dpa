@@ -178,9 +178,7 @@ class Intacor_Application:
 
                 # Next iteration
                 self._load_config(controlfinder=main_window_cf)
-                time.sleep(5)
                 self.set_processing_steps(controlfinder=main_window_cf, steps=self.active_steps)
-                time.sleep(5)
                 self.set_paths(controlfinder=main_window_cf, 
                                  input_folder=input_folder, 
                                  output_folder=output_folder)
