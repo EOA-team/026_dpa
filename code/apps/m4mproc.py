@@ -39,7 +39,7 @@ class M4MProc_Application:
                  output_folders: list[Path], 
                  selected_steps: list[M4MProcStep], 
                  config: Path,
-                 finish_condition: tuple[str, int, int]):
+                 finish_condition: tuple[str, str, int, int]):
         self.input_folders = input_folders
         self.output_folders = output_folders
         self.active_steps = selected_steps
