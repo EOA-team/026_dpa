@@ -10,7 +10,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 """
 from code.apps.hyspexnav import HyspexNavApplication
 from code.apps.hyspexrad import HyspexRadApplication
-from code.apps.m4mproc import M4MProc_Application, M4MProcStep
+from code.apps.intacor import Intacor_Application, IntacorStep
 from code.apps.pospacuav import PosPacUavApplication
 from code.file_utils import (
     find_las_file,
@@ -282,14 +282,14 @@ class Geocoding(PipelineStep):
         print(f"Starting Step: {self.name} ⏳")
         # Could also select reflectance config , same settings for geocoding
         config_path = get_base_path(
-            __file__).parent / "configs" / "conf_m4mproc_radiance.json"
+            __file__).parent / "configs" / "conf_intacor_radiance.json"
         # (output_subfolder, file_pattern, expected_count, timeout_s)
         process_finished_condition = (
-            "geocoded", "*.bsq", 3*self.nr_of_flight_lines, 300)
-        m4mproc = M4MProc_Application(
+            "3_geocoded", "*.bsq", 3*self.nr_of_flight_lines, 300)
+        m4mproc = Intacor_Application(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
-            selected_steps=[M4MProcStep.GEOCODING],
+            selected_steps=[IntacorStep.GEOCODING],
             config=config_path,
             finish_condition=process_finished_condition)
         m4mproc.run()
@@ -303,14 +303,14 @@ class CreateRadianceOrthomosaic(PipelineStep):
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         config_path = get_base_path(
-            __file__).parent / "configs" / "conf_m4mproc_radiance.json"
+            __file__).parent / "configs" / "conf_intacor_radiance.json"
         # (output_subfolder, file_pattern, expected_count, timeout_s)
-        process_finished_condition = ("mosaics", "mosaic_radiance.hdr", 1, 400)
-        m4mproc = M4MProc_Application(
+        process_finished_condition = ("7_mosaics", "mosaic_radiance.hdr", 1, 400)
+        m4mproc = Intacor_Application(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
             selected_steps=[
-                M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
+                IntacorStep.ORTHORECTIFICATION, IntacorStep.MOSAIC],
             config=config_path,
             finish_condition=process_finished_condition)
         m4mproc.run()
@@ -319,7 +319,7 @@ class CreateRadianceOrthomosaic(PipelineStep):
 
 
 class CreateReflectanceOrthomosaic(PipelineStep):
-    """Creates a radiance orthomosaic"""
+    """Creates a reflectance orthomosaic"""
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
@@ -327,12 +327,12 @@ class CreateReflectanceOrthomosaic(PipelineStep):
             __file__).parent / "configs" / "conf_m4mproc_reflectance.json"
         # (output_subfolder, file_pattern, expected_count, timeout_s)
         process_finished_condition = (
-            "mosaics", "mosaic_reflectance.hdr", 1, 400)
-        m4mproc = M4MProc_Application(
+            "7_mosaics", "mosaic_reflectance.hdr", 1, 400)
+        m4mproc = Intacor_Application(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
-            selected_steps=[M4MProcStep.REFLECTANCE_RETRIEVAL,
-                            M4MProcStep.ORTHORECTIFICATION, M4MProcStep.MOSAIC],
+            selected_steps=[IntacorStep.REFLECTANCE_RETRIEVAL,
+                            IntacorStep.ORTHORECTIFICATION, IntacorStep.MOSAIC],
             config=config_path,
             finish_condition=process_finished_condition)
         m4mproc.run()

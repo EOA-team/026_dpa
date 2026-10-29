@@ -308,7 +308,7 @@ class ControlFinder:
 
         return matching_control
 
-    def find_child_window_by_title(self, window_title: str) -> UIAWrapper | None:
+    def find_child_window_by_title(self, window_title: str) -> UIAWrapper:
         """
         Search for a visible child window within the parent window.
         """

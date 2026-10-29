@@ -26,10 +26,10 @@ from code.pipeline.steps import (
     ScrapeBaseStationData,
 )
 
-NR_OF_FLIGHT_LINES = 5
+NR_OF_FLIGHT_LINES = 3
 
 if __name__ == "__main__":
-    selected_jobs = ["ZOFE_260522_80_5"]
+    selected_jobs = ["re112o_250918"]
 
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
             # Important: use link to NAS at Reckenholz, not cached at Changins!
-            basefolder=Path("Z:/drone/DERIS/data/RE/ZOFE/hypSpec"),
+            basefolder=Path("Z:/drone/DERIS/data/RE/112o/hypSpec"),
             target=""),
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
@@ -213,29 +213,29 @@ if __name__ == "__main__":
         name="Translate Orthomosaics to Geotiff",
         input_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
-            target="output/mosaics"),
+            target="output/7_mosaics"),
         output_folder=PipelineFolder(
             basefolder=Path(Path("E:/mjolnir_processing")),
-            target="output/mosaics"),
+            target="output/7_mosaics"),
         jobs=selected_jobs
     )
 
     # Run Steps
-    fetch_raw_data.run()
-    download_base_station_data.run()
-    georeference_sensors.run()
+    #fetch_raw_data.run()
+    #download_base_station_data.run()
+    #georeference_sensors.run()
 
-    fetch_navigation_files.run()
-    navigation_discretization.run()
-    binary_to_radiance.run()
-    get_vnir_files.run()
-    get_swir_files.run()
+    #fetch_navigation_files.run()
+    #navigation_discretization.run()
+    #binary_to_radiance.run()
+    #get_vnir_files.run()
+    #get_swir_files.run()
 
-    build_digital_surface_model.run()
+    #build_digital_surface_model.run()
 
     # Required for Parge (Georectification)
-    get_swir_calibration_files.run()
-    get_vnir_calibration_files.run()
+    #get_swir_calibration_files.run()
+    #get_vnir_calibration_files.run()
 
     geocoding.run()
     create_radiance_orthomosaic.run()
