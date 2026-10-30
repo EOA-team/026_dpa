@@ -5,7 +5,7 @@ https://intacor.com/
 import time
 from pathlib import Path
 from enum import Enum
-from code.file_utils import get_base_path, wait_for_file_count
+from code.file_utils import get_base_path, wait_for_file_count, find_las_file
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
@@ -43,12 +43,14 @@ class Intacor_Application:
                  output_folders: list[Path], 
                  selected_steps: list[IntacorStep], 
                  config: Path,
-                 finish_condition: tuple[str, str, int, int]):
+                 finish_condition: tuple[str, str, int, int],
+                 direct_las_import: bool = False):
         self.input_folders = input_folders
         self.output_folders = output_folders
         self.active_steps = selected_steps
         self._config = config
         self.finish_condition = finish_condition # (output_subfolder, file_pattern, expected_count, timeout_s) 
+        self.direct_las_import = direct_las_import
 
         # Application
         self.app_path: str = "C:/ReSe_Software_Win/intacor/INTACOR.exe"
@@ -120,12 +122,21 @@ class Intacor_Application:
         input_folder_editbox.set_edit_text(str(input_folder) + "\\")
         # The '\' is important otherwise SWIR and VNIR are not found'
 
-    def _set_dsm_input_file(self, controlfinder: ControlFinder, input_folder: Path) -> None:
-        """Set the input folder in the INTACOR GUI."""
+    def _set_dsm_input_file(self, controlfinder: ControlFinder, input_folder: Path, direct_las_import: bool = False) -> None:
+        """Set the input folder in the INTACOR GUI.
+        Direct LAS Import only supported by Intacor, deprecated M4m does not support it"""
         input_folder_editbox = controlfinder.find_by_name(
             control_type="Edit",
             control_name="DSM File")
-        input_folder_editbox.set_edit_text(str(input_folder / "DSM" / "DSM"))
+        file_path = Path()
+
+        if direct_las_import:
+            file_path = find_las_file(input_folder)
+        else:
+            file_path = input_folder / "DSM" / "DSM"
+
+        input_folder_editbox.set_edit_text(str(file_path))
+            
 
 
     def _set_output_folder(self, controlfinder: ControlFinder, output_folder: Path) -> None:
@@ -136,10 +147,11 @@ class Intacor_Application:
         output_folder_editbox.set_edit_text(str(output_folder))
 
 
-    def set_paths(self, controlfinder: ControlFinder, input_folder: Path, output_folder: Path) -> None:
+    def set_paths(self, controlfinder: ControlFinder, input_folder: Path, 
+                  output_folder: Path, direct_las_import: bool = False) -> None:
         """Set the input and output folders/files in the INTACOR GUI."""
         self._set_input_folder(controlfinder, input_folder)
-        self._set_dsm_input_file(controlfinder, input_folder)
+        self._set_dsm_input_file(controlfinder, input_folder, direct_las_import)
         self._set_output_folder(controlfinder, output_folder)
 
     def start_process(self, controlfinder: ControlFinder) -> None:
@@ -181,7 +193,8 @@ class Intacor_Application:
                 self.set_processing_steps(controlfinder=main_window_cf, steps=self.active_steps)
                 self.set_paths(controlfinder=main_window_cf, 
                                  input_folder=input_folder, 
-                                 output_folder=output_folder)
+                                 output_folder=output_folder,
+                                 direct_las_import=self.direct_las_import)
                 self.start_process(controlfinder=main_window_cf)
                 self.confirm_process_start(controlfinder=main_window_cf)
                 wait_for_file_count(folder=output_folder / self.finish_condition[0],
@@ -201,14 +214,14 @@ if __name__ == "__main__":
     test_input_folders = [Path("E:/mjolnir_processing/re112o_250918")]
 
     config_path = get_base_path(__file__).parent / "configs" / "conf_intacor_radiance.json"
-    process_finished_condition = ("7_mosaics","*mosaic_radiance.hdr", 1, 400)  # (output_subfolder, file_pattern, expected_count, timeout_s)
-    
+    process_finished_condition = ("3_geocoded","*.bsq", 9, 300)  # (output_subfolder, file_pattern, expected_count, timeout_s)
     intacor = Intacor_Application(input_folders=test_input_folders, 
                                   output_folders=test_output_folders,
-                                  selected_steps=[IntacorStep.ORTHORECTIFICATION, IntacorStep.MOSAIC],
+                                  selected_steps=[IntacorStep.GEOCODING],
                                   config=config_path,
-                                  finish_condition=process_finished_condition)
-
+                                  finish_condition=process_finished_condition, 
+                                  direct_las_import=True
+                                  )                                
     
     intacor.run()
     

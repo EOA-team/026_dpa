@@ -274,9 +274,11 @@ class Geocoding(PipelineStep):
     """Attaching a geographic coordinate system to the imagery"""
 
     def __init__(self, name: str, jobs: list[str], input_folder: PipelineFolder,
-                 output_folder: PipelineFolder, nr_of_flight_lines: int):
+                 output_folder: PipelineFolder, nr_of_flight_lines: int,
+                 direct_las_import: bool = False):
         super().__init__(name, jobs, input_folder, output_folder)
         self.nr_of_flight_lines = nr_of_flight_lines
+        self.direct_las_import = direct_las_import 
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
@@ -291,7 +293,8 @@ class Geocoding(PipelineStep):
             output_folders=self.output_folders,
             selected_steps=[IntacorStep.GEOCODING],
             config=config_path,
-            finish_condition=process_finished_condition)
+            finish_condition=process_finished_condition,
+            direct_las_import=self.direct_las_import)
         m4mproc.run()
         print(f"Finished Step: {self.name} ✅")
         return True
