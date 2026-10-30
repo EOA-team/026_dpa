@@ -169,7 +169,7 @@ def find_las_file(folder: Path):
 def find_file_matching_pattern(folder: Path, patterns: tuple[str, ...]) -> Path:
     """Find the single file matching the given pattern in the given directory. Raises error if not exactly one found."""
 
-    files = []
+    files: list[Path] = []
     for p in patterns:
         files.extend(folder.rglob(p))
     if len(files) == 0:
