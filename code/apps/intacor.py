@@ -202,6 +202,8 @@ class Intacor_Application:
                                     pattern=self.finish_condition[1],
                                     expected_count=self.finish_condition[2],
                                     timeout_s=self.finish_condition[3])
+                # https://github.com/EOA-team/026_dpa/issues/44
+                time.sleep(1) #Add a small delay to make sure all files are written
                 
 
             
