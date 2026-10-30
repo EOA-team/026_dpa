@@ -287,7 +287,7 @@ class Geocoding(PipelineStep):
             __file__).parent / "configs" / "conf_intacor_radiance.json"
         # (output_subfolder, file_pattern, expected_count, timeout_s)
         process_finished_condition = (
-            "3_geocoded", "*.bsq", 3*self.nr_of_flight_lines, 300)
+            "3_geocoded", "*.bsq", 3*self.nr_of_flight_lines, 400)
         m4mproc = Intacor_Application(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
@@ -308,7 +308,7 @@ class CreateRadianceOrthomosaic(PipelineStep):
         config_path = get_base_path(
             __file__).parent / "configs" / "conf_intacor_radiance.json"
         # (output_subfolder, file_pattern, expected_count, timeout_s)
-        process_finished_condition = ("7_mosaics", "mosaic_radiance.hdr", 1, 400)
+        process_finished_condition = ("7_mosaics", "mosaic_radiance.hdr", 1, 500)
         m4mproc = Intacor_Application(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
@@ -330,7 +330,7 @@ class CreateReflectanceOrthomosaic(PipelineStep):
             __file__).parent / "configs" / "conf_m4mproc_reflectance.json"
         # (output_subfolder, file_pattern, expected_count, timeout_s)
         process_finished_condition = (
-            "7_mosaics", "mosaic_reflectance.hdr", 1, 400)
+            "7_mosaics", "mosaic_reflectance.hdr", 1, 500)
         m4mproc = Intacor_Application(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
