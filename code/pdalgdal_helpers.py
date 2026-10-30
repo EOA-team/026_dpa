@@ -1,7 +1,8 @@
-""" This module contains helper functions for working with PDAL and GDAL 
+"""This module contains helper functions for working with PDAL and GDAL
 PDAL : Point Data Abstraction Library - https://pdal.io/
 GDAL : Geospatial Data Abstraction Library - https://gdal.org/
 """
+
 import json
 import re
 from enum import StrEnum
@@ -14,18 +15,20 @@ gdal.UseExceptions()  # explicitly enable gdal exceptions
 
 
 class OrthomosaicFormats(StrEnum):
-    """ Formats supported by DPA """
+    """Formats supported by DPA"""
+
     GTIFF = "GTiff"
     ENVI = "ENVI"
+
 
 # TODO: Needs to be validated !
 # See Issue : https://github.com/EOA-team/026_dpa/issues/17
 
 
 def las_to_geotif(
-        input_las:  Path,
-        output_tif: Path,
-        resolution: float = 0.05,
+    input_las: Path,
+    output_tif: Path,
+    resolution: float = 0.05,
 ) -> None:
     """Convert a LAS point cloud to a DSM GeoTIFF using PDAL.
 
@@ -40,19 +43,23 @@ def las_to_geotif(
     """
     output_tif.parent.mkdir(parents=True, exist_ok=True)
 
-    pipeline = pdal.Pipeline(json.dumps({
-        "pipeline": [
-            str(input_las),
+    pipeline = pdal.Pipeline(
+        json.dumps(
             {
-                "type": "writers.gdal",
-                "filename": str(output_tif),
-                "resolution": resolution,
-                "output_type": "max",       # DSM = highest point per cell
-                "data_type": "float32",     # match expected ENVI data type 4
-                "gdalopts": "COMPRESS=LZW",
+                "pipeline": [
+                    str(input_las),
+                    {
+                        "type": "writers.gdal",
+                        "filename": str(output_tif),
+                        "resolution": resolution,
+                        "output_type": "max",  # DSM = highest point per cell
+                        "data_type": "float32",  # match expected ENVI data type 4
+                        "gdalopts": "COMPRESS=LZW",
+                    },
+                ]
             }
-        ]
-    }))
+        )
+    )
 
     pipeline.execute()
     print(f"DSM created: {output_tif}")
@@ -72,8 +79,8 @@ def _rename_envi_bin(bin_file: Path, output_file: Path) -> None:
 
 
 def geotiff_to_envi_dsm(
-        input_tif:   Path,
-        output_file: Path,
+    input_tif: Path,
+    output_file: Path,
 ) -> None:
     """Convert a GeoTIFF DSM to ENVI format, producing <output_file> and <output_file>.hdr.
 
@@ -135,8 +142,12 @@ def fix_envi_header(hdr_file: Path) -> None:
     text = re.sub(r"map info = \{(.*?)\}", fix_map_info, text)
 
     # Fix coordinate system string: remove {} wrapper and VERTCS block
-    text = re.sub(r"coordinate system string = \{(.*?),VERTCS\[.*?\]\}",
-                  r"coordinate system string = \1", text, flags=re.DOTALL)
+    text = re.sub(
+        r"coordinate system string = \{(.*?),VERTCS\[.*?\]\}",
+        r"coordinate system string = \1",
+        text,
+        flags=re.DOTALL,
+    )
 
     # Add sensor type before byte order if missing
     if "sensor type" not in text:
@@ -147,18 +158,17 @@ def fix_envi_header(hdr_file: Path) -> None:
 
     # Add x start, y start after byte order
     if "x start" not in text:
-        text = re.sub(r"(byte order = 0\n)",
-                      "\\1x start =  1\ny start =  1\n", text)
+        text = re.sub(r"(byte order = 0\n)", "\\1x start =  1\ny start =  1\n", text)
 
     # Add pixel size after coordinate system string
-    res_match = re.search(
-        r"map info = \{UTM,1,1,[\d.]+,[\d.]+, ([\d.]+),", text)
+    res_match = re.search(r"map info = \{UTM,1,1,[\d.]+,[\d.]+, ([\d.]+),", text)
     if res_match and "pixel size" not in text:
         res_str = f"{float(res_match.group(1)):.9f}"
         text = re.sub(
             r"(coordinate system string = .*?\]\])\n",
             f"\\1\npixel size = {{{res_str}, {res_str}}}\n",
-            text, flags=re.DOTALL
+            text,
+            flags=re.DOTALL,
         )
 
     # Remove band names, data ignore value, default bands
@@ -177,19 +187,28 @@ def envi_to_geotiff(bsq_file_path: str, output_file_path: str) -> gdal.Dataset:
     envi_file = gdal.Open(str(bsq_file_path))
 
     options = [
-        "-of", "GTiff",
-        "-co", "COMPRESS=LZW",  # Lossless is standard in GIS analysis
-        "-co", "TILED=YES",  # Allows for instant spatial queries with Rasterio
-        "-co", "BLOCKXSIZE=512",   # Set tile width to 512 (COG Standard)
-        "-co", "BLOCKYSIZE=512",   # Set tile height to 512 (COG Standard)
+        "-of",
+        "GTiff",
+        "-co",
+        "COMPRESS=LZW",  # Lossless is standard in GIS analysis
+        "-co",
+        "TILED=YES",  # Allows for instant spatial queries with Rasterio
+        "-co",
+        "BLOCKXSIZE=512",  # Set tile width to 512 (COG Standard)
+        "-co",
+        "BLOCKYSIZE=512",  # Set tile height to 512 (COG Standard)
         # Protection against >4GB crashes (gtiff limit is 4GB)
-        "-co", "BIGTIFF=YES",
-        "-co", "NUM_THREADS=ALL_CPUS",  # MAke sure to use all threads for speed
+        "-co",
+        "BIGTIFF=YES",
+        "-co",
+        "NUM_THREADS=ALL_CPUS",  # MAke sure to use all threads for speed
         # Interleave= Best for per band statistics
         # Interleave= PIXEL is best for visualization (RGB)
-        "-co", "INTERLEAVE=BAND",
+        "-co",
+        "INTERLEAVE=BAND",
         # copy through all source metadata domains verbatim
-        "-co", "COPY_SRC_MDD=YES",   
+        "-co",
+        "COPY_SRC_MDD=YES",
         # Note : GDAL Triggers resampling only if pixel size changes
         #  --> no need to define resampling method here.
     ]
@@ -208,14 +227,15 @@ if __name__ == "__main__":
     # Example usage:
     las_to_geotif(
         input_las=Path(
-            "E:/dsm_creation_test/Mission 1_lidardump-2025.09.03-14.02.28.las"),
+            "E:/dsm_creation_test/Mission 1_lidardump-2025.09.03-14.02.28.las"
+        ),
         output_tif=Path("E:/dsm_creation_test/DSM.tif"),
-        resolution=0.05
+        resolution=0.05,
     )
 
     geotiff_to_envi_dsm(
         input_tif=Path("E:/dsm_creation_test/DSM.tif"),
-        output_file=Path("E:/dsm_creation_test/DSM")
+        output_file=Path("E:/dsm_creation_test/DSM"),
     )
 
     fix_envi_header(Path("E:/dsm_creation_test/DSM.hdr"))

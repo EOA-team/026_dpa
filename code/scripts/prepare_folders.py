@@ -3,7 +3,7 @@ import shutil
 
 
 # Set your Job
-sel_flights = ["re112o_250610", "re112o_250918"] # Relevant Flights for MT 
+sel_flights = ["re112o_250610", "re112o_250918"]  # Relevant Flights for MT
 raw_folder = Path("D:/data/mjolnir")
 process_folder = Path("E:/mjolnir_processing")
 
@@ -13,10 +13,10 @@ process_folder = Path("E:/mjolnir_processing")
 # Example 2: To start with dsm, rad_vnir, and rad_swir already processed, comment out ['raw'] as it won't be needed.
 
 folder_filter = [
-    ['raw'],           # Include folders containing "raw"
-    #['dsm'],           # Include folders containing "dsm"
-    #['rad', 'vnir'],   # Include folders containing both "rad" and "vnir"
-    #['rad', 'swir']    # Include folders containing both "rad" and "swir"
+    ["raw"],  # Include folders containing "raw"
+    # ['dsm'],           # Include folders containing "dsm"
+    # ['rad', 'vnir'],   # Include folders containing both "rad" and "vnir"
+    # ['rad', 'swir']    # Include folders containing both "rad" and "swir"
 ]
 
 
@@ -32,8 +32,8 @@ def filter_folders(folders: Path, filters: list[list[str]]) -> list[str]:
 
     Parameters:
         folders (Path): Path object pointing to a directory.
-        filters (list[list[str]]): Each inner list represents a set of keywords 
-                                   that must ALL be present in the folder name 
+        filters (list[list[str]]): Each inner list represents a set of keywords
+                                   that must ALL be present in the folder name
                                    (case-insensitive).
 
     Returns:
@@ -44,8 +44,12 @@ def filter_folders(folders: Path, filters: list[list[str]]) -> list[str]:
 
     # Filter based on keyword rules (check folder name)
     filtered = [
-        f.name for f in folders_list
-        if any(all(keyword.lower() in f.name.lower() for keyword in rule) for rule in filters)
+        f.name
+        for f in folders_list
+        if any(
+            all(keyword.lower() in f.name.lower() for keyword in rule)
+            for rule in filters
+        )
     ]
     return filtered
 
@@ -80,13 +84,20 @@ def copy_folders(origin: Path, dest: Path, folders: list[str], report: bool = Fa
 def copy_flights(origin: Path, dest: Path, flights: list):
     for flight in flights:
         if not folder_exists(path=process_folder, folder=flight):
-            filtered_folders = filter_folders(folders=raw_folder / flight,
-                                              filters= folder_filter)
-            copy_folders(origin=origin / flight, dest=dest /
-                         flight, folders=filtered_folders, report=True)
+            filtered_folders = filter_folders(
+                folders=raw_folder / flight, filters=folder_filter
+            )
+            copy_folders(
+                origin=origin / flight,
+                dest=dest / flight,
+                folders=filtered_folders,
+                report=True,
+            )
 
 
-def rename_folders(base_folder: Path, flights: list, rename_lookup: list[dict], report: bool = False):
+def rename_folders(
+    base_folder: Path, flights: list, rename_lookup: list[dict], report: bool = False
+):
     """
     Renames subfolders in base_folder/flight according to rename_lookup.
 
@@ -108,7 +119,9 @@ def rename_folders(base_folder: Path, flights: list, rename_lookup: list[dict], 
                 folder_lower = subfolder.name.lower()
                 new_name = subfolder.name  # default: keep original
                 for entry in rename_lookup:
-                    if all(keyword.lower() in folder_lower for keyword in entry["filter"]):
+                    if all(
+                        keyword.lower() in folder_lower for keyword in entry["filter"]
+                    ):
                         new_name = entry["new_name"]
                         break
 
@@ -121,10 +134,16 @@ def rename_folders(base_folder: Path, flights: list, rename_lookup: list[dict], 
                     print(f"No change: {subfolder.name}")
 
 
-def rename_files_to_base_full_extension(base_folder: Path, flights: list, target_subfolder: str, base_name: str = "DSM", report: bool = False):
+def rename_files_to_base_full_extension(
+    base_folder: Path,
+    flights: list,
+    target_subfolder: str,
+    base_name: str = "DSM",
+    report: bool = False,
+):
     """
     Renames all files in a specific subfolder of each flight to a base name,
-    keeping the full original extension (everything after the first dot), 
+    keeping the full original extension (everything after the first dot),
     or just the base name if there is no extension.
 
     Example:
@@ -183,7 +202,9 @@ def folder_exists(path: Path, folder: str) -> bool:
     return False
 
 
-def check_empty_subfolders(base_folder: Path, flights: list, target_subfolder: str, report: bool = True) -> list[str]:
+def check_empty_subfolders(
+    base_folder: Path, flights: list, target_subfolder: str, report: bool = True
+) -> list[str]:
     """
     Checks which flight folders have an empty target subfolder (e.g., DSM).
 
@@ -216,7 +237,9 @@ def check_empty_subfolders(base_folder: Path, flights: list, target_subfolder: s
     return empty_flights
 
 
-def delete_flight_folders(base_folder: Path, flights_to_delete: list, report: bool = True):
+def delete_flight_folders(
+    base_folder: Path, flights_to_delete: list, report: bool = True
+):
     """
     Deletes entire flight folders inside the base folder.
 
@@ -235,9 +258,9 @@ def delete_flight_folders(base_folder: Path, flights_to_delete: list, report: bo
                 print(f"Deleted flight folder: {flight_folder}")
         else:
             if report:
-                print(
-                    f"Flight folder does not exist, skipping: {flight_folder}")
-                
+                print(f"Flight folder does not exist, skipping: {flight_folder}")
+
+
 def get_nr_of_files(base_path: Path, pattern: str) -> int:
     """
     Get the number of files matching the pattern in the folder.
@@ -245,13 +268,13 @@ def get_nr_of_files(base_path: Path, pattern: str) -> int:
     Examples:
         # Count all .bsq files
         count = get_nr_of_files(Path("data"), "*.bsq")
-        
+
         # Count specific file
         count = get_nr_of_files(Path("data"), "output.txt")
     """
     if not base_path.is_dir():
         return 0
-    
+
     matching_files = list(base_path.glob(pattern))
     return len(matching_files)
 
@@ -259,7 +282,7 @@ def get_nr_of_files(base_path: Path, pattern: str) -> int:
 def move_files_by_pattern(source: Path, destination: Path, pattern: str) -> int:
     """
     Move all files where filename contains the pattern (case-insensitive, ignoring spaces).
-    
+
 
     Examples:
         # Move all files containing 'v1240' (matches V1240, v 1240, V 1 2 4 0, etc.)
@@ -268,30 +291,33 @@ def move_files_by_pattern(source: Path, destination: Path, pattern: str) -> int:
     if not source.is_dir():
         print(f"Source directory does not exist: {source}")
         return 0
-    
+
     # Create destination directory if it doesn't exist
     destination.mkdir(parents=True, exist_ok=True)
-    
+
     # Normalize the pattern: lowercase and remove spaces
     normalized_pattern = pattern.lower().replace(" ", "")
-    
+
     # Get all files in source directory
     all_files = [f for f in source.iterdir() if f.is_file()]
-    
+
     moved_count = 0
     for file_path in all_files:
         # Normalize filename: lowercase and remove spaces
         normalized_filename = file_path.name.lower().replace(" ", "")
-        
+
         # Check if pattern is in filename
         if normalized_pattern in normalized_filename:
             dest_file = destination / file_path.name
             shutil.move(file_path, dest_file)  # move instead of copy
             print(f"Moved: {file_path.name}")
             moved_count += 1
-    
-    print(f"Moved {moved_count} file(s) containing '{pattern}' from {source} to {destination}")
+
+    print(
+        f"Moved {moved_count} file(s) containing '{pattern}' from {source} to {destination}"
+    )
     return moved_count
+
 
 def main():
     copy_flights(origin=raw_folder, dest=process_folder, flights=sel_flights)
@@ -302,9 +328,9 @@ def main():
             {"filter": ["raw"], "new_name": "RAW"},
             {"filter": ["dsm"], "new_name": "DSM"},
             {"filter": ["rad", "vnir"], "new_name": "VNIR"},
-            {"filter": ["rad", "swir"], "new_name": "SWIR"}
+            {"filter": ["rad", "swir"], "new_name": "SWIR"},
         ],
-        report=True
+        report=True,
     )
     # Rename dem to DSM
     rename_files_to_base_full_extension(
@@ -312,11 +338,11 @@ def main():
         flights=sel_flights,
         target_subfolder="DSM",
         base_name="DSM",
-        report=True
+        report=True,
     )
-    # Delete Unprocessed Flights 
-    #uncprocessed_flights = check_empty_subfolders(base_folder=process_folder, flights=list_folders(path=process_folder), target_subfolder="DSM")
-    #delete_flight_folders(base_folder=process_folder, flights_to_delete=uncprocessed_flights,report=True)
+    # Delete Unprocessed Flights
+    # uncprocessed_flights = check_empty_subfolders(base_folder=process_folder, flights=list_folders(path=process_folder), target_subfolder="DSM")
+    # delete_flight_folders(base_folder=process_folder, flights_to_delete=uncprocessed_flights,report=True)
 
 
 if __name__ == "__main__":

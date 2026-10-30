@@ -1,14 +1,20 @@
 """
 Helper functions for file handling operations.
 """
+
 import re
 from pathlib import Path
 from shutil import move, copy2
 from typing import Callable, Any
 
-def _process_files_by_regex(source: Path, destination: Path, regex_pattern: str,
-                             file_operation: Callable[..., Any],
-                             print_progress: bool = False) -> None:
+
+def _process_files_by_regex(
+    source: Path,
+    destination: Path,
+    regex_pattern: str,
+    file_operation: Callable[..., Any],
+    print_progress: bool = False,
+) -> None:
     """Internal helper that applies a file operation to all files matching a regex.
 
     Not intended to be called directly — use move_files_by_regex or
@@ -27,12 +33,16 @@ def _process_files_by_regex(source: Path, destination: Path, regex_pattern: str,
             if print_progress:
                 print(f"{file_operation.__name__}: {file_path} -> {dest_file}")
 
-def move_files_by_regex(source: Path, destination: Path, regex_pattern: str,
-                        print_progress: bool = False) -> None:
+
+def move_files_by_regex(
+    source: Path, destination: Path, regex_pattern: str, print_progress: bool = False
+) -> None:
     """Move all files matching regex from source to destination. Deletes originals."""
     _process_files_by_regex(source, destination, regex_pattern, move, print_progress)
 
-def copy_files_by_regex(source: Path, destination: Path, regex_pattern: str,
-                        print_progress: bool = False) -> None:
+
+def copy_files_by_regex(
+    source: Path, destination: Path, regex_pattern: str, print_progress: bool = False
+) -> None:
     """Copy all files matching regex from source to destination. Keeps originals."""
     _process_files_by_regex(source, destination, regex_pattern, copy2, print_progress)

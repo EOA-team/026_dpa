@@ -12,25 +12,27 @@ from pathlib import Path
 from typing import cast
 from selenium.webdriver.support.ui import WebDriverWait
 
+
 class BaseScraper(ABC):
     """Abstract base class for web scrapers."""
-    def __init__(self, config: dict ):
-        self.service_url = str(config['service_url'])
-        self.username = str(config['username'])
-        self.password = str(config['password'])
 
-        #Destination for downloaded data
-        self.destination_path = Path(config['destination_path'])
+    def __init__(self, config: dict):
+        self.service_url = str(config["service_url"])
+        self.username = str(config["username"])
+        self.password = str(config["password"])
+
+        # Destination for downloaded data
+        self.destination_path = Path(config["destination_path"])
         self.destination_path.mkdir(parents=True, exist_ok=True)
         # Initialize WebDriver
         self.webdriver = create_webdriver(
-            driver_path= config['driver_path'],
-            browser=cast(BrowserType, config['browser'])
+            driver_path=config["driver_path"],
+            browser=cast(BrowserType, config["browser"]),
         )
-        self.wait = WebDriverWait(self.webdriver, config['timeout'])
+        self.wait = WebDriverWait(self.webdriver, config["timeout"])
 
     @staticmethod
-    def load_environment_variable(variable_name : str) -> str:
+    def load_environment_variable(variable_name: str) -> str:
         """Load environment variable."""
         value = os.getenv(variable_name)
         if value is None:
@@ -40,7 +42,7 @@ class BaseScraper(ABC):
     @abstractmethod
     def run(self) -> None:
         """Abstract method - implement scraping logic in subclasses."""
-        pass #pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def close(self) -> None:
         """Close WebDriver connection."""

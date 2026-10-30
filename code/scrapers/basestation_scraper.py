@@ -1,15 +1,14 @@
 """
-This scraper extracts high-precision GNSS reference station observations for differential 
-post-processing of drone trajectory data.    
+This scraper extracts high-precision GNSS reference station observations for differential
+post-processing of drone trajectory data.
 
 I accesses the Swiss Positioning Service (Swipos) and supports:
 - Station selection: Choose from a network of reference stations across Switzerland.
 - Time period filtering: Specify date ranges to retrieve relevant observation data.
 
-All the data comes in RINEX format, which is a standard for GNSS data. 
+All the data comes in RINEX format, which is a standard for GNSS data.
 
 """
-
 
 import time
 from pathlib import Path
@@ -23,7 +22,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 
-class RinexDownloadWindow: # pylint: disable=too-few-public-methods
+class RinexDownloadWindow:  # pylint: disable=too-few-public-methods
     """Parses T04 files in an APX folder and computes the RINEX download window.
 
     1) T04 filenames are parsed to retrieve the time window when the drone was active.
@@ -36,18 +35,22 @@ class RinexDownloadWindow: # pylint: disable=too-few-public-methods
         'RTX vertical sigma (0.068 m) exceeds the tolerance (0.050 m).'
 
     Without a sufficient time window (at least 10min), POSPac may report this error:
-        'Unable to start order! Operation result: InvalidOperation, 
+        'Unable to start order! Operation result: InvalidOperation,
         Error message: The order does not meet the session length requirement.
 
     """
-    def __init__(self, apx_folder: Path,
-                 convergence_time: timedelta = timedelta(minutes=60),
-                 end_buffer: timedelta = timedelta(minutes=15)):
-        self.apx_folder      = apx_folder
-        self._datetimes      = self._load_datetimes()
 
-        self.flight_start     = self._datetimes[0] - convergence_time
-        self.flight_end       = self._datetimes[-1]   + end_buffer
+    def __init__(
+        self,
+        apx_folder: Path,
+        convergence_time: timedelta = timedelta(minutes=60),
+        end_buffer: timedelta = timedelta(minutes=15),
+    ):
+        self.apx_folder = apx_folder
+        self._datetimes = self._load_datetimes()
+
+        self.flight_start = self._datetimes[0] - convergence_time
+        self.flight_end = self._datetimes[-1] + end_buffer
 
     @property
     def duration_seconds(self) -> int:
@@ -83,7 +86,7 @@ class RinexDownloadWindow: # pylint: disable=too-few-public-methods
 
     def _parse_datetime(self, filename: str, tzone: tzinfo = timezone.utc) -> datetime:
         """Extract datetime from T04 filename (expects YYYYMMDDHHMM before extension)."""
-        name_part = filename.split('.')[0]
+        name_part = filename.split(".")[0]
         dt = datetime.strptime(name_part[-12:], "%Y%m%d%H%M")
         return dt.replace(tzinfo=tzone)
 
@@ -107,72 +110,66 @@ class BasestationScraper(BaseScraper):
         testdelay_s = 0.2  # seconds
         time.sleep(testdelay_s)
         login_link = self.webdriver.find_element(
-            by=By.ID, value="ContentPlaceHolder1_m_LoginLink")
+            by=By.ID, value="ContentPlaceHolder1_m_LoginLink"
+        )
         login_link.click()
         time.sleep(testdelay_s)
 
         input_user = self.webdriver.find_element(
-            by=By.ID, value="ContentPlaceHolder1_m_Login_UserName")
+            by=By.ID, value="ContentPlaceHolder1_m_Login_UserName"
+        )
         input_pw = self.webdriver.find_element(
-            by=By.ID, value="ContentPlaceHolder1_m_Login_Password")
+            by=By.ID, value="ContentPlaceHolder1_m_Login_Password"
+        )
         input_user.clear()
         input_user.send_keys(self.username)
         input_pw.clear()
         input_pw.send_keys(self.password)
 
         login_btn = self.webdriver.find_element(
-            by=By.ID, value="ContentPlaceHolder1_m_Login_LoginButton")
+            by=By.ID, value="ContentPlaceHolder1_m_Login_LoginButton"
+        )
         login_btn.click()
         time.sleep(testdelay_s)
 
     def accept_cookies(self) -> None:
         """Accept cookies to gain access to the rest of the page."""
-        cookies_btn = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "accept")
-            )
-        )
+        cookies_btn = self.wait.until(EC.element_to_be_clickable((By.ID, "accept")))
         cookies_btn.click()
 
     def open_rinexshop(self):
-        """ Navigate to the RINEX Shop page after logging in."""
+        """Navigate to the RINEX Shop page after logging in."""
         rinexshop_link = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "m_NavigationTreeViewt6")
-            )
+            EC.element_to_be_clickable((By.ID, "m_NavigationTreeViewt6"))
         )
         rinexshop_link.click()
 
     def open_neworder(self):
         """Open the 'New Order' page to start a new RINEX data request."""
         new_order_link = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContentPlaceHolder1_m_BtnNewOrder")
-            )
+            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnNewOrder"))
         )
         new_order_link.click()
 
     def open_cors(self) -> None:
         """Open the Continuously Operating Reference Station (CORS) page."""
         cors_link = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContentPlaceHolder1_m_LinkCORS")
-            )
+            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_LinkCORS"))
         )
         cors_link.click()
 
     def select_reference_station(self, station_value: str = "ETH2") -> None:
         """Select a reference station from the dropdown."""
         select_element = self.wait.until(
-            EC.visibility_of_element_located(
-                (By.ID, "m_RefStationListBox")
-            )
+            EC.visibility_of_element_located((By.ID, "m_RefStationListBox"))
         )
         # Wait until the specific option is present in the dropdown
         self.wait.until(
             EC.element_to_be_clickable(
-                (By.CSS_SELECTOR,
-                 f"#m_RefStationListBox option[value='{station_value}']")
+                (
+                    By.CSS_SELECTOR,
+                    f"#m_RefStationListBox option[value='{station_value}']",
+                )
             )
         )
         Select(select_element).select_by_value(station_value)
@@ -180,9 +177,7 @@ class BasestationScraper(BaseScraper):
     def click_continue_to_time_selection(self) -> None:
         """Click the continue button to proceed to the time selection page."""
         btn = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContToTimeSelectionButton")
-            )
+            EC.element_to_be_clickable((By.ID, "ContToTimeSelectionButton"))
         )
         btn.click()
 
@@ -199,7 +194,7 @@ class BasestationScraper(BaseScraper):
     def _set_start_time(self, obs: RinexDownloadWindow) -> None:
         """Set the observation start time fields in the SWIPOS form."""
         fields = {
-            "Hour":   obs.start_hour,
+            "Hour": obs.start_hour,
             "Minute": obs.start_minute,
             "Second": obs.start_second,
         }
@@ -215,7 +210,7 @@ class BasestationScraper(BaseScraper):
     def _set_duration(self, obs: RinexDownloadWindow) -> None:
         """Set the observation duration fields in the SWIPOS form."""
         fields = {
-            "Hour":   obs.duration_hours,
+            "Hour": obs.duration_hours,
             "Minute": obs.duration_minutes,
         }
         for unit, value in fields.items():
@@ -247,18 +242,14 @@ class BasestationScraper(BaseScraper):
     def click_add_to_delivery(self) -> None:
         """Click the button to proceed to delivery options."""
         btn = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContentPlaceHolder1_NextToOrderButton")
-            )
+            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_NextToOrderButton"))
         )
         btn.click()
 
     def click_proceed_with_delivery_option(self) -> None:
         """Click the button to proceed to the delivery options page."""
         btn = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContentPlaceHolder1_m_BtnNext")
-            )
+            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnNext"))
         )
         btn.click()
 
@@ -287,9 +278,7 @@ class BasestationScraper(BaseScraper):
         """
         long_wait = WebDriverWait(self.webdriver, timeout)
         btn = long_wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContentPlaceHolder1_NextToOrderButton")
-            )
+            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_NextToOrderButton"))
         )
         btn.click()
 
@@ -314,9 +303,7 @@ class BasestationScraper(BaseScraper):
     def click_remove_item(self) -> None:
         """Click the remove item button after downloading the RINEX data."""
         btn = self.wait.until(
-            EC.element_to_be_clickable(
-                (By.ID, "ContentPlaceHolder1_m_BtnRemoveItem")
-            )
+            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnRemoveItem"))
         )
         btn.click()
 

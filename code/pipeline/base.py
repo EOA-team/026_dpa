@@ -1,9 +1,10 @@
-""" In this module the base classes needed to build a pipeline are defined:
-1. A PipelineFolder : 
+"""In this module the base classes needed to build a pipeline are defined:
+1. A PipelineFolder :
 Defines either a input or output folder for a specific step in the pipeline.
-2. A PipelineStep : 
+2. A PipelineStep :
 Defines a processing step in the pipeline, handling input and output folders for each job.
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -37,8 +38,8 @@ class PipelineFolder:
     def __init__(self, basefolder: Path, target: str, static: bool = False):
         self.basefolder = basefolder
         self.target = target
-        #static = true, means folder is not job specific and same for all jobs
-        #(e.g. calibration files)
+        # static = true, means folder is not job specific and same for all jobs
+        # (e.g. calibration files)
         self.static = static
 
     def get_job_paths(self, job_names: list[str]) -> list[Path]:
@@ -57,8 +58,13 @@ class PipelineStep(ABC):
     Subclasses must implement the run method.
     """
 
-    def __init__(self, name: str, jobs: list[str],
-                 input_folder: PipelineFolder, output_folder: PipelineFolder):
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+    ):
         self.name = name
         self.jobs = jobs
         self.input_folders = input_folder.get_job_paths(jobs)
