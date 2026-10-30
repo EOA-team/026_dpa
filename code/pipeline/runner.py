@@ -1,4 +1,4 @@
-""" In the future there will be many different runner scripts for different pipelines
+"""In the future there will be many different runner scripts for different pipelines
 At The moment at Agroscope we only use one default pipeline but in Future there will be
 different pipelines!
 Example:
@@ -44,12 +44,13 @@ if __name__ == "__main__":
         input_folder=PipelineFolder(
             # Important: use link to NAS at Reckenholz, not cached at Changins!
             basefolder=Path("Z:/drone/DERIS/data/RE/112o/hypSpec"),
-            target=""),
+            target="",
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="RAW"),
+            basefolder=Path("E:/mjolnir_processing"), target="RAW"
+        ),
         jobs=selected_jobs,
-        exclude_within_output_folder=["rinex"]
+        exclude_within_output_folder=["rinex"],
     )
     # Step 2: Download Base Station Data from Swipos
     #     Use the APX files in the raw data to get the flight time info for the scraper
@@ -58,93 +59,95 @@ if __name__ == "__main__":
         name="Download Base Station Data",
         # Use data from APX folder to get flight time info for scraper
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="RAW/apx"),
+            basefolder=Path("E:/mjolnir_processing"), target="RAW/apx"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="RAW/rinex"),
-        jobs=selected_jobs
+            basefolder=Path("E:/mjolnir_processing"), target="RAW/rinex"
+        ),
+        jobs=selected_jobs,
     )
     # Step 3: Georeference Sensors
     georeference_sensors = GeoreferenceSensors(
         name="Georeference Sensors (SWIR, VNIR, LiDAR)",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="RAW"),
+            basefolder=Path("E:/mjolnir_processing"), target="RAW"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp"),
-        jobs=selected_jobs)
+            basefolder=Path("E:/mjolnir_processing"), target="tmp"
+        ),
+        jobs=selected_jobs,
+    )
 
     # Step 4: Fetch Navigation Files
     fetch_navigation_files = FetchNavigationFiles(
         name="Fetch Navigation Files",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target=""),
+            basefolder=Path("E:/mjolnir_processing"), target=""
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp/input_hyspexnav"),
-        jobs=selected_jobs)
+            basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"
+        ),
+        jobs=selected_jobs,
+    )
 
     # Step 5: NavigationDiscretization
     navigation_discretization = NavigationDiscretization(
         name="Navigation Discretization",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp/input_hyspexnav"),
+            basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp/swirvnir_data"),
-        jobs=selected_jobs
+            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+        ),
+        jobs=selected_jobs,
     )
 
     # Step 6: Convert Binary to Radiance
     binary_to_radiance = BinaryToRadiance(
         name="Binary to Radiance",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="RAW"),
+            basefolder=Path("E:/mjolnir_processing"), target="RAW"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp/swirvnir_data"),
-        jobs=selected_jobs
+            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+        ),
+        jobs=selected_jobs,
     )
     # Step 7: Get VNIR Files
     get_vnir_files = MoveFiles(
         name="Get VNIR Files",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp/swirvnir_data"),
+            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="VNIR"),
+            basefolder=Path("E:/mjolnir_processing"), target="VNIR"
+        ),
         jobs=selected_jobs,
-        regex_pattern=r"v1240"  # v1240 for VNIR
+        regex_pattern=r"v1240",  # v1240 for VNIR
     )
 
     # Step 8: Get SWIR Files
     get_swir_files = MoveFiles(
         name="Get SWIR Files",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="tmp/swirvnir_data"),
+            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="SWIR"),
+            basefolder=Path("E:/mjolnir_processing"), target="SWIR"
+        ),
         jobs=selected_jobs,
-        regex_pattern=r"s620"  # s620 for VNIR
+        regex_pattern=r"s620",  # s620 for VNIR
     )
     # Deprecated (since Intacor release): Build Digital Surface Model (DSM) from LiDAR Point Cloud
     build_digital_surface_model = BuildDigitalSurfaceModel(
         name="Build Digital Surface Model",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target=""),
+            basefolder=Path("E:/mjolnir_processing"), target=""
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="output/1_raw/DSM"),
-        jobs=selected_jobs
+            basefolder=Path("E:/mjolnir_processing"), target="output/1_raw/DSM"
+        ),
+        jobs=selected_jobs,
     )
     # Step 9: Get SWIR Calibration Files
     #      Note: Required as Parge Preparation
@@ -152,12 +155,15 @@ if __name__ == "__main__":
         name="Get SWIR Calibration Files",
         input_folder=PipelineFolder(
             basefolder=get_base_path(__file__).parent / "apps",
-            target="calibration", static=True),
+            target="calibration",
+            static=True,
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="SWIR"),
+            basefolder=Path("E:/mjolnir_processing"), target="SWIR"
+        ),
         jobs=selected_jobs,
-        regex_pattern=r"boresight_swir|sensormodel")
+        regex_pattern=r"boresight_swir|sensormodel",
+    )
 
     # Step 10: Get VNIR Calibration Files
     #      Note: Required as Parge Preparation
@@ -166,59 +172,60 @@ if __name__ == "__main__":
         input_folder=PipelineFolder(
             basefolder=get_base_path(__file__).parent / "apps",
             target="calibration",
-            static=True),
+            static=True,
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="VNIR"),
+            basefolder=Path("E:/mjolnir_processing"), target="VNIR"
+        ),
         jobs=selected_jobs,
-        regex_pattern=r"boresight_vnir|sensormodel"
+        regex_pattern=r"boresight_vnir|sensormodel",
     )
     # Step 11: Geocoding
     geocoding = Geocoding(
         name="Geocoding",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target=""),
+            basefolder=Path("E:/mjolnir_processing"), target=""
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="output"),
+            basefolder=Path("E:/mjolnir_processing"), target="output"
+        ),
         jobs=selected_jobs,
         nr_of_flight_lines=NR_OF_FLIGHT_LINES,
-        direct_las_import=True  # Use direct LAS import instead of DSM
+        direct_las_import=True,  # Use direct LAS import instead of DSM
     )
     # Step 12: Create Radiance Orthomosaic
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
         name="Create Radiance Orthomosaic",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target=""),
+            basefolder=Path("E:/mjolnir_processing"), target=""
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="output"),
-        jobs=selected_jobs
+            basefolder=Path("E:/mjolnir_processing"), target="output"
+        ),
+        jobs=selected_jobs,
     )
     # Step 13: Create Reflectance Orthomosaic
     create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
         name="Create Reflectance Orthomosaic",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target=""),
+            basefolder=Path("E:/mjolnir_processing"), target=""
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="output"),
-        jobs=selected_jobs
+            basefolder=Path("E:/mjolnir_processing"), target="output"
+        ),
+        jobs=selected_jobs,
     )
 
     # Step 14: Translate Orthomosaics to Geotiff
     orthomosaic_to_geotiff = OrthomosaicToGeoTiff(
         name="Translate Orthomosaics to Geotiff",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"),
-            target="output/7_mosaics"),
+            basefolder=Path("E:/mjolnir_processing"), target="output/7_mosaics"
+        ),
         output_folder=PipelineFolder(
-            basefolder=Path(Path("E:/mjolnir_processing")),
-            target="output/7_mosaics"),
-        jobs=selected_jobs
+            basefolder=Path(Path("E:/mjolnir_processing")), target="output/7_mosaics"
+        ),
+        jobs=selected_jobs,
     )
 
     # Run Steps

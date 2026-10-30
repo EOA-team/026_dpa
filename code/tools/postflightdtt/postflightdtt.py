@@ -7,11 +7,12 @@ Reads config.yaml and runs either the drone_to_hd or hd_to_nas transfer module.
 - hd_to_nas: Transfers data from hard drive to NAS. Supports multiple flight
   folders since trajectory matching is already completed.
 """
+
 import logging
-from code.yamlconfig_helper import load_config_from_yamlfile
+from code.file_utils import get_base_path
 from code.tools.postflightdtt.drone_to_hd import drone_to_hd_transfer
 from code.tools.postflightdtt.hd_to_nas import hd_to_nas_transfer
-from code.file_utils import get_base_path
+from code.yamlconfig_helper import load_config_from_yamlfile
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler()  # Force console output
-        ]
+        ],
     )
     logging.getLogger("selenium").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -33,9 +34,9 @@ if __name__ == "__main__":
         config = load_config_from_yamlfile(config_path)
 
         # Load Config
-        if config['mode'] == "drone_to_hd":
+        if config["mode"] == "drone_to_hd":
             drone_to_hd_transfer(config)
-        elif config['mode'] == "hd_to_nas":
+        elif config["mode"] == "hd_to_nas":
             hd_to_nas_transfer(config)
         else:
             raise ValueError(f"Invalid mode in config: {config['mode']}")
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         logger.info("All transfers complete")
         logger.warning("Please unmount Drive before disconnecting!")
 
-    except Exception as e: # pylint: disable=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Program failed: %s", e, exc_info=True)
 
     finally:

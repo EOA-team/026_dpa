@@ -1,18 +1,22 @@
 """Contains class to run PosPacUAV Application with Batch Manager"""
 
 import re
-from pathlib import Path
-from code.pywinauto_helpers import (
-    ApplicationManager, ControlFinder, UIAWrapper, DEFAULT_WAIT_TIME, ControlNotFoundError
-)
 from code.file_utils import wait_for_file_creation
+from code.pywinauto_helpers import (
+    DEFAULT_WAIT_TIME,
+    ApplicationManager,
+    ControlFinder,
+    ControlNotFoundError,
+    UIAWrapper,
+)
+from pathlib import Path
 from string import Template
 
 
 class PosPacUavApplication:
     """
     Class to simulate POSPac UAV which is only available as a Windows Application.
-    Uses the Batch Manager to run batch files 
+    Uses the Batch Manager to run batch files
     Allows to load the settings, start the processing and wait until process is finished.
     ️Note: POSPac UAV must be installed on the system where this code is executed.
     """
@@ -33,14 +37,14 @@ class PosPacUavApplication:
         """Open the Batch Manager panel."""
         btn = controlfinder.find_by_auto_id(
             control_type="Button",
-            auto_id="[Group : Batch Tools] Tool : BatchManager - Index : 0 ")
+            auto_id="[Group : Batch Tools] Tool : BatchManager - Index : 0 ",
+        )
         btn.invoke()
 
     def _get_batchmanager_panel(self, controlfinder: ControlFinder) -> UIAWrapper:
         """Get the Batchmanager Panel window."""
         batchmanager_window = controlfinder.find_by_auto_id(
-            control_type="Pane",
-            auto_id="BatchManagerCmdUI"
+            control_type="Pane", auto_id="BatchManagerCmdUI"
         )
         return batchmanager_window
 
@@ -62,22 +66,25 @@ class PosPacUavApplication:
     def _click_load_batch(self, controlfinder: ControlFinder) -> None:
         """Click the Load Batch button in the Batch Manager to open a batch file."""
         load_btn = controlfinder.find_by_name(
-            control_type="Button",
-            control_name="Load Batch")
+            control_type="Button", control_name="Load Batch"
+        )
         load_btn.click_input()
 
-    def _enter_batchfile_path(self, controlfinder: ControlFinder, posbat_file: Path) -> None:
+    def _enter_batchfile_path(
+        self, controlfinder: ControlFinder, posbat_file: Path
+    ) -> None:
         """Enter the batch file path in the open file dialog and confirm."""
         filename_editbox = controlfinder.find_by_name(
-            control_type="Edit", control_name="file name:", exact=True)
+            control_type="Edit", control_name="file name:", exact=True
+        )
         filename_editbox.set_edit_text(str(posbat_file))
         filename_editbox.type_keys("{ENTER}")
 
     def _click_runbatch_button(self, controlfinder: ControlFinder) -> None:
         """Click the runbatch button to open the dropdown menu."""
         load_btn = controlfinder.find_by_name(
-            control_type="Button",
-            control_name="Run Batch")
+            control_type="Button", control_name="Run Batch"
+        )
         load_btn.click_input()
 
     def _reset_batchmanager(self, controlfinder: ControlFinder) -> None:
@@ -90,23 +97,21 @@ class PosPacUavApplication:
         self._click_runbatch_button(controlfinder)
 
         run_all = controlfinder.find_by_name(
-            control_type="MenuItem",
-            control_name="Run All Projects...")
+            control_type="MenuItem", control_name="Run All Projects..."
+        )
         run_all.click_input()
 
-    def _run_batch(self, main_cf: ControlFinder,
-                   batch_cf: ControlFinder, posbat_file: Path) -> None:
+    def _run_batch(
+        self, main_cf: ControlFinder, batch_cf: ControlFinder, posbat_file: Path
+    ) -> None:
         """"""
         self._click_load_batch(controlfinder=batch_cf)
-        self._enter_batchfile_path(controlfinder=main_cf,
-                                   posbat_file=posbat_file)
+        self._enter_batchfile_path(controlfinder=main_cf, posbat_file=posbat_file)
         self._run_all_projects(controlfinder=batch_cf)
 
     @staticmethod
     def parse_flight_window_from_extract_log(
-            log_path: Path,
-            margin_s: float,
-            debug:    bool = False
+        log_path: Path, margin_s: float, debug: bool = False
     ) -> tuple[float, float]:
         """Parse Event 1 start/stop times from extract_Mission 1.log.
         Returns (start_time, stop_time) with margin added for IMU initialization.
@@ -122,15 +127,17 @@ class PosPacUavApplication:
 
         if debug:
             print(
-                f"Flight window: {start_time:.3f}s - {stop_time:.3f}s (margin: ±{margin_s}s)")
+                f"Flight window: {start_time:.3f}s - {stop_time:.3f}s (margin: ±{margin_s}s)"
+            )
 
         return start_time, stop_time
 
     @staticmethod
     def create_extract_only_batchfile(
-            output_file:  Path,
-            job_name:     str,
-            input_folder: Path,) -> None:
+        output_file: Path,
+        job_name: str,
+        input_folder: Path,
+    ) -> None:
         """Create a POSPac extract-only batch file from template for the given job.
 
         Args:
@@ -144,15 +151,16 @@ class PosPacUavApplication:
         if not t04_files:
             raise ValueError(f"No .T04 files found in {apx_folder}")
 
-        template_file = Path(__file__).parent / "templates" / \
-            "extract_only_template.posbat"
+        template_file = (
+            Path(__file__).parent / "templates" / "extract_only_template.posbat"
+        )
         template = Template(template_file.read_text(encoding="utf-8"))
 
         xml_content = template.substitute(
             job_name=job_name,
             input_folder=str(input_folder),
             first_pos_file=t04_files[0].name,
-            last_pos_file=t04_files[-1].name
+            last_pos_file=t04_files[-1].name,
         )
 
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -161,13 +169,13 @@ class PosPacUavApplication:
 
     @staticmethod
     def create_full_processing_batchfile(
-            output_file:          Path,
-            job_name:             str,
-            input_folder:         Path,
-            output_folder:        Path,
-            start_time_total_sec: float,
-            stop_time_total_sec:  float,
-            stabilized_mount:     str
+        output_file: Path,
+        job_name: str,
+        input_folder: Path,
+        output_folder: Path,
+        start_time_total_sec: float,
+        stop_time_total_sec: float,
+        stabilized_mount: str,
     ) -> None:
         """Create a POSPac full processing batch file from template.
 
@@ -193,12 +201,14 @@ class PosPacUavApplication:
         # Example Year 2025: .25o, .25n, .25g, .25l, .25c
         rinex_extensions = re.compile(r"\.\d{2}[onglc]$")
         rinex_files = sorted(
-            f for f in rinex_folder.glob(f"{rinex_station_id}*")
+            f
+            for f in rinex_folder.glob(f"{rinex_station_id}*")
             if rinex_extensions.match(f.suffix)
         )
         if not rinex_files:
             raise ValueError(
-                f"No RINEX files found for {rinex_station_id} in {rinex_folder}")
+                f"No RINEX files found for {rinex_station_id} in {rinex_folder}"
+            )
 
         pcap_files = list(input_folder.glob("*.pcap"))
         if not pcap_files:
@@ -208,8 +218,9 @@ class PosPacUavApplication:
             f"<DataFile>{f}</DataFile>" for f in rinex_files
         )
 
-        template_file = Path(__file__).parent / "templates" / \
-            "full_processing_template.posbat"
+        template_file = (
+            Path(__file__).parent / "templates" / "full_processing_template.posbat"
+        )
         template = Template(template_file.read_text(encoding="utf-8"))
 
         xml_content = template.substitute(
@@ -222,7 +233,7 @@ class PosPacUavApplication:
             stop_time_total_sec=stop_time_total_sec,
             rinex_files=rinex_datafiles,
             pcap_file=pcap_files[0].name,
-            stabilized_mount=stabilized_mount
+            stabilized_mount=stabilized_mount,
         )
 
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -232,54 +243,65 @@ class PosPacUavApplication:
     def run(self) -> None:
         """Run the POSPac UAV processing for each input/output folder pair (= job)."""
 
-        with ApplicationManager(app_path=self.app_path,
-                                work_dir=self.work_dir,
-                                window_title=None,  # Not needed when using auto_id
-                                window_auto_id=self.window_auto_id,
-                                is_idl_application=self.is_idl_application) as pospac_manager:
-
+        with ApplicationManager(
+            app_path=self.app_path,
+            work_dir=self.work_dir,
+            window_title=None,  # Not needed when using auto_id
+            window_auto_id=self.window_auto_id,
+            is_idl_application=self.is_idl_application,
+        ) as pospac_manager:
             main_window_cf = ControlFinder(window=pospac_manager.window)
-            for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+            for input_folder, output_folder in zip(
+                self.input_folders, self.output_folders
+            ):
                 # Make sure Window is ready before starting next iteration
-                main_window_cf.window.wait(
-                    'enabled', timeout=DEFAULT_WAIT_TIME)
+                main_window_cf.window.wait("enabled", timeout=DEFAULT_WAIT_TIME)
                 main_window_cf.window.set_focus()
                 # Next iteration
                 job_name = input_folder.parent.name
                 # Prepare Batch file "Extract only"
-                tmp_posbat_file_path = output_folder / \
-                    f"{job_name}_extract_only.posbat"
-                self.create_extract_only_batchfile(output_file=tmp_posbat_file_path,
-                                                   job_name=job_name,
-                                                   input_folder=input_folder)
+                tmp_posbat_file_path = output_folder / f"{job_name}_extract_only.posbat"
+                self.create_extract_only_batchfile(
+                    output_file=tmp_posbat_file_path,
+                    job_name=job_name,
+                    input_folder=input_folder,
+                )
                 # Run Batch file "Extract only"
                 self._reset_batchmanager(controlfinder=main_window_cf)
                 batchmanager_cf = self._open_batch_manager(main_window_cf)
-                self._run_batch(main_cf=main_window_cf,
-                                batch_cf=batchmanager_cf,
-                                posbat_file=tmp_posbat_file_path)
-                last_file_created_during_import = (tmp_posbat_file_path.parent
-                                                   # e.g re112o_250610_extract_only
-                                                   / tmp_posbat_file_path.stem
-                                                   / "Mission 1" / "Extract"
-                                                   / "gnss_nav_pri_interp_Mission 1.dat")
+                self._run_batch(
+                    main_cf=main_window_cf,
+                    batch_cf=batchmanager_cf,
+                    posbat_file=tmp_posbat_file_path,
+                )
+                last_file_created_during_import = (
+                    tmp_posbat_file_path.parent
+                    # e.g re112o_250610_extract_only
+                    / tmp_posbat_file_path.stem
+                    / "Mission 1"
+                    / "Extract"
+                    / "gnss_nav_pri_interp_Mission 1.dat"
+                )
                 wait_for_file_creation(
                     file_path=last_file_created_during_import,
-                    timeout_s=900 # Expected: 10min --> Margin: 15min
-                    )
+                    timeout_s=900,  # Expected: 10min --> Margin: 15min
+                )
                 # Get Start and Stop Time for full processing batch file from extract log
-                tmp_log_path = (tmp_posbat_file_path.parent
-                                / tmp_posbat_file_path.stem  # e.g re112o_250610_extract_only
-                                / "Mission 1" / "Extract"
-                                / "extract_Mission 1.log")
+                tmp_log_path = (
+                    tmp_posbat_file_path.parent
+                    / tmp_posbat_file_path.stem  # e.g re112o_250610_extract_only
+                    / "Mission 1"
+                    / "Extract"
+                    / "extract_Mission 1.log"
+                )
                 (start_time, stop_time) = self.parse_flight_window_from_extract_log(
-                    margin_s=200.0,
-                    log_path=tmp_log_path,
-                    debug=True)
+                    margin_s=200.0, log_path=tmp_log_path, debug=True
+                )
 
                 # Prepare Batch file "Full processing"
-                tmp_posbat_file_path = output_folder / \
-                    f"{job_name}_full_processing.posbat"
+                tmp_posbat_file_path = (
+                    output_folder / f"{job_name}_full_processing.posbat"
+                )
                 self.create_full_processing_batchfile(
                     output_file=tmp_posbat_file_path,
                     job_name=job_name,
@@ -288,31 +310,41 @@ class PosPacUavApplication:
                     # e.g. E:/mjolnir_processing/re112o_250610/tmp/re112o_250610_full_processing
                     output_folder=output_folder / tmp_posbat_file_path.stem,
                     start_time_total_sec=start_time,
-                    stop_time_total_sec=stop_time, 
-                    stabilized_mount="SynthesizeGimbalData" #Default: "SynthesizeGimbalData" , "StabilizedMount", "None"
+                    stop_time_total_sec=stop_time,
+                    stabilized_mount="SynthesizeGimbalData",  # Default: "SynthesizeGimbalData" , "StabilizedMount", "None"
                 )
                 # Run Batch file "Full processing"
                 self._reset_batchmanager(controlfinder=main_window_cf)
                 batchmanager_cf = self._open_batch_manager(main_window_cf)
-                self._run_batch(main_cf=main_window_cf,
-                                batch_cf=batchmanager_cf,
-                                posbat_file=tmp_posbat_file_path)
+                self._run_batch(
+                    main_cf=main_window_cf,
+                    batch_cf=batchmanager_cf,
+                    posbat_file=tmp_posbat_file_path,
+                )
 
-                last_file_created_during_processing = (tmp_posbat_file_path.parent
-                                                       / tmp_posbat_file_path.stem
-                                                       # e.g. re112o_250610_full_processing.log
-                                                       / f"{tmp_posbat_file_path.stem}.log")
-                wait_for_file_creation(file_path=last_file_created_during_processing,
-                                       timeout_s=1200  # Expected: 11min --> Margin: 20min
-                                       )
+                last_file_created_during_processing = (
+                    tmp_posbat_file_path.parent
+                    / tmp_posbat_file_path.stem
+                    # e.g. re112o_250610_full_processing.log
+                    / f"{tmp_posbat_file_path.stem}.log"
+                )
+                wait_for_file_creation(
+                    file_path=last_file_created_during_processing,
+                    timeout_s=1200,  # Expected: 11min --> Margin: 20min
+                )
 
 
 if __name__ == "__main__":
-    test_output_folders = [Path("E:/mjolnir_processing/re112o_250610/tmp"),
-                           Path("E:/mjolnir_processing/re112o_250918/tmp")]
-    test_input_folders = [Path("E:/mjolnir_processing//re112o_250610/RAW"),
-                          Path("E:/mjolnir_processing/re112o_250918/RAW")]
-    pospacuav = PosPacUavApplication(input_folders=test_input_folders,
-                                     output_folders=test_output_folders)
+    test_output_folders = [
+        Path("E:/mjolnir_processing/re112o_250610/tmp"),
+        Path("E:/mjolnir_processing/re112o_250918/tmp"),
+    ]
+    test_input_folders = [
+        Path("E:/mjolnir_processing//re112o_250610/RAW"),
+        Path("E:/mjolnir_processing/re112o_250918/RAW"),
+    ]
+    pospacuav = PosPacUavApplication(
+        input_folders=test_input_folders, output_folders=test_output_folders
+    )
 
     pospacuav.run()

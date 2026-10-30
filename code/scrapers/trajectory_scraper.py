@@ -1,10 +1,10 @@
-""" Trajectory data scraper for APX-20 GNSS-Inertial sensor via web interface
+"""Trajectory data scraper for APX-20 GNSS-Inertial sensor via web interface
 
 Extracts data from external APX-20 sensor via web interface (http://192.168.168.100/).
 
 Limitations
 -----------
-- Only accesses external APX-20 sensor (not internal APX-15), 
+- Only accesses external APX-20 sensor (not internal APX-15),
 - Requires drone battery power and all cables plugged
 
 Requirements
@@ -14,16 +14,18 @@ See code/scrapers/selenium_utils.py for browser and WebDriver setup instructions
 Note:
 ------------
  APX-15 internal sensor should be accessible directly via DAU, but could not yet access it via
- http://192.168.168.100/. Need to contact Applanix support. 
+ http://192.168.168.100/. Need to contact Applanix support.
 
 """
-import os
-from pathlib import Path
+
 import logging
-import time
+import os
 import shutil
-from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
+import time
 from code.scrapers.base_scraper import BaseScraper
+from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
+from pathlib import Path
+
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -51,9 +53,7 @@ class TrajectoryScraper(BaseScraper):
         Always call switch_to.default_content() before calling this method
         to reset the context from a previous frame.
         """
-        self.wait.until(
-            EC.frame_to_be_available_and_switch_to_it((By.ID, "main"))
-        )
+        self.wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, "main")))
         self.wait.until(
             EC.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
         )
@@ -87,9 +87,7 @@ class TrajectoryScraper(BaseScraper):
         """Dismiss the Applanix splash screen that appears on page open."""
         self.webdriver.switch_to.default_content()
         # Wait for the floating div to be visible
-        self.wait.until(
-            EC.visibility_of_element_located((By.ID, "idFloatingDiv"))
-        )
+        self.wait.until(EC.visibility_of_element_located((By.ID, "idFloatingDiv")))
         # Dismiss via JS - same as clicking the red X
         self.webdriver.execute_script("hideFloatingDiv(true);")
         logger.info("Splash popup dismissed")
@@ -101,8 +99,10 @@ class TrajectoryScraper(BaseScraper):
         # Click "Data Logging" main menu item (index 2)
         data_logging_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.XPATH,
-                 "//a[@class='MenuMainItemDiv' and contains(text(), 'Data Logging')]")
+                (
+                    By.XPATH,
+                    "//a[@class='MenuMainItemDiv' and contains(text(), 'Data Logging')]",
+                )
             )
         )
         data_logging_link.click()
@@ -110,8 +110,7 @@ class TrajectoryScraper(BaseScraper):
         # Click "Data Files" submenu item -> loads xml/fileManager.html into the iframe
         data_files_link = self.wait.until(
             EC.element_to_be_clickable(
-                (By.XPATH,
-                 "//a[@class='MenuSubItemDiv' and contains(., 'Data Files')]")
+                (By.XPATH, "//a[@class='MenuSubItemDiv' and contains(., 'Data Files')]")
             )
         )
         data_files_link.click()
@@ -259,7 +258,7 @@ class TrajectoryScraper(BaseScraper):
         logger.info("All files deleted")
 
     def run_test(self) -> None:
-        """Simulates scraping by creating test .T04 files in the 
+        """Simulates scraping by creating test .T04 files in the
         downloads folder and moving them to destination."""
         print(self.destination_path)
         logger.info("Simulation! Downloaded 10 test .T04 files")
@@ -293,7 +292,7 @@ class TrajectoryScraper(BaseScraper):
 
         # Save page source
         html_path = self.destination_path / f"debug_{step_name}.html"
-        with open(html_path, 'w', encoding='utf-8') as f:
+        with open(html_path, "w", encoding="utf-8") as f:
             f.write(self.webdriver.page_source)
 
         print(f"Debug saved: {step_name}")
@@ -302,7 +301,7 @@ class TrajectoryScraper(BaseScraper):
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logging.getLogger("selenium").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -313,8 +312,7 @@ if __name__ == "__main__":
         "browser": "firefox",
         "driver_path": "./bin/geckodriver.exe",
         "timeout": 5,
-        "destination_path": 
-        "C:/Users/F80877978/Downloads/HyspexAir/Recordings/{flight_folder}/apx/",
+        "destination_path": "C:/Users/F80877978/Downloads/HyspexAir/Recordings/{flight_folder}/apx/",
         "service_url": "http://192.168.168.100",
         "username": BaseScraper.load_environment_variable("APX_USER"),
         "password": BaseScraper.load_environment_variable("APX_PW"),
@@ -322,14 +320,12 @@ if __name__ == "__main__":
 
     FLIGHT_FOLDER = "re112o_250610"  # Example flight folder
     replaced_config = replace_config_placeholder(
-        config=CONFIG,
-        placeholder="{flight_folder}",
-        replacement=FLIGHT_FOLDER
+        config=CONFIG, placeholder="{flight_folder}", replacement=FLIGHT_FOLDER
     )
 
     resolved_config = resolve_relative_paths(
         config=replaced_config,
-        base_path=Path(os.getcwd())/"code"/"tools"/"postflightdtt"
+        base_path=Path(os.getcwd()) / "code" / "tools" / "postflightdtt",
     )
 
     scraper = TrajectoryScraper(config=resolved_config)

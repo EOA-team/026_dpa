@@ -17,12 +17,12 @@ Each browser requires its own driver executable:
 """
 
 import logging
-from typing import Literal, Union
+from typing import Literal
+
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.edge.service import Service as EdgeService
-
+from selenium.webdriver.firefox.service import Service as FirefoxService
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,8 @@ BrowserType = Literal["firefox", "chrome", "edge"]
 
 
 def create_webdriver(
-    browser: BrowserType,
-    driver_path: str
-) -> Union[webdriver.Firefox, webdriver.Chrome, webdriver.Edge]:
+    browser: BrowserType, driver_path: str
+) -> webdriver.Firefox | webdriver.Chrome | webdriver.Edge:
     """
     Create and configure a WebDriver instance for the specified browser.
     Example:
@@ -46,34 +45,38 @@ def create_webdriver(
 
         if browser == "firefox":
             firefox_options = webdriver.FirefoxOptions()
-            firefox_options.add_argument('--start-maximized')
+            firefox_options.add_argument("--start-maximized")
             firefox_service = FirefoxService(executable_path=driver_path)
             firefox_driver = webdriver.Firefox(
-                service=firefox_service, options=firefox_options)
+                service=firefox_service, options=firefox_options
+            )
             return firefox_driver
 
         if browser == "chrome":
             chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_argument('--start-maximized')
+            chrome_options.add_argument("--start-maximized")
             chrome_service = ChromeService(executable_path=driver_path)
             chrome_driver = webdriver.Chrome(
-                service=chrome_service, options=chrome_options)
+                service=chrome_service, options=chrome_options
+            )
             return chrome_driver
 
         if browser == "edge":
             edge_options = webdriver.EdgeOptions()
-            edge_options.add_argument('--start-maximized')
+            edge_options.add_argument("--start-maximized")
             edge_service = EdgeService(executable_path=driver_path)
-            edge_driver = webdriver.Edge(
-                service=edge_service, options=edge_options)
+            edge_driver = webdriver.Edge(service=edge_service, options=edge_options)
             return edge_driver
 
         raise ValueError(
-            f"Unsupported browser: {browser}. Choose from: 'firefox', 'chrome', 'edge'")
+            f"Unsupported browser: {browser}. Choose from: 'firefox', 'chrome', 'edge'"
+        )
 
     except Exception as e:
         logger.error(
             "Failed to initialize %s Driver: %s\nCheck that the driver is installed at: %s",
-            browser.capitalize(), e, driver_path
+            browser.capitalize(),
+            e,
+            driver_path,
         )
         raise
