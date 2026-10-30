@@ -6,16 +6,16 @@ to ensure matching of trajectory data with recordings.
 """
 
 import logging
-from pathlib import Path
 from code.file_utils import check_drive_mounted
+from code.scrapers.trajectory_scraper import TrajectoryScraper
 from code.tools.postflightdtt.postflightdtt_helpers import (
-    get_flight_folder,
-    get_resolved_config,
     backup_source,
     cleanup_source,
+    get_flight_folder,
+    get_resolved_config,
     transfer_data,
 )
-from code.scrapers.trajectory_scraper import TrajectoryScraper
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

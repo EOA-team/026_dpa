@@ -1,15 +1,15 @@
 """Contains class to run PosPacUAV Application with Batch Manager"""
 
 import re
-from pathlib import Path
+from code.file_utils import wait_for_file_creation
 from code.pywinauto_helpers import (
+    DEFAULT_WAIT_TIME,
     ApplicationManager,
     ControlFinder,
-    UIAWrapper,
-    DEFAULT_WAIT_TIME,
     ControlNotFoundError,
+    UIAWrapper,
 )
-from code.file_utils import wait_for_file_creation
+from pathlib import Path
 from string import Template
 
 

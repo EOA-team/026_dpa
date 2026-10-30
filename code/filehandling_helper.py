@@ -3,9 +3,10 @@ Helper functions for file handling operations.
 """
 
 import re
+from collections.abc import Callable
 from pathlib import Path
-from shutil import move, copy2
-from typing import Callable, Any
+from shutil import copy2, move
+from typing import Any
 
 
 def _process_files_by_regex(

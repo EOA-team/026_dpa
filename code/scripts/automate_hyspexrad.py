@@ -1,15 +1,14 @@
-from pywinauto import Desktop, Application
-from pywinauto.controls.uiawrapper import UIAWrapper
-from pywinauto.timings import Timings, TimeoutError
-from pathlib import Path
-
-from code.pywinauto_helpers import open_application, find_control, set_checkbox
+import time
+from code.pywinauto_helpers import find_control, open_application, set_checkbox
 from code.scripts.prepare_folders import (
-    folder_exists,
     get_nr_of_files,
     move_files_by_pattern,
 )
-import time
+from pathlib import Path
+
+from pywinauto import Application, Desktop
+from pywinauto.controls.uiawrapper import UIAWrapper
+from pywinauto.timings import Timings
 
 Timings.fast()
 wait_time = 5
@@ -85,9 +84,7 @@ def find_element_by_title(
 
             # check match
             element_text_norm = element_text.lower()
-            if partial and normalized_title in element_text_norm:
-                return ctrl
-            elif not partial and normalized_title == element_text_norm:
+            if (partial and normalized_title in element_text_norm) or (not partial and normalized_title == element_text_norm):
                 return ctrl
 
         except Exception:

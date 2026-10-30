@@ -1,16 +1,15 @@
 """Contains class to simulate M4MProc Windows Application"""
 
-import time
-from pathlib import Path
-from enum import Enum
 from code.file_utils import get_base_path, wait_for_file_count
 from code.pywinauto_helpers import (
+    DEFAULT_WAIT_TIME,
     ApplicationManager,
     ControlFinder,
     ControlSimulator,
     UIAWrapper,
-    DEFAULT_WAIT_TIME,
 )
+from enum import Enum
+from pathlib import Path
 
 
 class M4MProcStep(Enum):

@@ -1,5 +1,6 @@
-from pywinauto.application import Application
 import time
+
+from pywinauto.application import Application
 
 print("start")
 app = Application(backend="uia").start(

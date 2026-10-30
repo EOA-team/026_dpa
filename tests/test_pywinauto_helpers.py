@@ -1,12 +1,13 @@
-import pytest
 from code.pywinauto_helpers import (
-    open_application,
-    close_window_with_confirmation,
-    find_control,
-    set_checkbox,
     DEFAULT_WAIT_TIME,
     Desktop,
+    close_window_with_confirmation,
+    find_control,
+    open_application,
+    set_checkbox,
 )
+
+import pytest
 
 
 @pytest.fixture(scope="session")

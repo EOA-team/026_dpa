@@ -1,11 +1,10 @@
 """Translate ENVI (.bsq + .hdr) to a tiled, BAND-interleaved GeoTIFF.
 Note: COG Driver is buggy in GDAL 3.12 and freezes!"""
 
-from osgeo import gdal
 from code.file_utils import get_base_path
 from enum import StrEnum
-from pathlib import Path
 
+from osgeo import gdal
 
 gdal.UseExceptions()  # recommended: errors raise exceptions instead of just printing ERROR 1:
 

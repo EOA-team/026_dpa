@@ -4,20 +4,20 @@ https://intacor.com/
 """
 
 import time
-from pathlib import Path
-from enum import Enum
 from code.file_utils import (
+    find_file_matching_pattern,
     get_base_path,
     wait_for_file_count,
-    find_file_matching_pattern,
 )
 from code.pywinauto_helpers import (
+    DEFAULT_WAIT_TIME,
     ApplicationManager,
     ControlFinder,
     ControlSimulator,
     UIAWrapper,
-    DEFAULT_WAIT_TIME,
 )
+from enum import Enum
+from pathlib import Path
 
 
 class IntacorStep(Enum):

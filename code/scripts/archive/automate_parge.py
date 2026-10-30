@@ -1,6 +1,7 @@
-from pywinauto import Desktop, Application
-from pywinauto.timings import Timings
 import time
+
+from pywinauto import Application, Desktop
+from pywinauto.timings import Timings
 
 Timings.Defaults()
 

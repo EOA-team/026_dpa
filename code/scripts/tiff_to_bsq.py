@@ -1,5 +1,6 @@
-from osgeo import gdal
 from pathlib import Path
+
+from osgeo import gdal
 
 selected_Folder = Path("E:/mjolnir_processing/re112o_250610/output/georeferenced")
 

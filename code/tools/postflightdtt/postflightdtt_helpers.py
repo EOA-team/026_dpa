@@ -2,11 +2,10 @@
 which are being used in both drone_to_hd and hd_to_nas transfer modules."""
 
 import logging
-from shutil import copytree, rmtree
-from code.file_utils import copy_with_logging
-from code.file_utils import check_path_exists, get_base_path
+from code.file_utils import check_path_exists, copy_with_logging, get_base_path
 from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
 from pathlib import Path
+from shutil import copytree, rmtree
 
 logger = logging.getLogger(__name__)
 

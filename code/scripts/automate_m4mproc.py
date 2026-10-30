@@ -1,10 +1,10 @@
-import time
-from pywinauto import Desktop, Application
-from pywinauto.controls.uiawrapper import UIAWrapper
-from pywinauto.timings import Timings, TimeoutError
-from pathlib import Path
 import shutil
+from pathlib import Path
+
 from pyprojroot import here
+from pywinauto import Application, Desktop
+from pywinauto.controls.uiawrapper import UIAWrapper
+from pywinauto.timings import TimeoutError, Timings
 
 Timings.fast()
 wait_time = 5
@@ -40,12 +40,8 @@ class CheckboxesControl:
         for ctrl in self.window.descendants():
             try:
                 # If control is CheckBox OR supports TogglePattern (UIA buttons that act as checkboxes)
-                if ctrl.element_info.control_type == "CheckBox":
+                if ctrl.element_info.control_type == "CheckBox" or ctrl.get_toggle_pattern() is not None:
                     checkboxes.append(ctrl)
-                else:
-                    # Some Buttons act as checkboxes; check if it has TogglePattern
-                    if ctrl.get_toggle_pattern() is not None:
-                        checkboxes.append(ctrl)
             except Exception:
                 # Some controls may not support TogglePattern; skip them
                 continue
@@ -291,9 +287,7 @@ def find_button_by_title(
 
             # check match
             btn_text_norm = btn_text.lower()
-            if partial and normalized_title in btn_text_norm:
-                return ctrl
-            elif not partial and normalized_title == btn_text_norm:
+            if (partial and normalized_title in btn_text_norm) or (not partial and normalized_title == btn_text_norm):
                 return ctrl
 
         except Exception:
@@ -323,10 +317,10 @@ def confirm_alert(window: UIAWrapper):
         # Try to find the OK button
         ok_btn = find_button_by_title(window, title="OK")  # Spaces important!
         ok_btn.invoke()
-        print(f"⚠️ 'IDL Alert Window' appeared  — Skipping this flight ")
+        print("⚠️ 'IDL Alert Window' appeared  — Skipping this flight ")
 
     except TimeoutError:
-        print(f"⚠️ 'IDL Alert Window' did not appear  — There must be another issue ")
+        print("⚠️ 'IDL Alert Window' did not appear  — There must be another issue ")
 
 
 def confirm_control(window: UIAWrapper) -> bool:

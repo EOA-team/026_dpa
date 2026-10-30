@@ -18,13 +18,14 @@ Note:
 
 """
 
-import os
-from pathlib import Path
 import logging
-import time
+import os
 import shutil
-from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
+import time
 from code.scrapers.base_scraper import BaseScraper
+from code.yamlconfig_helper import replace_config_placeholder, resolve_relative_paths
+from pathlib import Path
+
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC

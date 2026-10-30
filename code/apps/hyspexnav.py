@@ -1,15 +1,15 @@
 """Contains class to simulate HySpexNav Windows Application"""
 
 import time
-from pathlib import Path
+from code.file_utils import get_base_path, wait_for_file_count
 from code.pywinauto_helpers import (
+    DEFAULT_WAIT_TIME,
     ApplicationManager,
     ControlFinder,
     ControlSimulator,
     UIAWrapper,
-    DEFAULT_WAIT_TIME,
 )
-from code.file_utils import get_base_path, wait_for_file_count
+from pathlib import Path
 
 
 class HyspexNavApplication:

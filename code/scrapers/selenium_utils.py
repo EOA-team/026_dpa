@@ -17,12 +17,12 @@ Each browser requires its own driver executable:
 """
 
 import logging
-from typing import Literal, Union
+from typing import Literal
+
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.edge.service import Service as EdgeService
-
+from selenium.webdriver.firefox.service import Service as FirefoxService
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ BrowserType = Literal["firefox", "chrome", "edge"]
 
 def create_webdriver(
     browser: BrowserType, driver_path: str
-) -> Union[webdriver.Firefox, webdriver.Chrome, webdriver.Edge]:
+) -> webdriver.Firefox | webdriver.Chrome | webdriver.Edge:
     """
     Create and configure a WebDriver instance for the specified browser.
     Example:

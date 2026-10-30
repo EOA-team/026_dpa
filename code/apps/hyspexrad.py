@@ -1,15 +1,15 @@
 """Contains class to simulate HySpexRad Windows Application"""
 
 import time
-from pathlib import Path
-from enum import StrEnum
 from code.pywinauto_helpers import (
+    DEFAULT_WAIT_TIME,
     ApplicationManager,
     ControlFinder,
     ControlSimulator,
     UIAWrapper,
-    DEFAULT_WAIT_TIME,
 )
+from enum import StrEnum
+from pathlib import Path
 
 
 class HyspexRadApplication:

@@ -1,12 +1,12 @@
 """Basic utility functions for file handling and  path management"""
 
 import logging
-from shutil import copy2
 import sys
+import time
 import zipfile
 from datetime import datetime
-import time
 from pathlib import Path
+from shutil import copy2
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
-from osgeo import gdal
 from code.file_utils import get_base_path
 from enum import StrEnum
-from pathlib import Path
+
+from osgeo import gdal
 
 gdal.UseExceptions()  # recommended: errors raise exceptions instead of just printing ERROR 1:
 

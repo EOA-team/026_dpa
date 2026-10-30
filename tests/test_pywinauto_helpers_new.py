@@ -1,10 +1,6 @@
-import pytest
-import time
 from code.pywinauto_helpers import (
     ApplicationManager,
-    DesktopManager,
     ControlFinder,
-    ControlNotFoundError,
 )
 
 

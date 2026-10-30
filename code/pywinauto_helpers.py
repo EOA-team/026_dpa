@@ -3,8 +3,8 @@ PyWinAuto Helper Module - An abstraction layer for the pywinauto library.
 Provides helper functions to manage windows and find controls more easily.
 """
 
-from pywinauto import Application, Desktop  # type: ignore[import-untyped]
 import pywinauto.keyboard as kb  # type: ignore[import-untyped]
+from pywinauto import Application, Desktop  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper  # type: ignore[import-untyped]
 
 # Configure Module
@@ -18,25 +18,25 @@ IDL_VM_WINDOW_TITLE = "Runtime App"
 class WindowAutomationError(Exception):
     """Base exception for window automation errors."""
 
-    ...  # pylint: disable=unnecessary-ellipsis
+    # pylint: disable=unnecessary-ellipsis
 
 
 class IdlHandlingError(WindowAutomationError):
     """Raised when there is an error handling IDL VM startup."""
 
-    ...  # pylint: disable=unnecessary-ellipsis
+    # pylint: disable=unnecessary-ellipsis
 
 
 class ControlNotFoundError(WindowAutomationError):
     """Raised when a UI control cannot be found."""
 
-    ...  # pylint: disable=unnecessary-ellipsis
+    # pylint: disable=unnecessary-ellipsis
 
 
 class WindowNotFoundError(WindowAutomationError):
     """Raised when a Window cannot be found."""
 
-    ...  # pylint: disable=unnecessary-ellipsis
+    # pylint: disable=unnecessary-ellipsis
 
 
 class DesktopManager:

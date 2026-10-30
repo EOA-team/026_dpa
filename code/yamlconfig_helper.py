@@ -3,6 +3,7 @@
 
 from pathlib import Path
 from typing import Any
+
 import yaml
 
 
@@ -42,7 +43,7 @@ def resolve_relative_paths(
 def load_config_from_yamlfile(config_path: str | Path) -> dict[str, Any]:
     """Load configuration from YAML file"""
     config_path = Path(config_path)
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         config_dict = yaml.safe_load(f)
     return config_dict
 

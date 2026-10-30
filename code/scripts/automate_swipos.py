@@ -1,16 +1,14 @@
+import os
+import time
+from dataclasses import dataclass
+from datetime import UTC, datetime, tzinfo
+from pathlib import Path
+
+from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support.ui import Select
-from datetime import datetime, timezone, tzinfo
-from dataclasses import dataclass
-from dotenv import load_dotenv
-import os
-import sys
-import time
-from pathlib import Path
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 rawdata_folder = Path(r"\\ags-vre-1040.agsad.admin.ch\Data-EODrone\drone\DERIS\raw")
 flight_folder = rawdata_folder / r"RE\112o_pascal\re112o_250918_80m"
@@ -45,14 +43,14 @@ def get_t04_filenames(fpath: Path) -> list[str]:
 
 
 def get_datetime_from_t04filename(
-    t04filename: str, tzone: tzinfo = timezone.utc
+    t04filename: str, tzone: tzinfo = UTC
 ) -> datetime:
     """
     Extracts date and time in UTC from a filename.
     Assumes the filename contains YYYYMMDDHHMM before the file extension.
     """
     # Remove file extension
-    name_part = t04filename.split(".")[0]
+    name_part = t04filename.split(".", maxsplit=1)[0]
 
     # Extract last 12 characters (YYYYMMDDHHMM)
     dt_str = name_part[-12:]

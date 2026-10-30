@@ -1,6 +1,5 @@
-from pathlib import Path
 import shutil
-
+from pathlib import Path
 
 # Set your Job
 sel_flights = ["re112o_250610", "re112o_250918"]  # Relevant Flights for MT
@@ -76,9 +75,8 @@ def copy_folders(origin: Path, dest: Path, folders: list[str], report: bool = Fa
             shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
             if report:
                 print(f"Copied: {src_path.name} ✅")
-        else:
-            if report:
-                print(f"Skipped (does not exist): {src_path.name} ❌")
+        elif report:
+            print(f"Skipped (does not exist): {src_path.name} ❌")
 
 
 def copy_flights(origin: Path, dest: Path, flights: list):
@@ -256,9 +254,8 @@ def delete_flight_folders(
             shutil.rmtree(flight_folder)
             if report:
                 print(f"Deleted flight folder: {flight_folder}")
-        else:
-            if report:
-                print(f"Flight folder does not exist, skipping: {flight_folder}")
+        elif report:
+            print(f"Flight folder does not exist, skipping: {flight_folder}")
 
 
 def get_nr_of_files(base_path: Path, pattern: str) -> int:

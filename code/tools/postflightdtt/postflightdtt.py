@@ -9,10 +9,10 @@ Reads config.yaml and runs either the drone_to_hd or hd_to_nas transfer module.
 """
 
 import logging
-from code.yamlconfig_helper import load_config_from_yamlfile
+from code.file_utils import get_base_path
 from code.tools.postflightdtt.drone_to_hd import drone_to_hd_transfer
 from code.tools.postflightdtt.hd_to_nas import hd_to_nas_transfer
-from code.file_utils import get_base_path
+from code.yamlconfig_helper import load_config_from_yamlfile
 
 logger = logging.getLogger(__name__)
 

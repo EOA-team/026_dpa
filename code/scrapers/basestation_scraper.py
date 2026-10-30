@@ -11,13 +11,11 @@ All the data comes in RINEX format, which is a standard for GNSS data.
 """
 
 import time
-from pathlib import Path
-from datetime import datetime, timezone, tzinfo, timedelta
-
 from code.scrapers.base_scraper import BaseScraper
+from datetime import UTC, datetime, timedelta, tzinfo
+from pathlib import Path
 
 from selenium.webdriver.common.by import By
-
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
@@ -84,9 +82,9 @@ class RinexDownloadWindow:  # pylint: disable=too-few-public-methods
         """Get all .t04 filenames in the APX folder."""
         return [f.name for f in self.apx_folder.glob("*.t04")]
 
-    def _parse_datetime(self, filename: str, tzone: tzinfo = timezone.utc) -> datetime:
+    def _parse_datetime(self, filename: str, tzone: tzinfo = UTC) -> datetime:
         """Extract datetime from T04 filename (expects YYYYMMDDHHMM before extension)."""
-        name_part = filename.split(".")[0]
+        name_part = filename.split(".", maxsplit=1)[0]
         dt = datetime.strptime(name_part[-12:], "%Y%m%d%H%M")
         return dt.replace(tzinfo=tzone)
 

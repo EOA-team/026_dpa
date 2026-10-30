@@ -6,10 +6,11 @@
 """
 
 import os
-from code.scrapers.selenium_utils import create_webdriver, BrowserType
 from abc import ABC, abstractmethod
+from code.scrapers.selenium_utils import BrowserType, create_webdriver
 from pathlib import Path
 from typing import cast
+
 from selenium.webdriver.support.ui import WebDriverWait
 
 
@@ -42,7 +43,7 @@ class BaseScraper(ABC):
     @abstractmethod
     def run(self) -> None:
         """Abstract method - implement scraping logic in subclasses."""
-        pass  # pylint: disable=unnecessary-pass
+        # pylint: disable=unnecessary-pass
 
     def close(self) -> None:
         """Close WebDriver connection."""
