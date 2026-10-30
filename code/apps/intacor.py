@@ -5,7 +5,7 @@ https://intacor.com/
 import time
 from pathlib import Path
 from enum import Enum
-from code.file_utils import get_base_path, wait_for_file_count, find_las_file
+from code.file_utils import get_base_path, wait_for_file_count, find_file_matching_pattern
 from code.pywinauto_helpers import (
     ApplicationManager, ControlFinder, ControlSimulator, UIAWrapper, DEFAULT_WAIT_TIME
 )
@@ -131,9 +131,10 @@ class Intacor_Application:
         file_path = Path()
 
         if direct_las_import:
-            file_path = find_las_file(input_folder)
+            file_path = find_file_matching_pattern(input_folder, ("*.las",))
         else:
-            file_path = input_folder / "DSM" / "DSM"
+            expected_pattern = ("*.bsq","DSM") # DSM only for deprecated BuildDigitalSurfaceModel-Step, backwards compatible 
+            file_path = find_file_matching_pattern(input_folder / "output" / "1_raw" / "DSM", expected_pattern)
 
         input_folder_editbox.set_edit_text(str(file_path))
             

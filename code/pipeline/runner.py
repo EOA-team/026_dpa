@@ -29,7 +29,7 @@ from code.pipeline.steps import (
 NR_OF_FLIGHT_LINES = 3
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_250918"]
+    selected_jobs = ["re112o_260923_80"]
 
     print(f"Starting Pipeline for jobs: {selected_jobs}")
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"s620"  # s620 for VNIR
     )
-    # Step 9: Build Digital Surface Model (DSM) from LiDAR Point Cloud
+    # Deprecated (since Intacor release): Build Digital Surface Model (DSM) from LiDAR Point Cloud
     build_digital_surface_model = BuildDigitalSurfaceModel(
         name="Build Digital Surface Model",
         input_folder=PipelineFolder(
@@ -143,10 +143,10 @@ if __name__ == "__main__":
             target=""),
         output_folder=PipelineFolder(
             basefolder=Path("E:/mjolnir_processing"),
-            target="DSM"),
+            target="output/1_raw/DSM"),
         jobs=selected_jobs
     )
-    # Step 10: Get SWIR Calibration Files
+    # Step 9: Get SWIR Calibration Files
     #      Note: Required as Parge Preparation
     get_swir_calibration_files = CopyFiles(
         name="Get SWIR Calibration Files",
@@ -159,7 +159,7 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"boresight_swir|sensormodel")
 
-    # Step 11: Get VNIR Calibration Files
+    # Step 10: Get VNIR Calibration Files
     #      Note: Required as Parge Preparation
     get_vnir_calibration_files = CopyFiles(
         name="Get VNIR Calibration Files",
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         jobs=selected_jobs,
         regex_pattern=r"boresight_vnir|sensormodel"
     )
-    # Step 12: Geocoding
+    # Step 11: Geocoding
     geocoding = Geocoding(
         name="Geocoding",
         input_folder=PipelineFolder(
@@ -183,9 +183,10 @@ if __name__ == "__main__":
             basefolder=Path("E:/mjolnir_processing"),
             target="output"),
         jobs=selected_jobs,
-        nr_of_flight_lines=NR_OF_FLIGHT_LINES
+        nr_of_flight_lines=NR_OF_FLIGHT_LINES,
+        direct_las_import=True  # Use direct LAS import instead of DSM
     )
-    # Step 13: Create Radiance Orthomosaic
+    # Step 12: Create Radiance Orthomosaic
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
         name="Create Radiance Orthomosaic",
         input_folder=PipelineFolder(
@@ -196,7 +197,7 @@ if __name__ == "__main__":
             target="output"),
         jobs=selected_jobs
     )
-    # Step 14: Create Reflectance Orthomosaic
+    # Step 13: Create Reflectance Orthomosaic
     create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
         name="Create Reflectance Orthomosaic",
         input_folder=PipelineFolder(
@@ -208,7 +209,7 @@ if __name__ == "__main__":
         jobs=selected_jobs
     )
 
-    # Step 15: Translate Orthomosaics to Geotiff
+    # Step 14: Translate Orthomosaics to Geotiff
     orthomosaic_to_geotiff = OrthomosaicToGeoTiff(
         name="Translate Orthomosaics to Geotiff",
         input_folder=PipelineFolder(
@@ -221,21 +222,19 @@ if __name__ == "__main__":
     )
 
     # Run Steps
-    #fetch_raw_data.run()
-    #download_base_station_data.run()
-    #georeference_sensors.run()
+    fetch_raw_data.run()
+    download_base_station_data.run()
+    georeference_sensors.run()
 
-    #fetch_navigation_files.run()
-    #navigation_discretization.run()
-    #binary_to_radiance.run()
-    #get_vnir_files.run()
-    #get_swir_files.run()
-
-    #build_digital_surface_model.run()
+    fetch_navigation_files.run()
+    navigation_discretization.run()
+    binary_to_radiance.run()
+    get_vnir_files.run()
+    get_swir_files.run()
 
     # Required for Parge (Georectification)
-    #get_swir_calibration_files.run()
-    #get_vnir_calibration_files.run()
+    get_swir_calibration_files.run()
+    get_vnir_calibration_files.run()
 
     geocoding.run()
     create_radiance_orthomosaic.run()
