@@ -165,3 +165,16 @@ def find_las_file(folder: Path):
         raise ValueError(f"Expected exactly one .las file, but found {len(files)}:\n" +
                          "\n".join(str(f) for f in files))
     return files[0]
+
+def find_file_matching_pattern(folder: Path, patterns: tuple[str, ...]) -> Path:
+    """Find the single file matching the given pattern in the given directory. Raises error if not exactly one found."""
+
+    files: list[Path] = []
+    for p in patterns:
+        files.extend(folder.rglob(p))
+    if len(files) == 0:
+        raise FileNotFoundError(f"No file found matching patterns {patterns} in {folder}")
+    if len(files) > 1:
+        raise ValueError(f"Expected exactly one file, but found {len(files)}:\n" +
+                         "\n".join(str(f) for f in files))
+    return files[0]
