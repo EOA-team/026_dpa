@@ -28,7 +28,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +53,9 @@ class TrajectoryScraper(BaseScraper):
         Always call switch_to.default_content() before calling this method
         to reset the context from a previous frame.
         """
-        self.wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, "main")))
+        self.wait.until(ec.frame_to_be_available_and_switch_to_it((By.ID, "main")))
         self.wait.until(
-            EC.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
+            ec.frame_to_be_available_and_switch_to_it((By.NAME, "dataFrame"))
         )
 
     def login(self):
@@ -64,14 +64,14 @@ class TrajectoryScraper(BaseScraper):
 
         # Type Username
         username_field = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "username"))
+            ec.visibility_of_element_located((By.NAME, "username"))
         )
         username_field.clear()
         username_field.send_keys(self.username)
 
         # Type Password
         password_field = self.wait.until(
-            EC.visibility_of_element_located((By.NAME, "password"))
+            ec.visibility_of_element_located((By.NAME, "password"))
         )
         password_field.clear()
         password_field.send_keys(self.password)
@@ -87,7 +87,7 @@ class TrajectoryScraper(BaseScraper):
         """Dismiss the Applanix splash screen that appears on page open."""
         self.webdriver.switch_to.default_content()
         # Wait for the floating div to be visible
-        self.wait.until(EC.visibility_of_element_located((By.ID, "idFloatingDiv")))
+        self.wait.until(ec.visibility_of_element_located((By.ID, "idFloatingDiv")))
         # Dismiss via JS - same as clicking the red X
         self.webdriver.execute_script("hideFloatingDiv(true);")
         logger.info("Splash popup dismissed")
@@ -98,7 +98,7 @@ class TrajectoryScraper(BaseScraper):
 
         # Click "Data Logging" main menu item (index 2)
         data_logging_link = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (
                     By.XPATH,
                     "//a[@class='MenuMainItemDiv' and contains(text(), 'Data Logging')]",
@@ -109,7 +109,7 @@ class TrajectoryScraper(BaseScraper):
 
         # Click "Data Files" submenu item -> loads xml/fileManager.html into the iframe
         data_files_link = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.XPATH, "//a[@class='MenuSubItemDiv' and contains(., 'Data Files')]")
             )
         )
@@ -127,7 +127,7 @@ class TrajectoryScraper(BaseScraper):
         self.switch_to_data_frame()
 
         internal_link = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.XPATH, "//a[@href=\"javascript:changeDir('Internal')\"]")
             )
         )
@@ -142,7 +142,7 @@ class TrajectoryScraper(BaseScraper):
         """
         # Wait for the selectAll link to appear after directory load
         select_all_link = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.XPATH, "//a[@href='javascript:selectAll()']")
             )
         )
@@ -156,7 +156,7 @@ class TrajectoryScraper(BaseScraper):
         Triggers a confirmation dialog — handled via wait for alert.
         """
         download_link = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.XPATH, "//a[@href=\"javascript:downloadMultiple('')\"]")
             )
         )
@@ -164,7 +164,7 @@ class TrajectoryScraper(BaseScraper):
         logger.info("Download clicked, handling confirmation dialog...")
 
         # downloadMultiple() shows a confirm() dialog before downloading
-        self.wait.until(EC.alert_is_present())
+        self.wait.until(ec.alert_is_present())
         alert = self.webdriver.switch_to.alert
         alert.accept()
         logger.info("Download confirmed")
@@ -225,14 +225,14 @@ class TrajectoryScraper(BaseScraper):
         Only available when deleteAllowed is true on the device.
         """
         delete_link = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.XPATH, "//a[@href='javascript:deleteSelectedFiles()']")
             )
         )
         delete_link.click()
         logger.info("Delete clicked, handling confirmation dialog...")
 
-        self.wait.until(EC.alert_is_present())
+        self.wait.until(ec.alert_is_present())
         self.webdriver.switch_to.alert.accept()
         logger.info("Delete confirmed")
 

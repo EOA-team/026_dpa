@@ -44,8 +44,8 @@ if __name__ == "__main__":
         logger.info("All transfers complete")
         logger.warning("Please unmount Drive before disconnecting!")
 
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Program failed: %s", e, exc_info=True)
+    except Exception:
+        logger.exception("Program failed")
 
     finally:
         input("\nPress Enter to exit...")
