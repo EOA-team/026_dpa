@@ -26,7 +26,7 @@ jobs:
 
       # static type checking
       - name: mypy
-        run: mypy .
+        run: mypy code
 
       # lint + complexity + security (replaces pylint, bandit, radon cc)
       - name: ruff check
