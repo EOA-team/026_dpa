@@ -104,7 +104,6 @@ class PosPacUavApplication:
     def _run_batch(
         self, main_cf: ControlFinder, batch_cf: ControlFinder, posbat_file: Path
     ) -> None:
-        """"""
         self._click_load_batch(controlfinder=batch_cf)
         self._enter_batchfile_path(controlfinder=main_cf, posbat_file=posbat_file)
         self._run_all_projects(controlfinder=batch_cf)
@@ -252,7 +251,7 @@ class PosPacUavApplication:
         ) as pospac_manager:
             main_window_cf = ControlFinder(window=pospac_manager.window)
             for input_folder, output_folder in zip(
-                self.input_folders, self.output_folders
+                self.input_folders, self.output_folders, strict=True
             ):
                 # Make sure Window is ready before starting next iteration
                 main_window_cf.window.wait("enabled", timeout=DEFAULT_WAIT_TIME)

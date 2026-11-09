@@ -36,7 +36,7 @@ class IntacorStep(Enum):
     POINT_CLOUD = ("Point Cloud", 7)
 
 
-class Intacor_Application:
+class IntacorApplication:
     """
     Class to simulate INTACOR which is only available as a Windows Application.
     In is a Beta Version of the Intacor Software. It integrates DROACOR and
@@ -221,7 +221,7 @@ class Intacor_Application:
             main_window_cf = ControlFinder(window=intacor_manager.window)
 
             for input_folder, output_folder in zip(
-                self.input_folders, self.output_folders
+                self.input_folders, self.output_folders, strict=True
             ):
                 # Make sure Window is ready before starting next iteration
                 main_window_cf.window.wait("enabled", timeout=DEFAULT_WAIT_TIME)
@@ -263,7 +263,7 @@ if __name__ == "__main__":
         9,
         300,
     )  # (output_subfolder, file_pattern, expected_count, timeout_s)
-    intacor = Intacor_Application(
+    intacor = IntacorApplication(
         input_folders=test_input_folders,
         output_folders=test_output_folders,
         selected_steps=[IntacorStep.GEOCODING],

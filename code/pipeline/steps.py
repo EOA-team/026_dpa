@@ -11,7 +11,7 @@ for steps that cannot yet be implemented in Python and must be simulated.
 
 from code.apps.hyspexnav import HyspexNavApplication
 from code.apps.hyspexrad import HyspexRadApplication
-from code.apps.intacor import Intacor_Application, IntacorStep
+from code.apps.intacor import IntacorApplication, IntacorStep
 from code.apps.pospacuav import PosPacUavApplication
 from code.file_utils import (
     find_las_file,
@@ -69,7 +69,9 @@ class CopyJobFolders(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             ignore_ptrn = (
                 ignore_patterns(*self.exclude_within_output_folder)
                 if self.exclude_within_output_folder
@@ -88,7 +90,9 @@ class ScrapeBaseStationData(PipelineStep):
     def run(self) -> bool:
         load_dotenv()  # Load environment variables from .env file
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             obs = RinexDownloadWindow(
                 apx_folder=input_folder,
                 # RTX convergence time not needed anymore --> 1min as placeholder for future use
@@ -132,7 +136,9 @@ class MoveFiles(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             move_files_by_regex(input_folder, output_folder, self.regex_pattern)
         print(f"Finished Step: {self.name} ✅")
         return True
@@ -154,7 +160,9 @@ class CopyFiles(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             copy_files_by_regex(input_folder, output_folder, self.regex_pattern)
         print(f"Finished Step: {self.name} ✅")
         return True
@@ -267,7 +275,9 @@ class FetchNavigationFiles(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             # ensure output folder exists
             output_folder.mkdir(parents=True, exist_ok=True)
             self.copy_known_file_paths(input_folder, output_folder)
@@ -300,7 +310,9 @@ class BuildDigitalSurfaceModel(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             las_file_path = find_las_file(input_folder)
             las_to_geotif(
                 input_las=las_file_path,
@@ -347,7 +359,7 @@ class Geocoding(PipelineStep):
             3 * self.nr_of_flight_lines,
             400,
         )
-        m4mproc = Intacor_Application(
+        m4mproc = IntacorApplication(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
             selected_steps=[IntacorStep.GEOCODING],
@@ -370,7 +382,7 @@ class CreateRadianceOrthomosaic(PipelineStep):
         )
         # (output_subfolder, file_pattern, expected_count, timeout_s)
         process_finished_condition = ("7_mosaics", "mosaic_radiance.hdr", 1, 500)
-        m4mproc = Intacor_Application(
+        m4mproc = IntacorApplication(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
             selected_steps=[IntacorStep.ORTHORECTIFICATION, IntacorStep.MOSAIC],
@@ -392,7 +404,7 @@ class CreateReflectanceOrthomosaic(PipelineStep):
         )
         # (output_subfolder, file_pattern, expected_count, timeout_s)
         process_finished_condition = ("7_mosaics", "mosaic_reflectance.hdr", 1, 500)
-        m4mproc = Intacor_Application(
+        m4mproc = IntacorApplication(
             input_folders=self.input_folders,
             output_folders=self.output_folders,
             selected_steps=[
@@ -413,7 +425,9 @@ class OrthomosaicToGeoTiff(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for input_folder, output_folder in zip(self.input_folders, self.output_folders):
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             # ensure output folder exists
             output_folder.mkdir(parents=True, exist_ok=True)
             envi_orthom = list(input_folder.rglob("*.bsq"))

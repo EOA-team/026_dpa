@@ -11,6 +11,8 @@ from code.pywinauto_helpers import (
 from enum import StrEnum
 from pathlib import Path
 
+PROGRES_FINISHED_VALUE = 100  # Progressbar value when processing is finished
+
 
 class HyspexRadApplication:
     """
@@ -200,7 +202,7 @@ class HyspexRadApplication:
     ):
         """Get the index of the software binning combobox for the given
         sensor and direction combination."""
-        BINNING_INDEX_MAP = {
+        binning_index_map = {
             (
                 self.SoftwareBinning.Sensor.SWIR,
                 self.SoftwareBinning.Direction.ACROSS_TRACK,
@@ -226,7 +228,7 @@ class HyspexRadApplication:
                 self.SoftwareBinning.Direction.ALONG_TRACK,
             ): 5,
         }
-        return BINNING_INDEX_MAP[(sensor, direction)]
+        return binning_index_map[(sensor, direction)]
 
     def _set_softwarebinning(
         self,
@@ -271,9 +273,9 @@ class HyspexRadApplication:
         counter = 0
         while counter < DEFAULT_WAIT_TIME:
             progress_value = progress_bar.iface_range_value.CurrentValue
-            if progress_value >= 100:
+            if progress_value >= PROGRES_FINISHED_VALUE:
                 counter += 1
-            elif progress_value < 100:
+            elif progress_value < PROGRES_FINISHED_VALUE:
                 counter = 0  # Reset counter if progress is less than 100%
             time.sleep(1)  # Check every second
 
@@ -330,7 +332,7 @@ class HyspexRadApplication:
 
             # Run Jobs
             for input_folder, output_folder in zip(
-                self.input_folders, self.output_folders
+                self.input_folders, self.output_folders, strict=True
             ):
                 self._select_input_images(
                     controlfinder=main_window_cf, input_folder=input_folder

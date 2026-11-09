@@ -2,7 +2,7 @@ from pathlib import Path
 
 from osgeo import gdal
 
-selected_Folder = Path("E:/mjolnir_processing/re112o_250610/output/georeferenced")
+selected_folder = Path("E:/mjolnir_processing/re112o_250610/output/georeferenced")
 
 
 def get_tif_files(folder_path: Path) -> list[str]:
@@ -19,15 +19,15 @@ def change_file_extension(file_path: str, new_extension: str) -> str:
 
 
 def main():
-    tif_files = get_tif_files(folder_path=selected_Folder)
+    tif_files = get_tif_files(folder_path=selected_folder)
     for filename in tif_files:
-        dataset = gdal.Open(selected_Folder / filename)
+        dataset = gdal.Open(selected_folder / filename)
         driver = gdal.GetDriverByName("ENVI")
         new_filename = change_file_extension(
-            file_path=selected_Folder / filename, new_extension="bsq"
+            file_path=selected_folder / filename, new_extension="bsq"
         )
         driver.CreateCopy(
-            selected_Folder / new_filename, dataset, options=["INTERLEAVE=BSQ"]
+            selected_folder / new_filename, dataset, options=["INTERLEAVE=BSQ"]
         )
         print(f"Conversion complete! ENVI file saved as: {new_filename}")
 

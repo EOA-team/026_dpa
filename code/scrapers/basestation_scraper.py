@@ -16,7 +16,7 @@ from datetime import UTC, datetime, timedelta, tzinfo
 from pathlib import Path
 
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 
@@ -132,38 +132,38 @@ class BasestationScraper(BaseScraper):
 
     def accept_cookies(self) -> None:
         """Accept cookies to gain access to the rest of the page."""
-        cookies_btn = self.wait.until(EC.element_to_be_clickable((By.ID, "accept")))
+        cookies_btn = self.wait.until(ec.element_to_be_clickable((By.ID, "accept")))
         cookies_btn.click()
 
     def open_rinexshop(self):
         """Navigate to the RINEX Shop page after logging in."""
         rinexshop_link = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "m_NavigationTreeViewt6"))
+            ec.element_to_be_clickable((By.ID, "m_NavigationTreeViewt6"))
         )
         rinexshop_link.click()
 
     def open_neworder(self):
         """Open the 'New Order' page to start a new RINEX data request."""
         new_order_link = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnNewOrder"))
+            ec.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnNewOrder"))
         )
         new_order_link.click()
 
     def open_cors(self) -> None:
         """Open the Continuously Operating Reference Station (CORS) page."""
         cors_link = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_LinkCORS"))
+            ec.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_LinkCORS"))
         )
         cors_link.click()
 
     def select_reference_station(self, station_value: str = "ETH2") -> None:
         """Select a reference station from the dropdown."""
         select_element = self.wait.until(
-            EC.visibility_of_element_located((By.ID, "m_RefStationListBox"))
+            ec.visibility_of_element_located((By.ID, "m_RefStationListBox"))
         )
         # Wait until the specific option is present in the dropdown
         self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (
                     By.CSS_SELECTOR,
                     f"#m_RefStationListBox option[value='{station_value}']",
@@ -175,14 +175,14 @@ class BasestationScraper(BaseScraper):
     def click_continue_to_time_selection(self) -> None:
         """Click the continue button to proceed to the time selection page."""
         btn = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "ContToTimeSelectionButton"))
+            ec.element_to_be_clickable((By.ID, "ContToTimeSelectionButton"))
         )
         btn.click()
 
     def _set_date(self, obs: RinexDownloadWindow) -> None:
         """Set the observation date in the SWIPOS form."""
         field = self.wait.until(
-            EC.visibility_of_element_located(
+            ec.visibility_of_element_located(
                 (By.ID, "ctl00$ContentPlaceHolder1$mxDateTimeSelectionDate_input")
             )
         )
@@ -198,7 +198,7 @@ class BasestationScraper(BaseScraper):
         }
         for unit, value in fields.items():
             field = self.wait.until(
-                EC.visibility_of_element_located(
+                ec.visibility_of_element_located(
                     (By.ID, f"ContentPlaceHolder1_m_StartTime{unit}")
                 )
             )
@@ -213,7 +213,7 @@ class BasestationScraper(BaseScraper):
         }
         for unit, value in fields.items():
             field = self.wait.until(
-                EC.visibility_of_element_located(
+                ec.visibility_of_element_located(
                     (By.ID, f"ContentPlaceHolder1_m_Duration{unit}")
                 )
             )
@@ -223,7 +223,7 @@ class BasestationScraper(BaseScraper):
     def _select_interval(self, interval_value: str) -> None:
         """Select the observation interval in seconds (default: 1s)."""
         select_element = self.wait.until(
-            EC.visibility_of_element_located(
+            ec.visibility_of_element_located(
                 (By.ID, "ContentPlaceHolder1_m_IntervalDropDownList")
             )
         )
@@ -240,21 +240,21 @@ class BasestationScraper(BaseScraper):
     def click_add_to_delivery(self) -> None:
         """Click the button to proceed to delivery options."""
         btn = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_NextToOrderButton"))
+            ec.element_to_be_clickable((By.ID, "ContentPlaceHolder1_NextToOrderButton"))
         )
         btn.click()
 
     def click_proceed_with_delivery_option(self) -> None:
         """Click the button to proceed to the delivery options page."""
         btn = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnNext"))
+            ec.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnNext"))
         )
         btn.click()
 
     def select_output_format(self, format_value: str = "RINEX 3.04") -> None:
         """Select the output file format (default: RINEX 3.04)."""
         select_element = self.wait.until(
-            EC.visibility_of_element_located(
+            ec.visibility_of_element_located(
                 (By.ID, "ContentPlaceHolder1_FileFormatDropDownList")
             )
         )
@@ -263,7 +263,7 @@ class BasestationScraper(BaseScraper):
     def click_generate_data(self) -> None:
         """Click the button to start generating the RINEX data."""
         btn = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.ID, "ContentPlaceHolder1_NextGenerateDataButton")
             )
         )
@@ -276,14 +276,14 @@ class BasestationScraper(BaseScraper):
         """
         long_wait = WebDriverWait(self.webdriver, timeout)
         btn = long_wait.until(
-            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_NextToOrderButton"))
+            ec.element_to_be_clickable((By.ID, "ContentPlaceHolder1_NextToOrderButton"))
         )
         btn.click()
 
     def select_delivery(self) -> None:
         """Select the first (topmost) delivery option from the radio buttons."""
         radio_buttons = self.wait.until(
-            EC.presence_of_all_elements_located(
+            ec.presence_of_all_elements_located(
                 (By.CSS_SELECTOR, 'input[type="radio"]')
             )
         )
@@ -292,7 +292,7 @@ class BasestationScraper(BaseScraper):
     def click_download(self) -> None:
         """Click the download button to download the RINEX data."""
         btn = self.wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.ID, "ContentPlaceHolder1_m_BtnDownloadOrder")
             )
         )
@@ -301,7 +301,7 @@ class BasestationScraper(BaseScraper):
     def click_remove_item(self) -> None:
         """Click the remove item button after downloading the RINEX data."""
         btn = self.wait.until(
-            EC.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnRemoveItem"))
+            ec.element_to_be_clickable((By.ID, "ContentPlaceHolder1_m_BtnRemoveItem"))
         )
         btn.click()
 

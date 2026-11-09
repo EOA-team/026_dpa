@@ -183,7 +183,7 @@ class HyspexNavApplication:
         ) as hyspexnav_manager:
             main_window_cf = ControlFinder(window=hyspexnav_manager.window)
             for input_folder, output_folder in zip(
-                self.input_folders, self.output_folders
+                self.input_folders, self.output_folders, strict=True
             ):
                 # Make sure Window is ready before starting next iteration
                 main_window_cf.window.wait("enabled", timeout=DEFAULT_WAIT_TIME)

@@ -20,9 +20,14 @@
 #         example: `# noqa: F401` left on a line that no longer needs it
 
 target-version = "py312"
+extend-exclude = ["code/scripts"]
 
 [lint]
 extend-select = ["I", "N", "UP", "PL", "S", "B", "C90", "RUF"]
+
+[lint.pylint] 
+max-positional-args = 7 
+max-args = 7
 
 [lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004"]         # allow assert and magic values in tests

@@ -28,7 +28,7 @@ class M4MProcStep(Enum):
     POINT_CLOUD = ("Point Cloud", 7)
 
 
-class M4MProc_Application:
+class M4MProcApplication:
     """
     Class to simulate M4MProc which is only available as a Windows Application.
     M4mProc is a Beta Version of the Intacor Software. It integrates DROACOR and
@@ -189,7 +189,7 @@ class M4MProc_Application:
             main_window_cf = ControlFinder(window=m4mproc_manager.window)
 
             for input_folder, output_folder in zip(
-                self.input_folders, self.output_folders
+                self.input_folders, self.output_folders, strict=True
             ):
                 # Make sure Window is ready before starting next iteration
                 main_window_cf.window.wait("enabled", timeout=DEFAULT_WAIT_TIME)
@@ -229,7 +229,7 @@ if __name__ == "__main__":
         300,
     )  # (output_subfolder, file_pattern, expected_count, timeout_s)
 
-    m4mproc = M4MProc_Application(
+    m4mproc = M4MProcApplication(
         input_folders=test_input_folders,
         output_folders=test_output_folders,
         selected_steps=[M4MProcStep.GEOCODING],

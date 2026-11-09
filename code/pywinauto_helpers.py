@@ -3,6 +3,8 @@ PyWinAuto Helper Module - An abstraction layer for the pywinauto library.
 Provides helper functions to manage windows and find controls more easily.
 """
 
+from typing import Self
+
 import pywinauto.keyboard as kb  # type: ignore[import-untyped]
 from pywinauto import Application, Desktop  # type: ignore[import-untyped]
 from pywinauto.controls.uiawrapper import UIAWrapper  # type: ignore[import-untyped]
@@ -122,7 +124,7 @@ class ApplicationManager:
         self.app: Application | None = None
         self.window: UIAWrapper | None = None
 
-    def __enter__(self) -> "ApplicationManager":
+    def __enter__(self) -> Self:
         """Context manager start point - opens when entering 'with' block."""
         self.app = Application(backend=DEFAULT_BACKEND).start(
             cmd_line=self.app_path, work_dir=self.work_dir
