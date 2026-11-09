@@ -17,16 +17,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Micromamba
-        uses: mamba-org/setup-micromamba@v2
+      - uses: actions/setup-python@v5
         with:
-          environment-file: environment.yml
-          environment-name: 026_dpa_py312
-          cache-environment: true
+          python-version: "3.12"
+        
+      - run: pip install ruff mypy types-psutil types-pyyaml
 
       # static type checking
       - name: mypy
-        run: mypy .
+        run: mypy code
 
       # lint + complexity + security (replaces pylint, bandit, radon cc)
       - name: ruff check
