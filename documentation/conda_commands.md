@@ -3,6 +3,14 @@
 This guide shows how to create your Conda environment from the YAML file, update it, and list all environments.
 
 ---
+## 0. Reset Environment
+Sometimes environemnt are not updated correctly (see ## 4. Update Environment from YAML)
+In this case it is recommended to complemetely remove the env and recreate it 
+
+
+```bash
+conda env remove -n 026_dpa_py312
+```
 
 ## 1. Create Environment from YAML
 
