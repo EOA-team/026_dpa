@@ -2,22 +2,15 @@ name: 026_dpa_py312
 channels:
   - conda-forge
 dependencies:
-  # runtime
   - python=3.12
-  - pywinauto        # Windows GUI automation
-  - selenium         # web scraping (browser drivers via bundled selenium-manager)
-  - gdal             # osgeo bindings
+  - pywinauto        
+  - selenium        
+  - gdal             
   - pdal
   - python-pdal
   - python-dotenv
   - pyyaml
   - pyprojroot
-  - fastapi
-  - uvicorn
-  # analysis (data/boxplot_gcp_accuracy.py)
-  - matplotlib
-  - pandas
-  - numpy
   # dev tooling
   - pytest
   - mypy
