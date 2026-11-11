@@ -4,7 +4,17 @@ This guide shows how to create your Conda environment from the YAML file, update
 
 ---
 
-## 1. Activate Your Environment
+## 1. Create Environment from YAML
+
+Creates the environment (Only need to run this once on your machine).
+
+```bash
+conda env create -f environment.yml
+```
+
+
+
+## 2. Activate Your Environment
 
 Activate your Conda environment using:
 
@@ -12,13 +22,11 @@ Activate your Conda environment using:
 conda activate 026_dpa_py312
 ```
 
-Replace `026_dpa_py312` with your environment name if different.
-
 ---
 
-## 2. Maintain environment.yml by Hand
+## 3. Maintain environment.yml by Hand
 
-`environment.yml` lists **only the direct dependencies** of this project (plus `python=3.12`).
+`environment.yml` lists **only the direct dependencies** 
 Transitive dependencies are resolved by conda at install time and are deliberately not listed.
 
 - Add a package to `environment.yml` when you start importing it in code, then apply with the update command below.
@@ -27,18 +35,8 @@ Transitive dependencies are resolved by conda at install time and are deliberate
   declaration.
 - Only pin a version when strictly necessary (e.g. `python=3.12`); otherwise leave packages
   unpinned or use a lower bound (`numpy >= 2.0`).
-
 ---
 
-## 3. Create Environment from YAML
-
-To recreate the environment on the same or another machine:
-
-```bash
-conda env create -f environment.yml
-```
-
-This will create a new Conda environment with the same name and packages as saved.
 
 ---
 ## 4. Update Environment from YAML
