@@ -1,6 +1,6 @@
-# Conda Environment: Save and Load Commands
+# Conda Environment: Create and Update Commands
 
-This guide shows how to save your Conda environment to a YAML file, recreate it, and list all environments.
+This guide shows how to create your Conda environment from the YAML file, update it, and list all environments.
 
 ---
 
@@ -9,22 +9,24 @@ This guide shows how to save your Conda environment to a YAML file, recreate it,
 Activate your Conda environment using:
 
 ```bash
-conda activate 026_dpa
+conda activate 026_dpa_py312
 ```
 
-Replace `026_dpa` with your environment name if different.
+Replace `026_dpa_py312` with your environment name if different.
 
 ---
 
-## 2. Export Environment to YAML
+## 2. Maintain environment.yml by Hand
 
-Export your current environment to a YAML file:
+`environment.yml` lists **only the direct dependencies** of this project (plus `python=3.12`).
+Transitive dependencies are resolved by conda at install time and are deliberately not listed.
 
-```bash
-conda env export --no-builds > environment.yml
-```
-
-This will create `environment.yml` containing all packages and dependencies.
+- Add a package to `environment.yml` when you start importing it in code, then apply with the update command below.
+- Do **not** regenerate the file via `conda env export` — it dumps every transitive
+  dependency and platform-specific pins, which makes the file unusable as a dependency
+  declaration.
+- Only pin a version when strictly necessary (e.g. `python=3.12`); otherwise leave packages
+  unpinned or use a lower bound (`numpy >= 2.0`).
 
 ---
 
@@ -64,10 +66,10 @@ This shows all Conda environments available on your system.
 ### Summary of Commands
 
 ```bash
-conda activate 026_dpa
-conda env export > environment.yml
+conda activate 026_dpa_py312
 conda env create -f environment.yml
+conda env update --file environment.yml --prune
 conda env list
 ```
 
-This workflow ensures you can save, share, and recreate your Conda environments reliably.
+This workflow keeps `environment.yml` small, platform-independent, and reproducible.
