@@ -8,8 +8,6 @@ Example:
  etc.
 """
 
-from datetime import timedelta
-
 from code.file_utils import get_base_path
 from code.pipeline.base import Path, PipelineFolder
 from code.pipeline.steps import (
@@ -28,9 +26,10 @@ from code.pipeline.steps import (
     OrthomosaicToGeoTiff,
     ScrapeBaseStationData,
 )
+from datetime import timedelta
 
 NR_OF_FLIGHT_LINES = 3
-PROCESSING_FOLDER =  Path("E:/test") # Path("E:/mjolnir_processing")
+PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
 
 if __name__ == "__main__":
     selected_jobs = ["re112o_260923_80"]
@@ -50,9 +49,7 @@ if __name__ == "__main__":
             basefolder=Path("Z:/drone/DERIS/data/RE/112o/hypSpec"),
             target="",
         ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="RAW"
-        ),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
         jobs=selected_jobs,
         exclude_within_output_folder=["rinex"],
     )
@@ -73,32 +70,22 @@ if __name__ == "__main__":
     download_base_station_data = ScrapeBaseStationData(
         name="Download Base Station Data",
         # Use data from APX folder to get flight time info for scraper
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="RAW/apx"
-        ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="RAW/rinex"
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW/apx"),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW/rinex"),
         jobs=selected_jobs,
     )
     # Step 4: Georeference Sensors
     georeference_sensors = GeoreferenceSensors(
         name="Georeference Sensors (SWIR, VNIR, LiDAR)",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="RAW"
-        ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp"
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="tmp"),
         jobs=selected_jobs,
     )
 
     # Step 5: Fetch Navigation Files
     fetch_navigation_files = FetchNavigationFiles(
         name="Fetch Navigation Files",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target=""
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/input_hyspexnav"
         ),
@@ -120,9 +107,7 @@ if __name__ == "__main__":
     # Step 7: Convert Binary to Radiance
     binary_to_radiance = BinaryToRadiance(
         name="Binary to Radiance",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="RAW"
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
@@ -134,9 +119,7 @@ if __name__ == "__main__":
         input_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="VNIR"
-        ),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="VNIR"),
         jobs=selected_jobs,
         regex_pattern=r"v1240",  # v1240 for VNIR
     )
@@ -147,18 +130,14 @@ if __name__ == "__main__":
         input_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="SWIR"
-        ),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="SWIR"),
         jobs=selected_jobs,
         regex_pattern=r"s620",  # s620 for VNIR
     )
     # Deprecated (since Intacor release): Build Digital Surface Model (DSM) from LiDAR Point Cloud
     build_digital_surface_model = BuildDigitalSurfaceModel(
         name="Build Digital Surface Model",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target=""
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="output/1_raw/DSM"
         ),
@@ -173,9 +152,7 @@ if __name__ == "__main__":
             target="calibration",
             static=True,
         ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="SWIR"
-        ),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="SWIR"),
         jobs=selected_jobs,
         regex_pattern=r"boresight_swir|sensormodel",
     )
@@ -189,21 +166,15 @@ if __name__ == "__main__":
             target="calibration",
             static=True,
         ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="VNIR"
-        ),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="VNIR"),
         jobs=selected_jobs,
         regex_pattern=r"boresight_vnir|sensormodel",
     )
     # Step 12: Geocoding
     geocoding = Geocoding(
         name="Geocoding",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target=""
-        ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="output"
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
         jobs=selected_jobs,
         nr_of_flight_lines=NR_OF_FLIGHT_LINES,
         direct_las_import=True,  # Use direct LAS import instead of DSM
@@ -211,23 +182,15 @@ if __name__ == "__main__":
     # Step 13: Create Radiance Orthomosaic
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
         name="Create Radiance Orthomosaic",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target=""
-        ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="output"
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
         jobs=selected_jobs,
     )
     # Step 14: Create Reflectance Orthomosaic
     create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
         name="Create Reflectance Orthomosaic",
-        input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target=""
-        ),
-        output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="output"
-        ),
+        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
         jobs=selected_jobs,
     )
 
