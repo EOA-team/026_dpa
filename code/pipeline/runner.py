@@ -27,6 +27,7 @@ from code.pipeline.steps import (
 )
 
 NR_OF_FLIGHT_LINES = 3
+PROCESSING_FOLDER =  Path("E:/test") # Path("E:/mjolnir_processing")
 
 if __name__ == "__main__":
     selected_jobs = ["re112o_260923_80"]
@@ -47,7 +48,7 @@ if __name__ == "__main__":
             target="",
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="RAW"
+            basefolder=PROCESSING_FOLDER, target="RAW"
         ),
         jobs=selected_jobs,
         exclude_within_output_folder=["rinex"],
@@ -59,10 +60,10 @@ if __name__ == "__main__":
         name="Download Base Station Data",
         # Use data from APX folder to get flight time info for scraper
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="RAW/apx"
+            basefolder=PROCESSING_FOLDER, target="RAW/apx"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="RAW/rinex"
+            basefolder=PROCESSING_FOLDER, target="RAW/rinex"
         ),
         jobs=selected_jobs,
     )
@@ -70,10 +71,10 @@ if __name__ == "__main__":
     georeference_sensors = GeoreferenceSensors(
         name="Georeference Sensors (SWIR, VNIR, LiDAR)",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="RAW"
+            basefolder=PROCESSING_FOLDER, target="RAW"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp"
+            basefolder=PROCESSING_FOLDER, target="tmp"
         ),
         jobs=selected_jobs,
     )
@@ -82,10 +83,10 @@ if __name__ == "__main__":
     fetch_navigation_files = FetchNavigationFiles(
         name="Fetch Navigation Files",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target=""
+            basefolder=PROCESSING_FOLDER, target=""
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"
+            basefolder=PROCESSING_FOLDER, target="tmp/input_hyspexnav"
         ),
         jobs=selected_jobs,
     )
@@ -94,10 +95,10 @@ if __name__ == "__main__":
     navigation_discretization = NavigationDiscretization(
         name="Navigation Discretization",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp/input_hyspexnav"
+            basefolder=PROCESSING_FOLDER, target="tmp/input_hyspexnav"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         jobs=selected_jobs,
     )
@@ -106,10 +107,10 @@ if __name__ == "__main__":
     binary_to_radiance = BinaryToRadiance(
         name="Binary to Radiance",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="RAW"
+            basefolder=PROCESSING_FOLDER, target="RAW"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         jobs=selected_jobs,
     )
@@ -117,10 +118,10 @@ if __name__ == "__main__":
     get_vnir_files = MoveFiles(
         name="Get VNIR Files",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="VNIR"
+            basefolder=PROCESSING_FOLDER, target="VNIR"
         ),
         jobs=selected_jobs,
         regex_pattern=r"v1240",  # v1240 for VNIR
@@ -130,10 +131,10 @@ if __name__ == "__main__":
     get_swir_files = MoveFiles(
         name="Get SWIR Files",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="tmp/swirvnir_data"
+            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="SWIR"
+            basefolder=PROCESSING_FOLDER, target="SWIR"
         ),
         jobs=selected_jobs,
         regex_pattern=r"s620",  # s620 for VNIR
@@ -142,10 +143,10 @@ if __name__ == "__main__":
     build_digital_surface_model = BuildDigitalSurfaceModel(
         name="Build Digital Surface Model",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target=""
+            basefolder=PROCESSING_FOLDER, target=""
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="output/1_raw/DSM"
+            basefolder=PROCESSING_FOLDER, target="output/1_raw/DSM"
         ),
         jobs=selected_jobs,
     )
@@ -159,7 +160,7 @@ if __name__ == "__main__":
             static=True,
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="SWIR"
+            basefolder=PROCESSING_FOLDER, target="SWIR"
         ),
         jobs=selected_jobs,
         regex_pattern=r"boresight_swir|sensormodel",
@@ -175,7 +176,7 @@ if __name__ == "__main__":
             static=True,
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="VNIR"
+            basefolder=PROCESSING_FOLDER, target="VNIR"
         ),
         jobs=selected_jobs,
         regex_pattern=r"boresight_vnir|sensormodel",
@@ -184,10 +185,10 @@ if __name__ == "__main__":
     geocoding = Geocoding(
         name="Geocoding",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target=""
+            basefolder=PROCESSING_FOLDER, target=""
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="output"
+            basefolder=PROCESSING_FOLDER, target="output"
         ),
         jobs=selected_jobs,
         nr_of_flight_lines=NR_OF_FLIGHT_LINES,
@@ -197,10 +198,10 @@ if __name__ == "__main__":
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
         name="Create Radiance Orthomosaic",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target=""
+            basefolder=PROCESSING_FOLDER, target=""
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="output"
+            basefolder=PROCESSING_FOLDER, target="output"
         ),
         jobs=selected_jobs,
     )
@@ -208,10 +209,10 @@ if __name__ == "__main__":
     create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
         name="Create Reflectance Orthomosaic",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target=""
+            basefolder=PROCESSING_FOLDER, target=""
         ),
         output_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="output"
+            basefolder=PROCESSING_FOLDER, target="output"
         ),
         jobs=selected_jobs,
     )
@@ -220,10 +221,10 @@ if __name__ == "__main__":
     orthomosaic_to_geotiff = OrthomosaicToGeoTiff(
         name="Translate Orthomosaics to Geotiff",
         input_folder=PipelineFolder(
-            basefolder=Path("E:/mjolnir_processing"), target="output/7_mosaics"
+            basefolder=PROCESSING_FOLDER, target="output/7_mosaics"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path(Path("E:/mjolnir_processing")), target="output/7_mosaics"
+            basefolder=Path(PROCESSING_FOLDER), target="output/7_mosaics"
         ),
         jobs=selected_jobs,
     )
