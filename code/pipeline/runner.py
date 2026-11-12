@@ -60,7 +60,9 @@ if __name__ == "__main__":
     clean_apx_files = ApxCleaning(
         name="Clean Apx Files",
         input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
+        output_folder=PipelineFolder(
+            basefolder=PROCESSING_FOLDER, target="RAW/apx/removed"
+        ),
         jobs=selected_jobs,
         buffer=timedelta(minutes=2),
     )

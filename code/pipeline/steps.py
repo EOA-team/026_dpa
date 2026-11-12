@@ -104,8 +104,9 @@ class ApxCleaning(PipelineStep):
     window of the base station data is derived from the remaining (flight relevant)
     T04 files only.
 
-    Note: input and output folder are identical (the flight folder), files are
-    moved internally from apx to apx/removed.
+    Args:
+        input_folder: Flight folder (contains the flight log and the apx subfolder).
+        output_folder: Folder for removed T04 files (apx/removed).
     """
 
     def __init__(
@@ -134,9 +135,10 @@ class ApxCleaning(PipelineStep):
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
-        for flight_folder in self.input_folders:
+        for flight_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
             apx_folder = flight_folder / "apx"
-            removed_folder = apx_folder / "removed"
 
             log_file = self._get_log_file(flight_folder)
             time_start, time_end = get_flight_log_time_range(log_file)
@@ -150,9 +152,9 @@ class ApxCleaning(PipelineStep):
                 if time_start <= t04_datetime <= time_end:
                     print(f"Keeping {t04_file.name} ({t04_datetime})")
                 else:
-                    removed_folder.mkdir(parents=True, exist_ok=True)
-                    move(str(t04_file), str(removed_folder / t04_file.name))
-                    print(f"Moved {t04_file.name} ({t04_datetime}) to {removed_folder}")
+                    output_folder.mkdir(parents=True, exist_ok=True)
+                    move(str(t04_file), str(output_folder / t04_file.name))
+                    print(f"Moved {t04_file.name} ({t04_datetime}) to {output_folder}")
 
         print(f"Finished Step: {self.name} ✅")
         return True
