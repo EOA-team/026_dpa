@@ -4,6 +4,7 @@ Helper functions for file handling operations.
 
 import re
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from shutil import copy2, move
 from typing import Any
@@ -47,3 +48,31 @@ def copy_files_by_regex(
 ) -> None:
     """Copy all files matching regex from source to destination. Keeps originals."""
     _process_files_by_regex(source, destination, regex_pattern, copy2, print_progress)
+
+
+def parse_t04_datetime(filename: str) -> datetime:
+    """Extract the datetime encoded in a T04 filename (naive, same timezone as log).
+
+    T04 filenames end with YYYYMMDDHHMM before the extension, e.g.:
+        6234C84164202605260836.T04 -> 2026-05-26 08:36
+    """
+    name_part = filename.split(".", maxsplit=1)[0]
+    return datetime.strptime(name_part[-12:], "%Y%m%d%H%M")
+
+
+def get_flight_log_time_range(log_file: Path) -> tuple[datetime, datetime]:
+    """Derive the overall acquisition time range from a flight log file.
+
+    Scans every line for datetimes in the format YYYY-MM-DDTHHMMSS
+    (e.g. 2026-05-26T085926) and returns (min, max) of all found values.
+    Robust to header lines and column layout.
+    """
+    datetime_pattern = re.compile(r"\d{4}-\d{2}-\d{2}T\d{6}")
+    datetimes = []
+    with open(log_file, encoding="utf-8") as f:
+        for line in f:
+            for match in datetime_pattern.findall(line):
+                datetimes.append(datetime.strptime(match, "%Y-%m-%dT%H%M%S"))
+    if not datetimes:
+        raise ValueError(f"No flight timestamps found in log file: {log_file}")
+    return min(datetimes), max(datetimes)
