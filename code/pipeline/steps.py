@@ -18,7 +18,12 @@ from code.file_utils import (
     get_base_path,
     move_and_extract_downloaded_zip,
 )
-from code.filehandling_helper import copy_files_by_regex, move_files_by_regex
+from code.filehandling_helper import (
+    copy_files_by_regex,
+    get_flight_log_time_range,
+    move_files_by_regex,
+    parse_t04_datetime,
+)
 from code.pdalgdal_helpers import (
     envi_to_geotiff,
     fix_envi_header,
@@ -30,7 +35,7 @@ from code.scrapers.base_scraper import BaseScraper
 from code.scrapers.basestation_scraper import BasestationScraper, RinexDownloadWindow
 from datetime import timedelta
 from pathlib import Path
-from shutil import copy2, copytree, ignore_patterns
+from shutil import copy2, copytree, ignore_patterns, move
 
 from dotenv import load_dotenv
 
@@ -79,6 +84,75 @@ class CopyJobFolders(PipelineStep):
             )
             copytree(input_folder, output_folder, ignore=ignore_ptrn)
             print(f"Copied {input_folder} to {output_folder}")
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class ApxCleaning(PipelineStep):
+    """Cleans up the apx folder of each flight folder by removing unused T04 files.
+
+    T04 filenames encode their acquisition datetime (YYYYMMDDHHMM), e.g.:
+        6234C84164202605260836.T04 -> 2026-05-26 08:36
+
+    The flight log (*.log within the flight folder) holds all acquired flight line
+    acquisitions with start and end times. The min and max datetime of the whole log
+    define the time range in which T04 data is required. All T04 files outside of
+    this range (widened by a configurable buffer) are moved to apx/removed.
+
+    Run after CopyJobFolders and before ScrapeBaseStationData, so that the download
+    window of the base station data is derived from the remaining (flight relevant)
+    T04 files only.
+
+    Note: input and output folder are identical (the flight folder), files are
+    moved internally from apx to apx/removed.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        buffer: timedelta = timedelta(minutes=2),
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.buffer = buffer
+
+    def _get_log_file(self, flight_folder: Path) -> Path:
+        """Find the single flight log file (*.log) in the flight folder."""
+        log_files = list(flight_folder.glob("*.log"))
+        if len(log_files) != 1:
+            raise ValueError(
+                f"Expected exactly one log file in {flight_folder}, found: {log_files}"
+            )
+        return log_files[0]
+
+    def _get_t04_files(self, apx_folder: Path) -> list[Path]:
+        """Get all T04 files in the apx folder (case-insensitive)."""
+        return [f for f in apx_folder.iterdir() if f.name.lower().endswith(".t04")]
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for flight_folder in self.input_folders:
+            apx_folder = flight_folder / "apx"
+            removed_folder = apx_folder / "removed"
+
+            log_file = self._get_log_file(flight_folder)
+            time_start, time_end = get_flight_log_time_range(log_file)
+            time_start -= self.buffer
+            time_end += self.buffer
+            print(f"Required T04 time range: {time_start} to {time_end}")
+
+            t04_files = self._get_t04_files(apx_folder)
+            for t04_file in t04_files:
+                t04_datetime = parse_t04_datetime(t04_file.name)
+                if time_start <= t04_datetime <= time_end:
+                    print(f"Keeping {t04_file.name} ({t04_datetime})")
+                else:
+                    removed_folder.mkdir(parents=True, exist_ok=True)
+                    move(str(t04_file), str(removed_folder / t04_file.name))
+                    print(f"Moved {t04_file.name} ({t04_datetime}) to {removed_folder}")
 
         print(f"Finished Step: {self.name} ✅")
         return True
