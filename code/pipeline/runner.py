@@ -64,7 +64,9 @@ if __name__ == "__main__":
             basefolder=PROCESSING_FOLDER, target="RAW/apx/removed"
         ),
         jobs=selected_jobs,
-        buffer=timedelta(minutes=2),
+        buffer=timedelta(
+            minutes=10
+        ),  # 10min before and after data acquisition range to make sure whole mission including calibration is covered
     )
     # Step 3: Download Base Station Data from Swipos
     #     Use the APX files in the raw data to get the flight time info for the scraper

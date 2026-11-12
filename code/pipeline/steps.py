@@ -154,7 +154,6 @@ class ApxCleaning(PipelineStep):
                 else:
                     output_folder.mkdir(parents=True, exist_ok=True)
                     move(str(t04_file), str(output_folder / t04_file.name))
-                    print(f"Moved {t04_file.name} ({t04_datetime}) to {output_folder}")
 
         print(f"Finished Step: {self.name} ✅")
         return True
