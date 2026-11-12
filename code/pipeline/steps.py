@@ -142,9 +142,9 @@ class ApxCleaning(PipelineStep):
 
             log_file = self._get_log_file(flight_folder)
             time_start, time_end = get_flight_log_time_range(log_file)
+            print(f"Required T04 time range: {time_start} to {time_end}")
             time_start -= self.buffer
             time_end += self.buffer
-            print(f"Required T04 time range: {time_start} to {time_end}")
 
             t04_files = self._get_t04_files(apx_folder)
             for t04_file in t04_files:
