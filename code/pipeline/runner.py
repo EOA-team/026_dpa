@@ -27,14 +27,25 @@ from code.pipeline.steps import (
     ScrapeBaseStationData,
 )
 from datetime import timedelta
+from enum import StrEnum
 
-NR_OF_FLIGHT_LINES = 3
+
+class AvailableTrials(StrEnum):
+    ZOFE = "ZOFE"
+    STYCS = "STYCS"
+    OTHERS = "others"
+    DEMO = "DEMO"
+    DEMEO = "112o"
+
+
+# USER Settings
+NR_OF_FLIGHT_LINES = 4
 PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
+SELECTED_TRIAL = AvailableTrials.ZOFE
+SELECTED_JOBS = ["ZOFE_260423_80"]
 
 if __name__ == "__main__":
-    selected_jobs = ["re112o_260923_80"]
-
-    print(f"Starting Pipeline for jobs: {selected_jobs}")
+    print(f"Starting Pipeline for jobs: {SELECTED_JOBS}")
 
     # Define Steps
 
@@ -46,11 +57,11 @@ if __name__ == "__main__":
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
             # Important: use link to NAS at Reckenholz, not cached at Changins!
-            basefolder=Path("Z:/drone/DERIS/data/RE/112o/hypSpec"),
+            basefolder=Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec/0_raw"),
             target="",
         ),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         exclude_within_output_folder=["rinex"],
     )
     # Step 2: Clean Apx Folder
@@ -63,7 +74,7 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="RAW/apx/removed"
         ),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         buffer=timedelta(
             minutes=10
         ),  # 10min before and after data acquisition range to make sure whole mission including calibration is covered
@@ -76,14 +87,14 @@ if __name__ == "__main__":
         # Use data from APX folder to get flight time info for scraper
         input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW/apx"),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW/rinex"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
     # Step 4: Georeference Sensors
     georeference_sensors = GeoreferenceSensors(
         name="Georeference Sensors (SWIR, VNIR, LiDAR)",
         input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="tmp"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
 
     # Step 5: Fetch Navigation Files
@@ -93,7 +104,7 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/input_hyspexnav"
         ),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
 
     # Step 6: NavigationDiscretization
@@ -105,7 +116,7 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
 
     # Step 7: Convert Binary to Radiance
@@ -115,7 +126,7 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
     # Step 8: Get VNIR Files
     get_vnir_files = MoveFiles(
@@ -124,7 +135,7 @@ if __name__ == "__main__":
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="VNIR"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         regex_pattern=r"v1240",  # v1240 for VNIR
     )
 
@@ -135,7 +146,7 @@ if __name__ == "__main__":
             basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="SWIR"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         regex_pattern=r"s620",  # s620 for VNIR
     )
     # Deprecated (since Intacor release): Build Digital Surface Model (DSM) from LiDAR Point Cloud
@@ -145,7 +156,7 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=PROCESSING_FOLDER, target="output/1_raw/DSM"
         ),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
     # Step 10: Get SWIR Calibration Files
     #      Note: Required as Parge Preparation
@@ -157,7 +168,7 @@ if __name__ == "__main__":
             static=True,
         ),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="SWIR"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         regex_pattern=r"boresight_swir|sensormodel",
     )
 
@@ -171,7 +182,7 @@ if __name__ == "__main__":
             static=True,
         ),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="VNIR"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         regex_pattern=r"boresight_vnir|sensormodel",
     )
     # Step 12: Geocoding
@@ -179,7 +190,7 @@ if __name__ == "__main__":
         name="Geocoding",
         input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
         nr_of_flight_lines=NR_OF_FLIGHT_LINES,
         direct_las_import=True,  # Use direct LAS import instead of DSM
     )
@@ -188,14 +199,14 @@ if __name__ == "__main__":
         name="Create Radiance Orthomosaic",
         input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
     # Step 14: Create Reflectance Orthomosaic
     create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
         name="Create Reflectance Orthomosaic",
         input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
         output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
 
     # Step 15: Translate Orthomosaics to Geotiff
@@ -207,7 +218,7 @@ if __name__ == "__main__":
         output_folder=PipelineFolder(
             basefolder=Path(PROCESSING_FOLDER), target="output/7_mosaics"
         ),
-        jobs=selected_jobs,
+        jobs=SELECTED_JOBS,
     )
 
     # Run Steps
