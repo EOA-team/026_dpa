@@ -37,6 +37,7 @@ class AvailableTrials(StrEnum):
     DEMO = "DEMO"
     DEMEO = "112o"
 
+
 # USER Settings
 NR_OF_FLIGHT_LINES = 4
 PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
