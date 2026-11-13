@@ -67,3 +67,15 @@ Thumbs.db
 
 # Env Files
 *.env
+
+# Pycharm Specific
+.idea/
+
+# Ignore Config files
+*config.yaml
+
+# Ignore bin folders
+bin/
+
+#ignore data folder
+data/

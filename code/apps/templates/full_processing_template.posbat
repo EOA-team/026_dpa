@@ -1,0 +1,266 @@
+<?xml version="1.0"?>
+<!--
+╔══════════════════════════════════════════════════════════════════╗
+║           POSPac Batch File: FULL PROCESSING TEMPLATE            ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Purpose:
+    Full POSPac UAV processing pipeline:
+    Extract → Process (INFusion Single Base) → Export → LiDAR QC → Point Cloud Generation
+
+Description:
+    This batch file performs the complete processing workflow for a
+    single job. It requires the extract-only batch to have been run
+    first to determine the correct start/stop times.
+
+Note:
+    Base station is hardcoded to ETH2 (Agroscope standard).
+
+All Infos relevant for this Batch File can be found on drone station:
+    "C:\Program Files\Applanix\POSPac UAV 9.3\Manuals\Batch Documentation"
+    "C:\Program Files\Applanix\POSPac UAV 9.3\Manuals\POSPac GNSS-Inertial Tools.pdf"
+    https://applanix.my.site.com/support/s/airborne-downloads
+
+Template Parameters:
+    job_name             - Name of the job
+                           e.g. 're112o_250610'
+
+    input_folder         - Path to the RAW data folder for the current job.
+                           Holds subfolders 'apx', 'rinex', and the .pcap file.
+                           e.g. 'E:\mjolnir_processing\re112o_250610\RAW'
+
+    output_folder        - Path to the output/tmp folder for the current job.
+                           e.g. 'E:\mjolnir_processing\re112o_250610\tmp'
+
+    first_pos_file       - Filename of the first .T04 file in apx subfolder
+    last_pos_file        - Filename of the last .T04 file in apx subfolder
+
+    start_time_total_sec - GPS seconds for start of flight window
+    stop_time_total_sec  - GPS seconds for end of flight window
+
+    rinex_files          - XML block of <DataFile> tags for RINEX files
+                           e.g.:
+                           <DataFile>...\ETH2161I00.25o</DataFile>
+                           <DataFile>...\ETH2161I00.25n</DataFile>
+
+    pcap_file            - Filename of the LiDAR .pcap file
+                           e.g. 'lidardump-2025.06.10-10.43.56.pcap'
+-->
+<Batch xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <Project>
+        <!--Removed on purpose: <Name>${job_name}</Name> 
+        Makes sure that NO subfolder is created with job_name
+        -->
+        <!-- ================================================================
+             EXTRACT: APX rover data (T04 format)
+             ================================================================ -->
+        <Extract>
+            <FirstPosFile>${input_folder}\apx\${first_pos_file}</FirstPosFile>
+            <LastPosFile>${input_folder}\apx\${last_pos_file}</LastPosFile>
+            <ScanImuForDataGaps>true</ScanImuForDataGaps>
+            <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+            <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
+        </Extract>
+
+        <!-- ================================================================
+             PROCESS: INFusion Single Base
+             Base station: ETH2 (hardcoded - Agroscope standard)
+             ================================================================ -->
+        <Process>
+            <GnssMode>INFusion_SingleBase</GnssMode>
+            <SingleBaseList>
+                <BatchBaseStationCoordinateInfo>
+                    <StationID>ETH2</StationID>
+                    <UseAvePos>true</UseAvePos> <!--reads POSITION XYZ from the RINEX .25o header-->
+                    <!-- Removed <UseRtxPos>true</UseRtxPos> : because we have Permanent Base Station ETH2 -->
+                    ${rinex_files}
+                </BatchBaseStationCoordinateInfo>
+            </SingleBaseList>
+
+            <CustomSettings>
+                <StartTime>${start_time_total_sec}</StartTime>
+                <EndTime>${stop_time_total_sec}</EndTime>
+                <ImuContext>Remote</ImuContext>
+                <StabilizedMountType>${stabilized_mount}</StabilizedMountType>
+
+                <!--Onboard IMU Settings-->
+                <PriGNSSLeverX>-0.020</PriGNSSLeverX>
+                <PriGNSSLeverY>0.000</PriGNSSLeverY>
+                <PriGNSSLeverZ>-0.638</PriGNSSLeverZ>
+                <PriGNSSLeverSD>SDLessthan3cm</PriGNSSLeverSD> <!--smallest setting: <3cm-->
+                <RefToIMULeverX>-0.011</RefToIMULeverX>
+                <RefToIMULeverY>0.088</RefToIMULeverY>
+                <RefToIMULeverZ>-0.281</RefToIMULeverZ>
+                <RefToIMUMountingAnglX>0</RefToIMUMountingAnglX>
+                <RefToIMUMountingAnglY>0</RefToIMUMountingAnglY>
+                <RefToIMUMountingAnglZ>-90</RefToIMUMountingAnglZ>
+                <VehRefMntAngX>0</VehRefMntAngX>
+                <VehRefMntAngY>0</VehRefMntAngY>
+                <VehRefMntAngZ>0</VehRefMntAngZ>
+
+                <!--Remote IMU Settings-->
+                <RemoteIMUPriGNSSLeverX>-0.020</RemoteIMUPriGNSSLeverX>
+                <RemoteIMUPriGNSSLeverY>0.000</RemoteIMUPriGNSSLeverY>
+                <RemoteIMUPriGNSSLeverZ>-0.638</RemoteIMUPriGNSSLeverZ>
+                <RemoteIMUPriGNSSLeverSD>SDLessthan3cm</RemoteIMUPriGNSSLeverSD> <!--smallest setting: <3cm-->
+                <RefToRemoteIMULeverX>0.052</RefToRemoteIMULeverX>
+                <RefToRemoteIMULeverY>-0.043</RefToRemoteIMULeverY>
+                <RefToRemoteIMULeverZ>0.018</RefToRemoteIMULeverZ>
+                <RefToRemoteIMUMountingAnglX>180</RefToRemoteIMUMountingAnglX>
+                <RefToRemoteIMUMountingAnglY>0</RefToRemoteIMUMountingAnglY>
+                <RefToRemoteIMUMountingAnglZ>0</RefToRemoteIMUMountingAnglZ>
+                <VehRemoteIMURefMntAngX>0</VehRemoteIMURefMntAngX>
+                <VehRemoteIMURefMntAngY>0</VehRemoteIMURefMntAngY>
+                <VehRemoteIMURefMntAngZ>0</VehRemoteIMURefMntAngZ>
+            </CustomSettings>
+        </Process>
+
+        <!-- ================================================================
+             EXPORT 1: VNIR - All Records (HySpex geographic)
+             VNIR lever arm: X=-0.024, Y=-0.045, Z=-0.055
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>${output_folder}\Mission 1\Export\VNIR_all_records.txt</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
+                <OutputFormat>HySpex_geographic</OutputFormat>
+                <EventNum>AllRecords</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
+                <LeverX>-0.024</LeverX>
+                <LeverY>-0.045</LeverY>
+                <LeverZ>-0.055</LeverZ>
+                <Tx>0</Tx>
+                <Ty>0</Ty>
+                <Tz>0</Tz>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             EXPORT 2: SWIR - All Records (HySpex geographic)
+             SWIR lever arm: X=-0.024, Y=0.030, Z=-0.055
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>${output_folder}\Mission 1\Export\SWIR_all_records.txt</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
+                <OutputFormat>HySpex_geographic</OutputFormat>
+                <EventNum>AllRecords</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
+                <LeverX>-0.024</LeverX>
+                <LeverY>0.030</LeverY>
+                <LeverZ>-0.055</LeverZ>
+                <Tx>0</Tx>
+                <Ty>0</Ty>
+                <Tz>0</Tz>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             EXPORT 3: Event 1 Time triggers
+             Same for VNIR and SWIR — only exported once (no lever arm needed)
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>${output_folder}\Mission 1\Export\events.txt</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
+                <OutputFormat>HySpex_geographic</OutputFormat>
+                <EventNum>Event1Time</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             EXPORT 4: Custom SBET binary output
+             ================================================================ -->
+        <Export>
+            <CustomSettings>
+                <OutputFile>${output_folder}\Mission 1\Export\sbet_${job_name}.out</OutputFile>
+                <StartTimeTotalSec>${start_time_total_sec}</StartTimeTotalSec>
+                <StopTimeTotalSec>${stop_time_total_sec}</StopTimeTotalSec>
+                <OutputFormat>Custom Smoothed BET</OutputFormat>
+                <EventNum>AllRecords</EventNum>
+                <ExportSolutionInUse>Postprocessed</ExportSolutionInUse>
+                <Grid>Universal Transverse Mercator</Grid>
+                <Zone>UTM North 32 (6E to 12E)</Zone>
+                <Datum>WGS84</Datum>
+                <LocalTransf>NONE</LocalTransf>
+                <HeightOptions>Ellipsoid</HeightOptions>
+                <HeightOutputWGS84>false</HeightOutputWGS84>
+                <CoordinateUnits>Meter</CoordinateUnits>
+                <LatLonUnits>DegDecimal</LatLonUnits>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
+            </CustomSettings>
+        </Export>
+
+        <!-- ================================================================
+             LIDAR Run : Calibrate and QC + Point Cloud Generator
+             LiDAR lever arms: X=-0.115, Y=-0.008, Z=0.13
+             Approximate boresight angles: TX=90 deg (5400 arcmin), TY=-62 deg (3720 arcmin), TZ=90 deg (5400 arcmin)
+             ================================================================ -->
+        <Lidar>
+            <Type>VelodynePCAP</Type> <!-- VLP (16,32)-->
+            <VelodynePCAPOptions>
+                <Model>1</Model>
+                <DataPort>2368</DataPort>
+                <PositionPort>8308</PositionPort>
+            </VelodynePCAPOptions>
+            <LidarFile>${input_folder}\${pcap_file}</LidarFile>
+            <CalibrateAndQC>true</CalibrateAndQC>
+            <ExportTrajectory>true</ExportTrajectory> <!-- Note: We do not have CalibrationSBETLicense-->
+            <GeneratePointCloud>true</GeneratePointCloud>
+            <CustomSettings>
+                <LiDARQCFolder>${output_folder}\Mission 1\LiDARQC</LiDARQCFolder>
+                <LeverX>-0.115</LeverX>
+                <LeverY>-0.008</LeverY>
+                <LeverZ>0.13</LeverZ>
+                <Tx>5400</Tx> <!-- 90 degrees in arcminutes -->
+                <Ty>-3720</Ty> <!-- -62 degrees in arcminutes -->
+                <Tz>5400</Tz> <!-- 90 degrees in arcminutes -->
+                <LiDARQCAdjustTrajectory>true</LiDARQCAdjustTrajectory>
+                <LiDARQCCalibrateBoresights>true</LiDARQCCalibrateBoresights>
+                <LiDARQCRangeMin>30</LiDARQCRangeMin>
+                <LiDARQCSolutionInUse>Postprocessed</LiDARQCSolutionInUse>
+                <LASCreatorRangeMin>30</LASCreatorRangeMin>
+                <LASCreatorSolutionInUse>Custom</LASCreatorSolutionInUse>
+                <Ellipsoid>WGS84</Ellipsoid>
+                <Datum>WGS84</Datum>
+                <UseMissionEpoch>true</UseMissionEpoch> <!-- otherwise epoch = 1997.000 , huge offset-->
+            </CustomSettings>
+        </Lidar>
+    </Project>
+
+    <Version>4.0</Version>
+
+</Batch>

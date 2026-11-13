@@ -31,7 +31,7 @@
         "MOSAICOPT": "nearest; psize:  0.040",
         "MOSDIR": "",
         "MOSFILT": "*geo.bsq",
-        "MOSFILE": "mosaic_.bsq",
+        "MOSFILE": "mosaic.bsq",
         "POINTSOPT": "LAS",
         "POINTSDIR": "",
         "POINTSFILT": "*mica.bsq",

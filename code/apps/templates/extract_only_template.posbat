@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+╔══════════════════════════════════════════════════════════════════╗
+║              POSPac Batch File: EXTRACT ONLY                     ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Purpose:
+    Extract APX data and identify actual camera trigger events.
+
+Description:
+    After running this batch file, parse the output file
+    "extract_Mission 1.log" to determine the time window during which
+    the drone was actively scanning the target.
+
+    This time window is required to define accurate start and stop times
+    for the subsequent batch file, which performs full processing and
+    exports position data.
+
+Note:
+    Trimming unused data is important, as excess data or gaps may lead
+    to processing issues in the final solution.
+
+Template Parameters:
+    job_name       - Name of the job
+                     e.g. 're112o_250610'
+
+    input_folder   - Path to the RAW data folder for the current job.
+                     This folder holds the subfolder 'apx' which contains
+                     the .T04 files to be processed.
+                     e.g. 'E:\mjolnir_processing\re112o_250610\RAW'
+                          'E:\mjolnir_processing\re112o_250610\RAW\apx'
+
+    first_pos_file - Filename of the first .T04 file in the apx subfolder
+    last_pos_file  - Filename of the last .T04 file in the apx subfolder
+-->
+<Batch xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <Project>
+        <n>${job_name}</n>
+
+        <Extract>
+            <FirstPosFile>${input_folder}\apx\${first_pos_file}</FirstPosFile>
+            <LastPosFile>${input_folder}\apx\${last_pos_file}</LastPosFile>
+            <ScanImuForDataGaps>true</ScanImuForDataGaps>
+        </Extract>
+
+    </Project>
+
+    <Version>4.0</Version>
+
+</Batch>

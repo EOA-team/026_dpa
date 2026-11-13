@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request: 
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality-checks:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}   # ensures conda is activated for all steps
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          environment-name: 026_dpa_py312
+          cache-environment: true
+
+      # static type checking
+      - name: mypy
+        run: mypy code
+
+      # lint + complexity + security (replaces pylint, bandit, radon cc)
+      - name: ruff check
+        run: ruff check
+
+      # formatting check (replaces autopep8)
+      - name: ruff format
+        run: ruff format --check
+      

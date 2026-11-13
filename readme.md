@@ -93,7 +93,12 @@ Note: Normally only adjust input_folder of First Pipeline Step "Fetch Raw Data"
         exclude_within_output_folder=["rinex"]
     )
 ```
-**6. Run Pipeline**
+**6. Activate Env**
+```
+conda activate 026_dpa_py312
+```
+
+**7. Run Pipeline**
 ```
 python -m code.pipeline.runner
 ```

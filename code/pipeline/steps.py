@@ -1,0 +1,516 @@
+"""
+Defines various pipeline steps.
+A pipeline step implements a `run` method, which can take one of the following forms:
+1. **Direct Python instructions**
+for simple tasks such as copying or moving files.
+2. **Calls to a more complex Python class**
+for advanced operations, e.g., automatic georeferencing of orthomosaics using GDAL.
+3. **Calls to a Windows application**
+for steps that cannot yet be implemented in Python and must be simulated.
+"""
+
+from code.apps.hyspexnav import HyspexNavApplication
+from code.apps.hyspexrad import HyspexRadApplication
+from code.apps.intacor import IntacorApplication, IntacorStep
+from code.apps.pospacuav import PosPacUavApplication
+from code.file_utils import (
+    find_las_file,
+    get_base_path,
+    move_and_extract_downloaded_zip,
+)
+from code.filehandling_helper import (
+    copy_files_by_regex,
+    get_flight_log_time_range,
+    move_files_by_regex,
+    parse_t04_datetime,
+)
+from code.pdalgdal_helpers import (
+    envi_to_geotiff,
+    fix_envi_header,
+    geotiff_to_envi_dsm,
+    las_to_geotif,
+)
+from code.pipeline.base import PipelineFolder, PipelineStep
+from code.scrapers.base_scraper import BaseScraper
+from code.scrapers.basestation_scraper import BasestationScraper, RinexDownloadWindow
+from datetime import timedelta
+from pathlib import Path
+from shutil import copy2, copytree, ignore_patterns, move
+
+from dotenv import load_dotenv
+
+# Pylint Note :
+# Pipeline steps are known to have at most 6 arguments, exceeding pylint's default limit of 5.
+# This is intentional: each step requires folders, job names, and configuration parameters.
+# Similarly, exposing only a single public run() method is by design —
+# a pipeline step has one responsibility: to be run.
+
+# pylint: disable=too-many-arguments, too-few-public-methods, too-many-positional-arguments
+
+
+class CopyJobFolders(PipelineStep):
+    """Copies data folders from input to output for each job.
+
+    Excludes specified subfolders to avoid copying data that is either already
+    processed or should be freshly fetched by a dedicated pipeline step.
+
+    Args:
+        exclude_within_output_folder: List of subfolder names to skip during copy.
+            Some job folders contain pre-processed data from previous manual workflows
+            that should not be reused (e.g. 'rinex' folders should always be freshly
+            fetched by the ScrapeBaseStationData step to ensure consistent format).
+    """
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        exclude_within_output_folder: list[str] | None = None,
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.exclude_within_output_folder = exclude_within_output_folder
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            ignore_ptrn = (
+                ignore_patterns(*self.exclude_within_output_folder)
+                if self.exclude_within_output_folder
+                else None
+            )
+            copytree(input_folder, output_folder, ignore=ignore_ptrn)
+            print(f"Copied {input_folder} to {output_folder}")
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class ApxCleaning(PipelineStep):
+    """Cleans up the apx folder of each flight folder by removing unused T04 files.
+
+    T04 filenames encode their acquisition datetime (YYYYMMDDHHMM), e.g.:
+        6234C84164202605260836.T04 -> 2026-05-26 08:36
+
+    The flight log (*.log within the flight folder) holds all acquired flight line
+    acquisitions with start and end times. The min and max datetime of the whole log
+    define the time range in which T04 data is required. All T04 files outside of
+    this range (widened by a configurable buffer) are moved to apx/removed.
+
+    Run after CopyJobFolders and before ScrapeBaseStationData, so that the download
+    window of the base station data is derived from the remaining (flight relevant)
+    T04 files only.
+
+    Args:
+        input_folder: Flight folder (contains the flight log and the apx subfolder).
+        output_folder: Folder for removed T04 files (apx/removed).
+    """
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        buffer: timedelta = timedelta(minutes=2),
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.buffer = buffer
+
+    def _get_log_file(self, flight_folder: Path) -> Path:
+        """Find the single flight log file (*.log) in the flight folder."""
+        log_files = list(flight_folder.glob("*.log"))
+        if len(log_files) != 1:
+            raise ValueError(
+                f"Expected exactly one log file in {flight_folder}, found: {log_files}"
+            )
+        return log_files[0]
+
+    def _get_t04_files(self, apx_folder: Path) -> list[Path]:
+        """Get all T04 files in the apx folder (case-insensitive)."""
+        return [f for f in apx_folder.iterdir() if f.name.lower().endswith(".t04")]
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for flight_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            apx_folder = flight_folder / "apx"
+
+            log_file = self._get_log_file(flight_folder)
+            time_start, time_end = get_flight_log_time_range(log_file)
+            print(f"Required T04 time range: {time_start} to {time_end}")
+            time_start -= self.buffer
+            time_end += self.buffer
+
+            t04_files = self._get_t04_files(apx_folder)
+            for t04_file in t04_files:
+                t04_datetime = parse_t04_datetime(t04_file.name)
+                if time_start <= t04_datetime <= time_end:
+                    print(f"Keeping {t04_file.name} ({t04_datetime})")
+                else:
+                    output_folder.mkdir(parents=True, exist_ok=True)
+                    move(str(t04_file), str(output_folder / t04_file.name))
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class ScrapeBaseStationData(PipelineStep):
+    """Scrapes base station data from Swipos for each job and saves it to the output folder."""
+
+    def run(self) -> bool:
+        load_dotenv()  # Load environment variables from .env file
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            obs = RinexDownloadWindow(
+                apx_folder=input_folder,
+                # RTX convergence time not needed anymore --> 1min as placeholder for future use
+                # https://github.com/EOA-team/026_dpa/issues/23git
+                convergence_time=timedelta(minutes=1),
+                end_buffer=timedelta(minutes=1),
+            )
+
+            config_dict = {
+                "browser": "firefox",
+                "driver_path": "C:/Tools/webdrivers/geckodriver.exe",
+                "timeout": 5,
+                "destination_path": output_folder,
+                "service_url": "https://shop.swipos.ch/",
+                "username": BaseScraper.load_environment_variable("SWIPOS_USER"),
+                "password": BaseScraper.load_environment_variable("SWIPOS_PW"),
+            }
+
+            print(f"Scraping base station data for {input_folder}...")
+            scraper = BasestationScraper(config=config_dict, observation_time=obs)
+            scraper.run()
+            move_and_extract_downloaded_zip(output_folder)
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class MoveFiles(PipelineStep):
+    """Moves specified files from input to output for each job."""
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        regex_pattern: str,
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.regex_pattern = regex_pattern
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            move_files_by_regex(input_folder, output_folder, self.regex_pattern)
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class CopyFiles(PipelineStep):
+    """Copies specified files from input to output for each job."""
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        regex_pattern: str,
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.regex_pattern = regex_pattern
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            copy_files_by_regex(input_folder, output_folder, self.regex_pattern)
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class BinaryToRadiance(PipelineStep):
+    """Converts binary files to radiance files for each job."""
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        app_instance="HyspexRadApplication",
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.app_instance = app_instance
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        hyspexrad = HyspexRadApplication(
+            input_folders=self.input_folders, output_folders=self.output_folders
+        )
+        hyspexrad.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class GeoreferenceSensors(PipelineStep):
+    """
+    Runs the full POSPac UAV processing pipeline for each job.
+    - Creates a post-processed trajectory (SBET) using ETH2 base station (INFusion Single Base).
+    - Georeferences the VNIR and SWIR sensors using the generated SBET.
+    - Generates a georeferenced LAS point cloud from raw LiDAR data.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        app_instance="PosPacUavApplication",
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.app_instance = app_instance
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        pospacuav = PosPacUavApplication(
+            input_folders=self.input_folders, output_folders=self.output_folders
+        )
+        pospacuav.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class FetchNavigationFiles(PipelineStep):
+    """Fetches all input files required by HySpex NAV into the navigation files folder.
+
+    Copies the following files for each job:
+        - events.txt              trigger timestamps per scan line
+        - VNIR_all_records.txt    continuous IMU data for VNIR sensor
+        - SWIR_all_records.txt    continuous IMU data for SWIR sensor
+        - {job_name}.log          flight line start/stop times and bands
+
+    The first three files are copied from a known path, e.g.:
+        tmp/re112o_250717_full_processing/Mission 1/Export/events.txt
+        tmp/re112o_250717_full_processing/Mission 1/Export/VNIR_all_records.txt
+        tmp/re112o_250717_full_processing/Mission 1/Export/SWIR_all_records.txt
+
+    The log file is matched by regex (*.log) since its name varies per job —
+    it may include a flight height suffix or not, e.g.:
+        re112o_250717.log
+        re112o_250717_80m2.log
+    """
+
+    def copy_known_file_paths(self, input_folder: Path, output_folder: Path) -> None:
+        """Copy files from known paths to the output folder."""
+        events_file = (
+            input_folder
+            / "tmp"
+            / f"{input_folder.name}_full_processing"
+            / "Mission 1"
+            / "Export"
+            / "events.txt"
+        )
+        swir_records_file = (
+            input_folder
+            / "tmp"
+            / f"{input_folder.name}_full_processing"
+            / "Mission 1"
+            / "Export"
+            / "SWIR_all_records.txt"
+        )
+        vnir_records_file = (
+            input_folder
+            / "tmp"
+            / f"{input_folder.name}_full_processing"
+            / "Mission 1"
+            / "Export"
+            / "VNIR_all_records.txt"
+        )
+        for file in [events_file, swir_records_file, vnir_records_file]:
+            if file.exists():
+                copy2(file, output_folder / file.name)
+            else:
+                print(f"⚠️ Warning: Expected file not found: {file}")
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            # ensure output folder exists
+            output_folder.mkdir(parents=True, exist_ok=True)
+            self.copy_known_file_paths(input_folder, output_folder)
+            # For the log file the name can vary--> use regex to find it
+            copy_files_by_regex(
+                source=input_folder / "RAW",
+                destination=output_folder,
+                regex_pattern=r".*\.log",
+            )
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class NavigationDiscretization(PipelineStep):
+    """Runs the HySpex NAV application to discretize navigation files for each job."""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        hyspexnav = HyspexNavApplication(
+            input_folders=self.input_folders, output_folders=self.output_folders
+        )
+        hyspexnav.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class BuildDigitalSurfaceModel(PipelineStep):
+    """Creates a digital surface model from the las point cloud file."""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            las_file_path = find_las_file(input_folder)
+            las_to_geotif(
+                input_las=las_file_path,
+                output_tif=output_folder / "DSM.tif",
+                resolution=0.05,
+            )
+
+            geotiff_to_envi_dsm(
+                input_tif=output_folder / "DSM.tif", output_file=output_folder / "DSM"
+            )
+
+            fix_envi_header(output_folder / "DSM.hdr")
+
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class Geocoding(PipelineStep):
+    """Attaching a geographic coordinate system to the imagery"""
+
+    def __init__(
+        self,
+        name: str,
+        jobs: list[str],
+        input_folder: PipelineFolder,
+        output_folder: PipelineFolder,
+        nr_of_flight_lines: int,
+        direct_las_import: bool = False,
+    ):
+        super().__init__(name, jobs, input_folder, output_folder)
+        self.nr_of_flight_lines = nr_of_flight_lines
+        self.direct_las_import = direct_las_import
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        # Could also select reflectance config , same settings for geocoding
+        config_path = (
+            get_base_path(__file__).parent / "configs" / "conf_intacor_radiance.json"
+        )
+        # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = (
+            "3_geocoded",
+            "*.bsq",
+            3 * self.nr_of_flight_lines,
+            400,
+        )
+        m4mproc = IntacorApplication(
+            input_folders=self.input_folders,
+            output_folders=self.output_folders,
+            selected_steps=[IntacorStep.GEOCODING],
+            config=config_path,
+            finish_condition=process_finished_condition,
+            direct_las_import=self.direct_las_import,
+        )
+        m4mproc.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class CreateRadianceOrthomosaic(PipelineStep):
+    """Creates a radiance orthomosaic"""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        config_path = (
+            get_base_path(__file__).parent / "configs" / "conf_intacor_radiance.json"
+        )
+        # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = ("7_mosaics", "mosaic_radiance.hdr", 1, 500)
+        m4mproc = IntacorApplication(
+            input_folders=self.input_folders,
+            output_folders=self.output_folders,
+            selected_steps=[IntacorStep.ORTHORECTIFICATION, IntacorStep.MOSAIC],
+            config=config_path,
+            finish_condition=process_finished_condition,
+        )
+        m4mproc.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class CreateReflectanceOrthomosaic(PipelineStep):
+    """Creates a reflectance orthomosaic"""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        config_path = (
+            get_base_path(__file__).parent / "configs" / "conf_m4mproc_reflectance.json"
+        )
+        # (output_subfolder, file_pattern, expected_count, timeout_s)
+        process_finished_condition = ("7_mosaics", "mosaic_reflectance.hdr", 1, 500)
+        m4mproc = IntacorApplication(
+            input_folders=self.input_folders,
+            output_folders=self.output_folders,
+            selected_steps=[
+                IntacorStep.REFLECTANCE_RETRIEVAL,
+                IntacorStep.ORTHORECTIFICATION,
+                IntacorStep.MOSAIC,
+            ],
+            config=config_path,
+            finish_condition=process_finished_condition,
+        )
+        m4mproc.run()
+        print(f"Finished Step: {self.name} ✅")
+        return True
+
+
+class OrthomosaicToGeoTiff(PipelineStep):
+    """Creates a Geotiff orthomosaic from the ENVI orthomosaic"""
+
+    def run(self) -> bool:
+        print(f"Starting Step: {self.name} ⏳")
+        for input_folder, output_folder in zip(
+            self.input_folders, self.output_folders, strict=True
+        ):
+            # ensure output folder exists
+            output_folder.mkdir(parents=True, exist_ok=True)
+            envi_orthom = list(input_folder.rglob("*.bsq"))
+            for file in envi_orthom:
+                envi_to_geotiff(
+                    bsq_file_path=str(file),
+                    output_file_path=str(output_folder / f"{file.stem}.tif"),
+                )
+                print(f"Converted {file} to {output_folder / f'{file.stem}.tif'}")
+        print(f"Finished Step: {self.name} ✅")
+        return True
