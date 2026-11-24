@@ -5,9 +5,12 @@ frames waiting in the queue before each capture and returns the newest
 frame, at most one camera frame period old.
 """
 
+import csv
+from datetime import datetime, timezone
 from pathlib import Path
 
 from harvesters.core import Harvester, ImageAcquirer
+import tifffile
 
 CAMERA_FPS = 30  # the A65 always streams at this fixed rate
 CAMERA_SERIAL = "75006073"  # serial of this camera, used to find it
@@ -27,6 +30,23 @@ _CAMERA_SETTINGS = {
     "CounterTriggerSource": "Off",
     "NUCMode": "Automatic",
 }
+
+_STATIC_METADATA_KEYS = (
+    "DeviceModelName", "DeviceID", "CameraSN", "SensorSN",
+    "CameraFirmwareVersion", "SensorFirmwareVersion", "SensorFocalLength",
+    "R", "B", "F", "O", "J1", "RThg",
+    "ObjectEmissivity",
+    "ReflectedTempInternal", "AtmTempInternal",
+    "AtmosphericTransmission", "WindowTransmission", "WindowTempInternal",
+    "PixelFormat", "CMOSBitDepth", "SensorGainMode",
+    "TemperatureLinearMode", "TemperatureLinearResolution",
+    "SensorFrameRate",
+)
+
+_DYNAMIC_METADATA_KEYS = (
+    "SensorTemperature", "HousingTemperature", "ShutterTemperature",
+    "Spot", "NUCMode",
+)
 
 
 class ThermalCam:
@@ -87,6 +107,10 @@ class ThermalCam:
             raise RuntimeError("camera is still acquiring")
         print("[CAM] Acquisition stopped.")
 
+    def set_nuc(self, mode: str) -> None:
+        """Set the NUC mode, e.g. "Manual" during sampling, "Automatic" after."""
+        self._node_map.NUCMode.value = mode
+
     def fetch_newest(self):
         """Return the frame produced right now: discard old ones, then fetch."""
         self._discard_old_frames()
@@ -108,11 +132,52 @@ class ThermalCam:
             old_frame = self._acquirer.try_fetch(timeout=empty_check_timeout)
             if old_frame is None:
                 return
-            old_frame.queue() # Gives Back memory so camera can fill it with next frame 
+            old_frame.queue()
 
-    def set_nuc(self, mode: str) -> None:
-        """Set the NUC mode, e.g. "Manual" during sampling, "Automatic" after."""
-        self._node_map.NUCMode.value = mode
+    def read_static_metadata(self) -> dict:
+        """Read identity, calibration and radiometric settings (unchanging).
+
+        Read once per session. The returned dict carries a "timestamp" row
+        recording when the session metadata was taken.
+        """
+        metadata = {"timestamp": datetime.now(timezone.utc).isoformat()}
+        metadata.update(self._read_metadata_keys(_STATIC_METADATA_KEYS))
+        return metadata
+
+    def read_dynamic_metadata(self) -> dict:
+        """Read the per-frame health values: temperatures, spot reading, NUC mode."""
+        return self._read_metadata_keys(_DYNAMIC_METADATA_KEYS)
+
+    def _read_metadata_keys(self, keys: tuple) -> dict:
+        """Read the given GenICam features from the camera node map."""
+        return {key: getattr(self._node_map, key).value for key in keys}
+
+    def save_tiff(self, frame, filename: str) -> None:
+        """Save the frame as filename.tif; never overwrite an existing file."""
+        file_path = self._prepare_save_path(filename, "tif")
+        if file_path is None:
+            return
+        tifffile.imwrite(file_path, frame, photometric="minisblack")
+
+    def save_metadata_as_csv(self, metadata: dict, filename: str) -> None:
+        """Write metadata as key,value rows; never overwrite an existing file."""
+        file_path = self._prepare_save_path(filename, "csv")
+        if file_path is None:
+            return
+        with open(file_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["parameter", "value"])
+            for key, value in metadata.items():
+                writer.writerow([key, value])
+
+    def _prepare_save_path(self, filename: str, extension: str) -> Path | None:
+        """Return the path to write to, or None if the file already exists."""
+        self._out_dir.mkdir(parents=True, exist_ok=True)
+        file_path = self._out_dir / f"{filename}.{extension}"
+        if file_path.exists():
+            print(f"[CAM] {file_path.name} already exists - skipped")
+            return None
+        return file_path
 
     def disconnect(self) -> None:
         """Stop acquisition if running and release the camera connection."""
