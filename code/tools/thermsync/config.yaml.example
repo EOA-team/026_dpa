@@ -1,0 +1,3 @@
+# ThermSync V3 configuration
+destination_path: "D:/HySpexAir/Recordings/ThermalCamera"
+target_fps: 1  # 1..5
