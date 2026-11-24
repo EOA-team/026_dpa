@@ -11,13 +11,16 @@ exclude = [
 #   3. follow_untyped_imports = true           — mypy reads source directly
 #   4. # type: ignore[import-untyped]          — last resort, no type checking
 #
-# osgeo and pdal: option 3 works cleanly as their internals are well-structured.
+# osgeo, pdal, harvesters and genicam: option 3 works cleanly as their internals
+# are well-structured.
 # pywinauto: option 3 fails because methods are generated dynamically at runtime —
 # mypy produces false-positive [attr-defined] errors → option 4 used per-import instead.
 [[tool.mypy.overrides]]
 module = [
-    "osgeo.*",  # no stubs available
-    "pdal.*",   # no stubs available
+    "osgeo.*",      # no stubs available
+    "pdal.*",       # no stubs available
+    "harvesters.*", # no stubs available
+    "genicam.*",    # no stubs available
     # pywinauto is not added, see reason above
 ]
 follow_untyped_imports = true

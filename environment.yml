@@ -15,8 +15,9 @@ dependencies:
   # dev tooling
   - pytest
   - mypy
+  - types-pyyaml  
   - ruff
   - pylint
   - pip:
-      - harvesters==1.4.3  # GenTL client for the FLIR A65; pinned ; not all versions working stable
+      - harvesters==1.4.3  # GenTL client for the FLIR A65; pinned version works , updating on own risk
       - pyinstaller  # build tool for code/tools/postflightdtt, not on conda-forge

@@ -8,6 +8,7 @@ frame, at most one camera frame period old.
 import csv
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import tifffile
 from genicam.gentl import GenTL_GenericException
@@ -79,7 +80,7 @@ class ThermalCam:
         self._out_dir = out_dir
         self._harvester: Harvester | None = None
         self._acquirer: ImageAcquirer | None = None
-        self._node_map = None  # GenICam feature map, set in prepare()
+        self._node_map: Any = None  # GenICam feature map, set in prepare()
 
     @property
     def sampling_period(self) -> float:
@@ -94,6 +95,13 @@ class ThermalCam:
         arrives within one camera frame period after discarding.
         """
         return self.sampling_period * 2
+
+    @property
+    def _device(self) -> ImageAcquirer:
+        """The connected camera acquirer; call prepare() before use."""
+        if self._acquirer is None:
+            raise RuntimeError("camera not prepared - call prepare() first")
+        return self._acquirer
 
     def prepare(self) -> None:
         """Connect to the camera: load the GenTL producer, find it by serial."""
@@ -110,22 +118,22 @@ class ThermalCam:
 
     def apply_default_config(self) -> None:
         """Apply the radiometric acquisition settings."""
-        self._acquirer.num_buffers = _NUM_BUFFERS
+        self._device.num_buffers = _NUM_BUFFERS
         for name, value in _CAMERA_SETTINGS.items():
             getattr(self._node_map, name).value = value
         print("[CAM] Default config applied.")
 
     def start_acquiring(self) -> None:
         """Start the continuous frame stream into the driver buffer."""
-        self._acquirer.start()
-        if not self._acquirer.is_acquiring():
+        self._device.start()
+        if not self._device.is_acquiring():
             raise RuntimeError("camera did not start acquiring")
         print("[CAM] Acquisition started.")
 
     def stop_acquiring(self) -> None:
         """Stop the frame stream."""
-        self._acquirer.stop()
-        if self._acquirer.is_acquiring():
+        self._device.stop()
+        if self._device.is_acquiring():
             raise RuntimeError("camera is still acquiring")
         print("[CAM] Acquisition stopped.")
 
@@ -136,7 +144,7 @@ class ThermalCam:
     def fetch_newest(self):
         """Return the frame produced right now: discard old ones, then fetch."""
         self._discard_old_frames()
-        with self._acquirer.fetch(timeout=self.buffer_timeout) as buffer:
+        with self._device.fetch(timeout=self.buffer_timeout) as buffer:
             component = buffer.payload.components[0]
             frame = component.data.reshape(component.height, component.width).copy()
         return frame
@@ -151,7 +159,7 @@ class ThermalCam:
         """
         empty_check_timeout = CAMERA_FRAME_PERIOD_S / 2
         while True:
-            old_frame = self._acquirer.try_fetch(timeout=empty_check_timeout)
+            old_frame = self._device.try_fetch(timeout=empty_check_timeout)
             if old_frame is None:
                 return
             old_frame.queue()
