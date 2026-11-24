@@ -8,7 +8,7 @@ and the reader reconnects automatically until it is stopped.
 import socket
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 APX_HOST = "192.168.168.100"
 APX_PORT = 5017
@@ -56,7 +56,7 @@ def parse_zda(sentence: str) -> datetime | None:
             minutes,
             int(seconds),
             round((seconds % 1) * 1_000_000),
-            tzinfo=timezone.utc,
+            tzinfo=UTC,
         )
     except (ValueError, IndexError):
         return None
@@ -122,7 +122,7 @@ class NmeaReader:
                         if parsed is not None:
                             with self._lock:
                                 self._gps_time = parsed
-        except (socket.timeout, OSError) as exc:
+        except (TimeoutError, OSError) as exc:
             print(f"[NMEA] Connection lost: {exc}")
 
 

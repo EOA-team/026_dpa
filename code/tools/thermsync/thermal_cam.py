@@ -6,7 +6,7 @@ frame, at most one camera frame period old.
 """
 
 import csv
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import tifffile
@@ -19,7 +19,9 @@ CAMERA_FRAME_PERIOD_S = 1.0 / CAMERA_FPS
 
 CTI_PATH = r"C:\Program Files\Teledyne\Spinnaker\cti64\vs2015\Spinnaker_GenTL_v140.cti"
 
-_NUM_BUFFERS = 3  # Spinnaker's minimum; the engine reserves one, leaving 2 stored frames
+_NUM_BUFFERS = (
+    3  # Spinnaker's minimum; the engine reserves one, leaving 2 stored frames
+)
 
 _CAMERA_SETTINGS = {
     "PixelFormat": "Mono14",
@@ -33,20 +35,39 @@ _CAMERA_SETTINGS = {
 }
 
 _STATIC_METADATA_KEYS = (
-    "DeviceModelName", "DeviceID", "CameraSN", "SensorSN",
-    "CameraFirmwareVersion", "SensorFirmwareVersion", "SensorFocalLength",
-    "R", "B", "F", "O", "J1", "RThg",
+    "DeviceModelName",
+    "DeviceID",
+    "CameraSN",
+    "SensorSN",
+    "CameraFirmwareVersion",
+    "SensorFirmwareVersion",
+    "SensorFocalLength",
+    "R",
+    "B",
+    "F",
+    "O",
+    "J1",
+    "RThg",
     "ObjectEmissivity",
-    "ReflectedTempInternal", "AtmTempInternal",
-    "AtmosphericTransmission", "WindowTransmission", "WindowTempInternal",
-    "PixelFormat", "CMOSBitDepth", "SensorGainMode",
-    "TemperatureLinearMode", "TemperatureLinearResolution",
+    "ReflectedTempInternal",
+    "AtmTempInternal",
+    "AtmosphericTransmission",
+    "WindowTransmission",
+    "WindowTempInternal",
+    "PixelFormat",
+    "CMOSBitDepth",
+    "SensorGainMode",
+    "TemperatureLinearMode",
+    "TemperatureLinearResolution",
     "SensorFrameRate",
 )
 
 _DYNAMIC_METADATA_KEYS = (
-    "SensorTemperature", "HousingTemperature", "ShutterTemperature",
-    "Spot", "NUCMode",
+    "SensorTemperature",
+    "HousingTemperature",
+    "ShutterTemperature",
+    "Spot",
+    "NUCMode",
 )
 
 
@@ -141,7 +162,7 @@ class ThermalCam:
         Read once per session. The returned dict carries a "timestamp" row
         recording when the session metadata was taken.
         """
-        metadata = {"timestamp": datetime.now(timezone.utc).isoformat()}
+        metadata = {"timestamp": datetime.now(UTC).isoformat()}
         metadata.update(self._read_metadata_keys(_STATIC_METADATA_KEYS))
         return metadata
 

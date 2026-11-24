@@ -6,14 +6,13 @@ CSV. Files are never overwritten.
 """
 
 import time
-from datetime import datetime
-from pathlib import Path
-
 from code.file_utils import get_base_path
 from code.tools.thermsync.nmea_reader import NmeaReader
 from code.tools.thermsync.quit_listener import QuitListener
 from code.tools.thermsync.thermal_cam import ThermalCam
 from code.yamlconfig_helper import load_config_from_yamlfile
+from datetime import datetime
+from pathlib import Path
 
 _START_KEY = "s"
 
@@ -71,17 +70,14 @@ def main() -> None:
     nmea.start()
     cam.prepare()
     cam.apply_default_config()
-    cam.save_metadata_as_csv(
-        cam.read_static_metadata(), "thermalcam_static_metadata"
-    )
+    cam.save_metadata_as_csv(cam.read_static_metadata(), "thermalcam_static_metadata")
     cam.start_acquiring()
     print("Important: let the camera warm up ~10 min before sampling.")
 
     frames = 0
     try:
         while (
-            input("Press <s> + Enter to start sampling: ").strip().lower()
-            != _START_KEY
+            input("Press <s> + Enter to start sampling: ").strip().lower() != _START_KEY
         ):
             print("  Press s then Enter.")
         cam.set_nuc("Manual")
