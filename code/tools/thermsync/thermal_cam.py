@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import tifffile
+from genicam.gentl import GenTL_GenericException
 from harvesters.core import Harvester, ImageAcquirer
 
 CAMERA_FPS = 30  # the A65 always streams at this fixed rate
@@ -186,7 +187,7 @@ class ThermalCam:
                 if self._acquirer.is_acquiring():
                     self._acquirer.stop()
                 self._acquirer.destroy()
-            except Exception as exc:  # noqa: PLW0718 - teardown must never fail
+            except (GenTL_GenericException, OSError) as exc:
                 print(f"[CAM] Warning during disconnect: {exc}")
         if self._harvester is not None:
             self._harvester.reset()
