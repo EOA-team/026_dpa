@@ -5,12 +5,13 @@ thermal_YYYY-MM-DD_HHMMSS.mmm_UTC_raw.tif plus a per-frame camera metadata
 CSV. Files are never overwritten.
 """
 
-import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
 from code.file_utils import get_base_path
 from code.tools.thermsync.nmea_reader import NmeaReader
+from code.tools.thermsync.quit_listener import QuitListener
 from code.tools.thermsync.thermal_cam import ThermalCam
 from code.yamlconfig_helper import load_config_from_yamlfile
 
@@ -29,36 +30,34 @@ def _load_config() -> dict:
     return load_config_from_yamlfile(config_path)
 
 
-class QuitListener:
-    """Background thread watching for the quit key on stdin (RDP-safe)."""
+def _capture_loop(
+    cam: ThermalCam, nmea: NmeaReader, quit_listener: QuitListener
+) -> int:
+    """Capture frames until quit is requested; return the capture count."""
+    frame_idx = 0
+    while not quit_listener.quit_requested:
+        t0 = time.perf_counter()
 
-    def __init__(self, quit_key: str = "q") -> None:
-        self._quit_key = quit_key.lower()
-        self._stop_event = threading.Event()
-        self._thread = threading.Thread(
-            target=self._run, daemon=True, name="QuitListener"
+        frame = cam.fetch_newest()
+        gps_time = nmea.get()
+        if gps_time is None:
+            timestamp = f"frame_{frame_idx:04d}"
+        else:
+            timestamp = format_utc(gps_time)
+
+        cam.save_tiff(frame, f"thermal_{timestamp}_UTC_raw")
+        cam.save_metadata_as_csv(
+            cam.read_dynamic_metadata(),
+            f"{timestamp}_thermalcam_dynamic_metadata",
         )
 
-    @property
-    def quit_requested(self) -> bool:
-        return self._stop_event.is_set()
+        loop_time = (time.perf_counter() - t0) * 1000
+        print(f"[{frame_idx:04d}] {timestamp}_UTC | loop {loop_time:.0f} ms")
 
-    def start(self) -> None:
-        self._thread.start()
-        print(f"[KEY] Type <{self._quit_key.upper()}> + Enter to stop.")
-
-    def stop(self) -> None:
-        self._stop_event.set()
-
-    def _run(self) -> None:
-        while not self._stop_event.is_set():
-            try:
-                key = input()
-            except EOFError:
-                return
-            if key.strip().lower() == self._quit_key:
-                print("[KEY] Quit requested.")
-                self._stop_event.set()
+        frame_idx += 1
+        elapsed = time.perf_counter() - t0
+        time.sleep(max(0, cam.sampling_period - elapsed))
+    return frame_idx
 
 
 def main() -> None:
@@ -78,13 +77,24 @@ def main() -> None:
     cam.start_acquiring()
     print("Important: let the camera warm up ~10 min before sampling.")
 
-    while input("Press <s> + Enter to start sampling: ").strip().lower() != _START_KEY:
-        print("  Press s then Enter.")
-
-    cam.set_nuc("Manual")
-    print("Sampling - press <q> + Enter to stop.")
-    quit_listener = QuitListener()
-    quit_listener.start()
+    frames = 0
+    try:
+        while (
+            input("Press <s> + Enter to start sampling: ").strip().lower()
+            != _START_KEY
+        ):
+            print("  Press s then Enter.")
+        cam.set_nuc("Manual")
+        print("Sampling - press <q> + Enter to stop.")
+        quit_listener = QuitListener()
+        quit_listener.start()
+        frames = _capture_loop(cam, nmea, quit_listener)
+    finally:
+        cam.set_nuc("Automatic")
+        cam.stop_acquiring()
+        cam.disconnect()
+        nmea.stop()
+    print(f"Capture complete. {frames} frames saved.")
 
 
 if __name__ == "__main__":

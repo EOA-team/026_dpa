@@ -9,8 +9,8 @@ import csv
 from datetime import datetime, timezone
 from pathlib import Path
 
-from harvesters.core import Harvester, ImageAcquirer
 import tifffile
+from harvesters.core import Harvester, ImageAcquirer
 
 CAMERA_FPS = 30  # the A65 always streams at this fixed rate
 CAMERA_SERIAL = "75006073"  # serial of this camera, used to find it
