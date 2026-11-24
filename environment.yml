@@ -11,10 +11,12 @@ dependencies:
   - python-dotenv
   - pyyaml
   - pyprojroot
+  - tifffile
   # dev tooling
   - pytest
   - mypy
   - ruff
   - pylint
   - pip:
+      - harvesters==1.4.3  # GenTL client for the FLIR A65; pinned ; not all versions working stable
       - pyinstaller  # build tool for code/tools/postflightdtt, not on conda-forge
