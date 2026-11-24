@@ -1,12 +1,13 @@
 """Control of the FLIR A65 thermal camera via Harvesters and GenTL.
 
-The camera free-runs at CAMERA_FPS. fetch_newest() empties the frame
-queue before each capture and returns the newest frame, at most one
-camera frame period old.
+The camera free-runs at CAMERA_FPS. fetch_newest() discards the old
+frames waiting in the queue before each capture and returns the newest
+frame, at most one camera frame period old.
 """
 
-from harvesters.core import Harvester, ImageAcquirer
 from pathlib import Path
+
+from harvesters.core import Harvester, ImageAcquirer
 
 CAMERA_FPS = 30  # the A65 always streams at this fixed rate
 CAMERA_SERIAL = "75006073"  # serial of this camera, used to find it
@@ -45,10 +46,10 @@ class ThermalCam:
 
     @property
     def buffer_timeout(self) -> float:
-        """Max seconds to wait for a frame after a buffer flush.
+        """Max seconds to wait for a frame after the old frames are discarded.
 
         Two capture periods - a generous ceiling: the frame normally
-        arrives within one camera frame period after the flush.
+        arrives within one camera frame period after discarding.
         """
         return self.sampling_period * 2
 
@@ -85,6 +86,29 @@ class ThermalCam:
         if self._acquirer.is_acquiring():
             raise RuntimeError("camera is still acquiring")
         print("[CAM] Acquisition stopped.")
+
+    def fetch_newest(self):
+        """Return the frame produced right now: discard old ones, then fetch."""
+        self._discard_old_frames()
+        with self._acquirer.fetch(timeout=self.buffer_timeout) as buffer:
+            component = buffer.payload.components[0]
+            frame = component.data.reshape(component.height, component.width).copy()
+        return frame
+
+    def _discard_old_frames(self) -> None:
+        """Throw away all frames waiting in the queue.
+
+        Each discarded frame's buffer is returned to the pool, ready for the
+        next frame the camera produces. The empty-check waits only half a
+        frame period, so the loop always ends before the next fresh frame
+        arrives.
+        """
+        empty_check_timeout = CAMERA_FRAME_PERIOD_S / 2
+        while True:
+            old_frame = self._acquirer.try_fetch(timeout=empty_check_timeout)
+            if old_frame is None:
+                return
+            old_frame.queue() # Gives Back memory so camera can fill it with next frame 
 
     def set_nuc(self, mode: str) -> None:
         """Set the NUC mode, e.g. "Manual" during sampling, "Automatic" after."""
