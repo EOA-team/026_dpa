@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import tifffile
-from genicam.gentl import GenTL_GenericException
+from genicam.gentl import GenTL_GenericException  # type: ignore[import-untyped]
 from harvesters.core import Harvester, ImageAcquirer
 
 CAMERA_FPS = 30  # the A65 always streams at this fixed rate
