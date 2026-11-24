@@ -7,6 +7,7 @@ and the reader reconnects automatically until it is stopped.
 
 import socket
 import threading
+import time
 from datetime import datetime, timezone
 
 APX_HOST = "192.168.168.100"
@@ -14,12 +15,13 @@ APX_PORT = 5017
 
 CONNECT_TIMEOUT_S = 5.0  # max wait for the TCP connection to the APX
 RECV_TIMEOUT_S = 2.0  # silence longer than this means the connection is dead
+RECONNECT_DELAY_S = 2.0  # wait between reconnect attempts
 
 _JOIN_TIMEOUT_S = 5.0
 _RECV_SIZE = 4096
 
 _ZDA = "ZDA"
-_ZDA_REQUIRED_FIELDS = 5  # talker(e.g. $ZDA), time, day, month, year 
+_ZDA_REQUIRED_FIELDS = 5  # talker, time, day, month, year - all we consume
 _TIME_REQUIRED_CHARS = 6  # hhmmss - whole seconds at minimum
 
 
@@ -61,7 +63,11 @@ def parse_zda(sentence: str) -> datetime | None:
 
 
 class NmeaReader:
-    """Background reader caching the latest $--ZDA UTC time."""
+    """Background reader caching the latest $--ZDA UTC time.
+
+    Reconnects automatically whenever the connection is lost or refused,
+    retrying every RECONNECT_DELAY_S until stop() is called.
+    """
 
     def __init__(self, host: str = APX_HOST, port: int = APX_PORT) -> None:
         self._host = host
@@ -88,6 +94,15 @@ class NmeaReader:
             return self._gps_time
 
     def _run(self) -> None:
+        while not self._stop_event.is_set():
+            self._read_connection()
+            if self._stop_event.wait(timeout=RECONNECT_DELAY_S):
+                break  # stop requested during the reconnect pause
+            print(f"[NMEA] Retrying in {RECONNECT_DELAY_S:.0f} s ...")
+        print("[NMEA] Thread exiting.")
+
+    def _read_connection(self) -> None:
+        """Read the stream on a single connection until it ends or stop is called."""
         buffer = ""
         try:
             with socket.create_connection(
@@ -98,7 +113,8 @@ class NmeaReader:
                 while not self._stop_event.is_set():
                     data = sock.recv(_RECV_SIZE)
                     if not data:
-                        break  # the APX closed the connection
+                        print("[NMEA] Connection closed by the APX.")
+                        return
                     buffer += data.decode("ascii", errors="ignore")
                     while "\n" in buffer:
                         line, buffer = buffer.split("\n", 1)
@@ -108,4 +124,16 @@ class NmeaReader:
                                 self._gps_time = parsed
         except (socket.timeout, OSError) as exc:
             print(f"[NMEA] Connection lost: {exc}")
-        print("[NMEA] Disconnected.")
+
+
+if __name__ == "__main__":
+    reader = NmeaReader()
+    reader.start()
+    try:
+        while True:
+            print(f"[ZDA] latest: {reader.get()}")
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nStopped by user.")
+    finally:
+        reader.stop()
