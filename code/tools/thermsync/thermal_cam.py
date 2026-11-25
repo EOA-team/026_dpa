@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import tifffile
-from genicam.gentl import GenTL_GenericException  # type: ignore[import-untyped]
+from genicam.gentl import GenericException  # type: ignore[import-untyped]
 from harvesters.core import Harvester, ImageAcquirer
 
 CAMERA_FPS = 30  # the A65 always streams at this fixed rate
@@ -216,7 +216,7 @@ class ThermalCam:
                 if self._acquirer.is_acquiring():
                     self._acquirer.stop()
                 self._acquirer.destroy()
-            except (GenTL_GenericException, OSError) as exc:
+            except (GenericException, TimeoutError, OSError) as exc:
                 print(f"[CAM] Warning during disconnect: {exc}")
         if self._harvester is not None:
             self._harvester.reset()
