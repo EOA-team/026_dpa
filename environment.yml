@@ -12,6 +12,7 @@ dependencies:
   - pyyaml
   - pyprojroot
   - tifffile
+  - pip
   # dev tooling
   - pytest
   - mypy
@@ -21,3 +22,7 @@ dependencies:
   - pip:
       - harvesters==1.4.3  # GenTL client for the FLIR A65; pinned version works , updating on own risk
       - pyinstaller  # build tool for code/tools/postflightdtt, not on conda-forge
+      - jaraco-classes
+      - jaraco-context
+      - jaraco-functools
+      - jaraco-text
