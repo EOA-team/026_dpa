@@ -49,19 +49,18 @@ class NasStageFolders(StrEnum):
     """
 
     RAW = "0_raw"
-    PROCESSING = "2_processing"
-    PROCESSED = "3_processed"
+    PROCESSING = "1_processing"
+    PROCESSED = "2_processed"
 
-
-# Processing Location
-LOCAL_PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
-# Storage Location on NAS: use link to NAS at Reckenholz (Z:), not cached at Changins (Y:)!
-NAS_BASE_PATH = Path(f"Z:/drone/DERIS_TEST/RE/{AvailableTrials.ZOFE.value}/hypSpec")
 
 # Job Settings
 NR_OF_FLIGHT_LINES = 4
-SELECTED_TRIAL = AvailableTrials.ZOFE
-SELECTED_JOBS = ["ZOFE_260423_80", "ZOFE_260522_80_2"]
+SELECTED_TRIAL = AvailableTrials.OTHERS
+SELECTED_JOBS = ["102s_260723_80"]
+# Processing Location
+LOCAL_PROCESSING_FOLDER = Path("E:/mjolnir_processing")  # Path("E:/mjolnir_processing")
+# Storage Location on NAS: use link to NAS at Reckenholz (Z:), not cached at Changins (Y:)!
+NAS_BASE_PATH = Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec")
 
 if __name__ == "__main__":
     print(f"Starting Pipeline for jobs: {SELECTED_JOBS}")
@@ -267,8 +266,8 @@ if __name__ == "__main__":
 
     # Run Steps
     # fetch_raw_data.run()
-    clean_apx_files.run()
-    download_base_station_data.run()
+    # clean_apx_files.run()
+    # download_base_station_data.run()
     store_basestationdata_on_nas.run()
     # georeference_sensors.run()
 
