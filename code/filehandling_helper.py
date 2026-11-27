@@ -16,24 +16,27 @@ def _process_files_by_regex(
     regex_pattern: str,
     file_operation: Callable[..., Any],
     print_progress: bool = False,
-) -> None:
+) -> int:
     """Internal helper that applies a file operation to all files matching a regex.
-
-    Not intended to be called directly — use move_files_by_regex or
-    copy_files_by_regex instead."""
+     Not intended to be called directly — use move_files_by_regex or
+     copy_files_by_regex instead.
+    Returns the number of matches."""
 
     destination.mkdir(parents=True, exist_ok=True)
     try:
         compiled_regex = re.compile(regex_pattern, re.IGNORECASE)
     except re.error as e:
         print(f"❌ Invalid regex pattern '{regex_pattern}': {e}")
-        return
+        return 0
+    count = 0
     for file_path in [f for f in source.iterdir() if f.is_file()]:
         if compiled_regex.search(file_path.name):
             dest_file = destination / file_path.name
             file_operation(str(file_path), str(dest_file))
+            count += 1
             if print_progress:
                 print(f"{file_operation.__name__}: {file_path} -> {dest_file}")
+    return count
 
 
 def move_files_by_regex(
@@ -45,9 +48,12 @@ def move_files_by_regex(
 
 def copy_files_by_regex(
     source: Path, destination: Path, regex_pattern: str, print_progress: bool = False
-) -> None:
-    """Copy all files matching regex from source to destination. Keeps originals."""
-    _process_files_by_regex(source, destination, regex_pattern, copy2, print_progress)
+) -> int:
+    """Copy all files matching regex from source to destination. Keeps originals.
+    Returns the number of copied files."""
+    return _process_files_by_regex(
+        source, destination, regex_pattern, copy2, print_progress
+    )
 
 
 def parse_t04_datetime(filename: str) -> datetime:

@@ -31,6 +31,9 @@ from enum import StrEnum
 
 
 class AvailableTrials(StrEnum):
+    """Available trials for processing, ensures type safety and avoids typos.
+    Note: Will extend in the future with more trials"""
+
     ZOFE = "ZOFE"
     STYCS = "STYCS"
     OTHERS = "others"
@@ -38,11 +41,29 @@ class AvailableTrials(StrEnum):
     DEMEO = "112o"
 
 
-# USER Settings
-NR_OF_FLIGHT_LINES = 4
-PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
+class NasStageFolders(StrEnum):
+    """Each Folder on the NAS describes a stage in the processing pipeline
+    RAW: Raw data from drone flights (e.g. apx, *.hyspex, *.pcap)
+    PROCESSING: Intermediate files for reuse in other processes (e.g. rinex or navigation files)
+    PROCESSED: Final radiance and reflectance orthomosaics
+    """
+
+    RAW = "0_raw"
+    PROCESSING = "1_processing"
+    PROCESSED = "2_processed"
+
+
+# Job Settings
+NR_OF_FLIGHT_LINES = 5
 SELECTED_TRIAL = AvailableTrials.ZOFE
-SELECTED_JOBS = ["ZOFE_260423_80"]
+SELECTED_JOBS = [
+    "ZOFE_260529_80_1",
+    "ZOFE_260529_80_3",
+]
+# Storage Location on NAS: use link to NAS at Reckenholz (Z:), not cached at Changins (Y:)!
+NAS_PATH = Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec")
+# Processing Folder on Drone Station
+LOCAL_PROCESSING_FOLDER = Path("E:/mjolnir_processing") 
 
 if __name__ == "__main__":
     print(f"Starting Pipeline for jobs: {SELECTED_JOBS}")
@@ -56,11 +77,10 @@ if __name__ == "__main__":
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
-            # Important: use link to NAS at Reckenholz, not cached at Changins!
-            basefolder=Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec/0_raw"),
+            basefolder=NAS_PATH / NasStageFolders.RAW.value,
             target="",
         ),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
+        output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="RAW"),
         jobs=SELECTED_JOBS,
         exclude_within_output_folder=["rinex"],
     )
@@ -70,9 +90,9 @@ if __name__ == "__main__":
     #     flight relevant T04 files only.
     clean_apx_files = ApxCleaning(
         name="Clean Apx Files",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="RAW"),
         output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="RAW/apx/removed"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="RAW/apx/removed"
         ),
         jobs=SELECTED_JOBS,
         buffer=timedelta(
@@ -85,80 +105,114 @@ if __name__ == "__main__":
     download_base_station_data = ScrapeBaseStationData(
         name="Download Base Station Data",
         # Use data from APX folder to get flight time info for scraper
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW/apx"),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW/rinex"),
-        jobs=SELECTED_JOBS,
-    )
-    # Step 4: Georeference Sensors
-    georeference_sensors = GeoreferenceSensors(
-        name="Georeference Sensors (SWIR, VNIR, LiDAR)",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="tmp"),
-        jobs=SELECTED_JOBS,
-    )
-
-    # Step 5: Fetch Navigation Files
-    fetch_navigation_files = FetchNavigationFiles(
-        name="Fetch Navigation Files",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
+        input_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="RAW/apx"
+        ),
         output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp/input_hyspexnav"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="RAW/rinex"
         ),
         jobs=SELECTED_JOBS,
     )
 
-    # Step 6: NavigationDiscretization
+    # Step 4: Store Base Station Data persistent on NAS
+    #     Note: Basestation Data are only downloadable for 1 year on the Swipos server, so we save them to NAS for future use.
+    store_basestationdata_on_nas = CopyJobFolders(
+        name="Store Base Station Data on NAS",
+        input_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="RAW/rinex"
+        ),
+        output_folder=PipelineFolder(
+            basefolder=NAS_PATH / NasStageFolders.PROCESSING.value,
+            target="rinex",
+        ),
+        jobs=SELECTED_JOBS,
+        exclude_within_output_folder=["rinex"],
+    )
+
+    # Step 5: Georeference Sensors
+    georeference_sensors = GeoreferenceSensors(
+        name="Georeference Sensors (SWIR, VNIR, LiDAR)",
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="RAW"),
+        output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="tmp"),
+        jobs=SELECTED_JOBS,
+    )
+
+    # Step 6: Fetch Navigation Files
+    fetch_navigation_files = FetchNavigationFiles(
+        name="Fetch Navigation Files",
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/input_hyspexnav"
+        ),
+        jobs=SELECTED_JOBS,
+    )
+    # Step 7: Store Navigation Files persistent on NAS
+    #     Note: Used by ThermalCam Processing Pipeline
+    store_navigation_files_on_nas = CopyJobFolders(
+        name="Store Navigation Files on NAS",
+        input_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/input_hyspexnav"
+        ),
+        output_folder=PipelineFolder(
+            basefolder=NAS_PATH / NasStageFolders.PROCESSING.value,
+            target="navigation_files",
+        ),
+        jobs=SELECTED_JOBS,
+        exclude_within_output_folder=["rinex"],
+    )
+
+    # Step 8: NavigationDiscretization
     navigation_discretization = NavigationDiscretization(
         name="Navigation Discretization",
         input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp/input_hyspexnav"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/input_hyspexnav"
         ),
         output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         jobs=SELECTED_JOBS,
     )
 
-    # Step 7: Convert Binary to Radiance
+    # Step 9: Convert Binary to Radiance
     binary_to_radiance = BinaryToRadiance(
         name="Binary to Radiance",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="RAW"),
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="RAW"),
         output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
         jobs=SELECTED_JOBS,
     )
-    # Step 8: Get VNIR Files
+    # Step 10: Get VNIR Files
     get_vnir_files = MoveFiles(
         name="Get VNIR Files",
         input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="VNIR"),
+        output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="VNIR"),
         jobs=SELECTED_JOBS,
         regex_pattern=r"v1240",  # v1240 for VNIR
     )
 
-    # Step 9: Get SWIR Files
+    # Step 11: Get SWIR Files
     get_swir_files = MoveFiles(
         name="Get SWIR Files",
         input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="tmp/swirvnir_data"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/swirvnir_data"
         ),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="SWIR"),
+        output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="SWIR"),
         jobs=SELECTED_JOBS,
         regex_pattern=r"s620",  # s620 for VNIR
     )
     # Deprecated (since Intacor release): Build Digital Surface Model (DSM) from LiDAR Point Cloud
     build_digital_surface_model = BuildDigitalSurfaceModel(
         name="Build Digital Surface Model",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target=""),
         output_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="output/1_raw/DSM"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="output/1_raw/DSM"
         ),
         jobs=SELECTED_JOBS,
     )
-    # Step 10: Get SWIR Calibration Files
+    # Step 12: Get SWIR Calibration Files
     #      Note: Required as Parge Preparation
     get_swir_calibration_files = CopyFiles(
         name="Get SWIR Calibration Files",
@@ -167,12 +221,12 @@ if __name__ == "__main__":
             target="calibration",
             static=True,
         ),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="SWIR"),
+        output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="SWIR"),
         jobs=SELECTED_JOBS,
         regex_pattern=r"boresight_swir|sensormodel",
     )
 
-    # Step 11: Get VNIR Calibration Files
+    # Step 13: Get VNIR Calibration Files
     #      Note: Required as Parge Preparation
     get_vnir_calibration_files = CopyFiles(
         name="Get VNIR Calibration Files",
@@ -181,53 +235,80 @@ if __name__ == "__main__":
             target="calibration",
             static=True,
         ),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="VNIR"),
+        output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="VNIR"),
         jobs=SELECTED_JOBS,
         regex_pattern=r"boresight_vnir|sensormodel",
     )
-    # Step 12: Geocoding
+    # Step 14: Geocoding
     geocoding = Geocoding(
         name="Geocoding",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="output"
+        ),
         jobs=SELECTED_JOBS,
         nr_of_flight_lines=NR_OF_FLIGHT_LINES,
         direct_las_import=True,  # Use direct LAS import instead of DSM
     )
-    # Step 13: Create Radiance Orthomosaic
+    # Step 15: Create Radiance Orthomosaic
     create_radiance_orthomosaic = CreateRadianceOrthomosaic(
         name="Create Radiance Orthomosaic",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="output"
+        ),
         jobs=SELECTED_JOBS,
     )
-    # Step 14: Create Reflectance Orthomosaic
+    # Step 16: Create Reflectance Orthomosaic
     create_reflectance_orthomosaic = CreateReflectanceOrthomosaic(
         name="Create Reflectance Orthomosaic",
-        input_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target=""),
-        output_folder=PipelineFolder(basefolder=PROCESSING_FOLDER, target="output"),
+        input_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target=""),
+        output_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="output"
+        ),
         jobs=SELECTED_JOBS,
     )
 
-    # Step 15: Translate Orthomosaics to Geotiff
+    # Step 17: Translate Orthomosaics to Geotiff
     orthomosaic_to_geotiff = OrthomosaicToGeoTiff(
         name="Translate Orthomosaics to Geotiff",
         input_folder=PipelineFolder(
-            basefolder=PROCESSING_FOLDER, target="output/7_mosaics"
+            basefolder=LOCAL_PROCESSING_FOLDER, target="output/7_mosaics"
         ),
         output_folder=PipelineFolder(
-            basefolder=Path(PROCESSING_FOLDER), target="output/7_mosaics"
+            basefolder=Path(LOCAL_PROCESSING_FOLDER), target="output/7_mosaics"
         ),
         jobs=SELECTED_JOBS,
+    )
+
+    # Step 18: Placeholder for Manual georeferencing step
+    #     Note: Output will be "mosaic_radiance.tif" and "mosaic_reflectance.tif"
+
+    # STEP 19 : Store Final Orthomosaics on NAS
+    #     Note: "tmp_mosaic_radiance.tif" and "tmp_mosaic_reflectance.tif" are not yet manual georeferenced and will therefore not be stored
+    store_orthomosaics_on_nas = CopyFiles(
+        name="Store Orthomosaics on NAS",
+        input_folder=PipelineFolder(
+            basefolder=LOCAL_PROCESSING_FOLDER, target="output/7_mosaics"
+        ),
+        output_folder=PipelineFolder(
+            basefolder=NAS_PATH / NasStageFolders.PROCESSED.value,
+            target="",
+        ),
+        jobs=SELECTED_JOBS,
+        regex_pattern=r"^mosaic_(?:radiance|reflectance)\.tif$",
+        warning_message=" No final orthomosaics found. Probably you have not georeferenced manually yet. Please Georeference manually and save the files as 'mosaic_radiance.tif' and 'mosaic_reflectance.tif' before storing on NAS.",
     )
 
     # Run Steps
     fetch_raw_data.run()
     clean_apx_files.run()
     download_base_station_data.run()
+    store_basestationdata_on_nas.run()
     georeference_sensors.run()
 
     fetch_navigation_files.run()
+    store_navigation_files_on_nas.run()
     navigation_discretization.run()
     binary_to_radiance.run()
     get_vnir_files.run()
@@ -241,5 +322,7 @@ if __name__ == "__main__":
     create_radiance_orthomosaic.run()
     create_reflectance_orthomosaic.run()
     orthomosaic_to_geotiff.run()
+    # Placeholder for Manual georeferencing step
+    store_orthomosaics_on_nas.run()
 
     print("All Pipeline steps completed.")

@@ -82,7 +82,9 @@ class CopyJobFolders(PipelineStep):
                 if self.exclude_within_output_folder
                 else None
             )
-            copytree(input_folder, output_folder, ignore=ignore_ptrn)
+            copytree(
+                input_folder, output_folder, ignore=ignore_ptrn, dirs_exist_ok=True
+            )
             print(f"Copied {input_folder} to {output_folder}")
 
         print(f"Finished Step: {self.name} ✅")
@@ -229,16 +231,22 @@ class CopyFiles(PipelineStep):
         input_folder: PipelineFolder,
         output_folder: PipelineFolder,
         regex_pattern: str,
+        warning_message: str | None = None,
     ):
         super().__init__(name, jobs, input_folder, output_folder)
         self.regex_pattern = regex_pattern
+        self.warning_message = warning_message
 
     def run(self) -> bool:
         print(f"Starting Step: {self.name} ⏳")
         for input_folder, output_folder in zip(
             self.input_folders, self.output_folders, strict=True
         ):
-            copy_files_by_regex(input_folder, output_folder, self.regex_pattern)
+            n_copied = copy_files_by_regex(
+                input_folder, output_folder, self.regex_pattern
+            )
+            if n_copied == 0 and self.warning_message:
+                print(f"⚠️ {self.warning_message} (source: {input_folder})")
         print(f"Finished Step: {self.name} ✅")
         return True
 
@@ -509,7 +517,7 @@ class OrthomosaicToGeoTiff(PipelineStep):
             for file in envi_orthom:
                 envi_to_geotiff(
                     bsq_file_path=str(file),
-                    output_file_path=str(output_folder / f"{file.stem}.tif"),
+                    output_file_path=str(output_folder / f"tmp_{file.stem}.tif"),
                 )
                 print(f"Converted {file} to {output_folder / f'{file.stem}.tif'}")
         print(f"Finished Step: {self.name} ✅")
