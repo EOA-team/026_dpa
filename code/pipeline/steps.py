@@ -82,7 +82,9 @@ class CopyJobFolders(PipelineStep):
                 if self.exclude_within_output_folder
                 else None
             )
-            copytree(input_folder, output_folder, ignore=ignore_ptrn)
+            copytree(
+                input_folder, output_folder, ignore=ignore_ptrn, dirs_exist_ok=True
+            )
             print(f"Copied {input_folder} to {output_folder}")
 
         print(f"Finished Step: {self.name} ✅")
