@@ -82,9 +82,9 @@ class HyspexRadApplication:
         self.output_folders = output_folders
 
         # Application
-        self.app_path: str = "D:/hyspex_training/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe"
+        self.app_path: str = "D:/hyspex_documentation/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/HyspexRad_V3.5.exe"
         self.work_dir: str = (
-            "D:/hyspex_training/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/"
+            "D:/hyspex_documentation/02. HySpex software/HyspexRadV3.5/HyspexRadV3.5/"
         )
         # Window title stays static, no need for window_auto_id
         self.window_title: str = "HyspexRad_V3.5"
