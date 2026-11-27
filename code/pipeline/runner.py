@@ -61,11 +61,9 @@ SELECTED_JOBS = [
     "ZOFE_260529_80_3",
 ]
 # Storage Location on NAS: use link to NAS at Reckenholz (Z:), not cached at Changins (Y:)!
-NAS_SOURCE_PATH = Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec")
-# Processing Location
-LOCAL_PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
-# Normally same like NAS_SOURCE_PATH, only for testing different
-NAS_DESTINATION_PATH = Path(f"Z:/drone/DERIS_TEST/RE/{SELECTED_TRIAL.value}/hypSpec")
+NAS_PATH = Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec")
+# Processing Folder on Drone Station
+LOCAL_PROCESSING_FOLDER = Path("E:/mjolnir_processing") 
 
 if __name__ == "__main__":
     print(f"Starting Pipeline for jobs: {SELECTED_JOBS}")
@@ -79,7 +77,7 @@ if __name__ == "__main__":
     fetch_raw_data = CopyJobFolders(
         name="Fetch Raw Data",
         input_folder=PipelineFolder(
-            basefolder=NAS_SOURCE_PATH / NasStageFolders.RAW.value,
+            basefolder=NAS_PATH / NasStageFolders.RAW.value,
             target="",
         ),
         output_folder=PipelineFolder(basefolder=LOCAL_PROCESSING_FOLDER, target="RAW"),
@@ -124,7 +122,7 @@ if __name__ == "__main__":
             basefolder=LOCAL_PROCESSING_FOLDER, target="RAW/rinex"
         ),
         output_folder=PipelineFolder(
-            basefolder=NAS_DESTINATION_PATH / NasStageFolders.PROCESSING.value,
+            basefolder=NAS_PATH / NasStageFolders.PROCESSING.value,
             target="rinex",
         ),
         jobs=SELECTED_JOBS,
@@ -156,7 +154,7 @@ if __name__ == "__main__":
             basefolder=LOCAL_PROCESSING_FOLDER, target="tmp/input_hyspexnav"
         ),
         output_folder=PipelineFolder(
-            basefolder=NAS_DESTINATION_PATH / NasStageFolders.PROCESSING.value,
+            basefolder=NAS_PATH / NasStageFolders.PROCESSING.value,
             target="navigation_files",
         ),
         jobs=SELECTED_JOBS,
@@ -294,12 +292,12 @@ if __name__ == "__main__":
             basefolder=LOCAL_PROCESSING_FOLDER, target="output/7_mosaics"
         ),
         output_folder=PipelineFolder(
-            basefolder=NAS_DESTINATION_PATH / NasStageFolders.PROCESSED.value,
+            basefolder=NAS_PATH / NasStageFolders.PROCESSED.value,
             target="",
         ),
         jobs=SELECTED_JOBS,
         regex_pattern=r"^mosaic_(?:radiance|reflectance)\.tif$",
-        warning_message=" No final orthomosaics found. Probably you have not georeferenced manually yet. Please Georefermce manually and save the files as 'mosaic_radiance.tif' and 'mosaic_reflectance.tif' before storing on NAS.",
+        warning_message=" No final orthomosaics found. Probably you have not georeferenced manually yet. Please Georeference manually and save the files as 'mosaic_radiance.tif' and 'mosaic_reflectance.tif' before storing on NAS.",
     )
 
     # Run Steps
@@ -324,6 +322,7 @@ if __name__ == "__main__":
     create_radiance_orthomosaic.run()
     create_reflectance_orthomosaic.run()
     orthomosaic_to_geotiff.run()
+    # Placeholder for Manual georeferencing step
     store_orthomosaics_on_nas.run()
 
     print("All Pipeline steps completed.")
