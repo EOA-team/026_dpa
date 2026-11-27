@@ -54,14 +54,17 @@ class NasStageFolders(StrEnum):
 
 
 # Job Settings
-NR_OF_FLIGHT_LINES = 3
-SELECTED_TRIAL = AvailableTrials.OTHERS
+NR_OF_FLIGHT_LINES = 5
+SELECTED_TRIAL = AvailableTrials.ZOFE
 SELECTED_JOBS = [
-    "102s_260723_80",
-]  # Processing Location
-LOCAL_PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
+    "ZOFE_260529_80_1",
+    "ZOFE_260529_80_3",
+]
 # Storage Location on NAS: use link to NAS at Reckenholz (Z:), not cached at Changins (Y:)!
 NAS_SOURCE_PATH = Path(f"Z:/drone/DERIS/RE/{SELECTED_TRIAL.value}/hypSpec")
+# Processing Location
+LOCAL_PROCESSING_FOLDER = Path("E:/test")  # Path("E:/mjolnir_processing")
+# Normally same like NAS_SOURCE_PATH, only for testing different
 NAS_DESTINATION_PATH = Path(f"Z:/drone/DERIS_TEST/RE/{SELECTED_TRIAL.value}/hypSpec")
 
 if __name__ == "__main__":
@@ -296,30 +299,31 @@ if __name__ == "__main__":
         ),
         jobs=SELECTED_JOBS,
         regex_pattern=r"^mosaic_(?:radiance|reflectance)\.tif$",
+        warning_message=" No final orthomosaics found. Probably you have not georeferenced manually yet. Please Georefermce manually and save the files as 'mosaic_radiance.tif' and 'mosaic_reflectance.tif' before storing on NAS.",
     )
 
     # Run Steps
-    # fetch_raw_data.run()
-    # clean_apx_files.run()
-    # download_base_station_data.run()
-    # store_basestationdata_on_nas.run()
-    # georeference_sensors.run()
+    fetch_raw_data.run()
+    clean_apx_files.run()
+    download_base_station_data.run()
+    store_basestationdata_on_nas.run()
+    georeference_sensors.run()
 
-    # fetch_navigation_files.run()
-    # store_navigation_files_on_nas.run()
-    # navigation_discretization.run()
-    # binary_to_radiance.run()
-    # get_vnir_files.run()
-    # get_swir_files.run()
+    fetch_navigation_files.run()
+    store_navigation_files_on_nas.run()
+    navigation_discretization.run()
+    binary_to_radiance.run()
+    get_vnir_files.run()
+    get_swir_files.run()
 
     # Required for Parge (Georectification)
-    # get_swir_calibration_files.run()
-    # get_vnir_calibration_files.run()
+    get_swir_calibration_files.run()
+    get_vnir_calibration_files.run()
 
-    # geocoding.run()
-    # create_radiance_orthomosaic.run()
-    # create_reflectance_orthomosaic.run()
-    # orthomosaic_to_geotiff.run()
+    geocoding.run()
+    create_radiance_orthomosaic.run()
+    create_reflectance_orthomosaic.run()
+    orthomosaic_to_geotiff.run()
     store_orthomosaics_on_nas.run()
 
     print("All Pipeline steps completed.")
